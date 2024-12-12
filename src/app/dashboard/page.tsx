@@ -1,175 +1,247 @@
-"use client";
+"use client"
 
-import { LayoutDashboard, Users, CheckSquare, Target, Clock } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { StickyNotes } from "@/components/ui/sticky-note";
-import { PageHeader } from "@/components/ui/page-header";
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Clock, CircleDot } from 'lucide-react'
+import Sidebar from '@/components/layout/Sidebar'
+import { PageHeader } from '@/components/ui/page-header'
+import { Progress } from '@/components/ui/progress'
+import StickyNotes from '@/components/ui/sticky-note'
+import { supabase } from "@/lib/supabase"
 
-const dashboardCards = [
+interface Contact {
+  id: string
+  name: string
+  created_at: string
+}
+
+interface Activity {
+  id: string
+  message: string
+  created_at: string
+}
+
+const defaultMetrics = [
   {
-    title: "Tasks",
-    icon: CheckSquare,
-    stats: {
-      main: "12",
-      subtext: "Today's Tasks"
-    },
-    details: [
-      { text: "9 completed", value: "75%" }
-    ],
-    color: "bg-amber-500/10",
-    textColor: "text-amber-500",
-    progress: 75
-  },
-  {
-    title: "Active Leads",
-    icon: Target,
-    stats: {
-      main: "8",
-      subtext: "New Today"
-    },
-    details: [
-      { text: "4 requiring follow-up", icon: Clock },
-      { text: "2 deals closed today", icon: CheckSquare }
-    ],
-    color: "bg-blue-500/10",
-    textColor: "text-blue-500"
-  },
-  {
-    title: "Contacts",
+    name: "Total Contacts",
+    value: "...",
+    change: "Loading...",
     icon: Users,
-    stats: {
-      main: "20",
-      subtext: "Total Contacts"
-    },
-    details: [
-      { text: "0 meetings today", icon: Clock }
-    ],
-    color: "bg-pink-500/10",
-    textColor: "text-pink-500"
+    className: "card-contacts"
+  },
+  {
+    name: "Active Tasks",
+    value: "64",
+    change: "-2.4%",
+    icon: CheckSquare,
+    className: "card-tasks"
+  },
+  {
+    name: "Open Leads",
+    value: "23",
+    change: "+8.7%",
+    icon: Target,
+    className: "card-leads"
+  },
+  {
+    name: "Sales Revenue",
+    value: "$45.2k",
+    change: "+22.4%",
+    icon: BarChart3,
+    className: "card-sales"
+  },
+  {
+    name: "Messages",
+    value: "12",
+    change: "+4",
+    icon: MessageSquare,
+    className: "card-activity"
   }
-];
+]
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false)
+  const [progress, setProgress] = useState(75) // 37,500 / 50,000 * 100
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([])
+  const [metrics, setMetrics] = useState(defaultMetrics)
+
+  useEffect(() => {
+    setMounted(true)
+    fetchDashboardData()
+  }, [])
+
+  async function fetchDashboardData() {
+    try {
+      // Fetch contacts
+      const { data: contactsData, error: contactsError } = await supabase
+        .from('contacts')
+        .select('id, name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (contactsError) throw contactsError
+
+      // Calculate contact metrics
+      const totalContacts = contactsData?.length || 0
+      const previousTotal = totalContacts - (contactsData?.filter(c => 
+        new Date(c.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      ).length || 0)
+      const contactChange = previousTotal ? ((totalContacts - previousTotal) / previousTotal * 100).toFixed(1) : '0'
+
+      // Update metrics with real contact data
+      setMetrics(prev => prev.map(metric => 
+        metric.name === "Total Contacts" 
+          ? { ...metric, value: totalContacts.toString(), change: `${contactChange}%` }
+          : metric
+      ))
+
+      // Create recent activity from new contacts
+      const activities = contactsData?.map(contact => ({
+        id: contact.id,
+        message: `New contact added: ${contact.name}`,
+        created_at: contact.created_at
+      })) || []
+
+      setContacts(contactsData || [])
+      setRecentActivity(activities)
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err)
+    }
+  }
+
+  if (!mounted) return null
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    
+    if (seconds < 60) return 'just now'
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  }
+
   return (
-    <div className="p-6 space-y-6 bg-background text-foreground">
-      <PageHeader 
-        title="Dashboard" 
-        icon={LayoutDashboard}
-        iconClass="icon-dashboard"
-      />
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Good Evening!</h1>
-        <p className="text-muted-foreground">Here's what's happening today</p>
-      </div>
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="p-8">
+          <PageHeader 
+            heading="Dashboard"
+            description="Welcome back! Here's an overview of your CRM activity."
+            icon={<BarChart3 className="h-6 w-6" />}
+          />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="dashboard-card card-tasks border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              <div className="flex items-center gap-2">
-                <CheckSquare className="text-orange-500" />
-                Tasks
-              </div>
-            </CardTitle>
-            <span className="text-orange-500 text-2xl font-bold animate-counter">12</span>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Today's Tasks</p>
-              <div className="progress-bar-wrapper">
-                <div className="progress-bar" style={{ width: '75%' }} />
-              </div>
-              <p className="text-sm text-muted-foreground">9 completed</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="dashboard-card card-leads border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              <div className="flex items-center gap-2">
-                <Target className="text-blue-500" />
-                Active Leads
-              </div>
-            </CardTitle>
-            <span className="text-blue-500 text-2xl font-bold animate-counter">8</span>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">New Today</p>
-              <p className="text-sm text-muted-foreground">4 requiring follow-up</p>
-              <p className="text-sm text-muted-foreground">2 deals closed today</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="dashboard-card card-contacts border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              <div className="flex items-center gap-2">
-                <Users className="text-pink-500" />
-                Contacts
-              </div>
-            </CardTitle>
-            <span className="text-pink-500 text-2xl font-bold animate-counter">20</span>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Total Contacts</p>
-              <p className="text-sm text-muted-foreground">0 meetings today</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="dashboard-card card-sales border-0">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Target className="text-purple-500" />
-              Sales Target
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Monthly Goal</p>
-              <div className="text-2xl font-bold animate-counter">£50,000</div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div>Current: £37,500</div>
-                  <div className="text-muted-foreground">Remaining: £12,500</div>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {metrics.map((metric, index) => (
+              <motion.div
+                key={metric.name}
+                className={`dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                whileHover={{ y: -4 }}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 rounded-lg bg-white/5">
+                    <metric.icon className="h-5 w-5" />
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    metric.change.startsWith('+') ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {metric.change}
+                  </span>
                 </div>
-                <div className="progress-bar-wrapper">
-                  <div className="progress-bar" style={{ width: '75%' }} />
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    {metric.name}
+                  </h3>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                    className="text-2xl font-bold text-primary"
+                  >
+                    {metric.value}
+                  </motion.div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </motion.div>
+            ))}
+          </motion.div>
 
-        <Card className="dashboard-card card-activity border-0">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="text-blue-500" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3].map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full activity-dot" />
-                  <div>
-                    <p className="text-sm">New lead assigned to you</p>
-                    <p className="text-sm text-muted-foreground">2 hours ago</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            {/* Sales Target Section */}
+            <motion.div
+              className="dashboard-card rounded-xl p-6 bg-emerald-950/30"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <CircleDot className="h-6 w-6 text-emerald-400" />
+                <h2 className="text-xl font-semibold">Sales Target</h2>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-muted-foreground">Monthly Goal</span>
+                  <span className="text-3xl font-bold">£50,000</span>
+                </div>
+                <div className="space-y-2">
+                  <Progress value={progress} className="h-2" />
+                  <div className="flex justify-between text-sm">
+                    <span>Current: £37,500</span>
+                    <span className="text-muted-foreground">Remaining: £12,500</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </motion.div>
+
+            {/* Recent Activity Section */}
+            <motion.div
+              className="dashboard-card rounded-xl p-6 bg-indigo-950/30"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <Clock className="h-6 w-6 text-indigo-400" />
+                <h2 className="text-xl font-semibold">Recent Activity</h2>
+              </div>
+              <div className="space-y-4">
+                {recentActivity.slice(0, 5).map((activity, index) => (
+                  <motion.div
+                    key={activity.id}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 + (index * 0.1) }}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{activity.message}</p>
+                      <p className="text-xs text-muted-foreground">{formatTimeAgo(activity.created_at)}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="mt-8">
+            <StickyNotes />
+          </div>
+        </div>
+      </main>
     </div>
-  );
+  )
 }

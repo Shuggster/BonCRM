@@ -7,9 +7,9 @@ export default function LeadsPage() {
   return (
     <div className="p-6">
       <PageHeader 
-        title="Leads" 
-        icon={Target}
-        iconClass="icon-leads"
+        heading="Leads"
+        description="Manage your sales leads and opportunities"
+        icon={<div className="icon-leads"><Target className="h-6 w-6" /></div>}
       />
       {/* Content will go here */}
     </div>

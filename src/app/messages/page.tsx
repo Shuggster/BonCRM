@@ -7,9 +7,9 @@ export default function MessagesPage() {
   return (
     <div className="p-6">
       <PageHeader 
-        title="Messages" 
-        icon={MessageSquare}
-        iconClass="icon-messages"
+        heading="Messages"
+        description="View and manage your conversations"
+        icon={<div className="icon-messages"><MessageSquare className="h-6 w-6" /></div>}
       />
       {/* Content will go here */}
     </div>

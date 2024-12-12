@@ -7,9 +7,9 @@ export default function AnalyticsPage() {
   return (
     <div className="p-6">
       <PageHeader 
-        title="Analytics" 
-        icon={BarChart3}
-        iconClass="icon-analytics"
+        heading="Analytics"
+        description="View your business metrics and insights"
+        icon={<div className="icon-analytics"><BarChart3 className="h-6 w-6" /></div>}
       />
       {/* Content will go here */}
     </div>

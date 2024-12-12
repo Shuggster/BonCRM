@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Test styles */
+.test-style {
+  color: red !important;
+  font-size: 24px !important;
+}
+
 @layer base {
   :root {
     --background: 222.2 84% 4.9%;
@@ -203,6 +209,38 @@
   100% {
     transform: translateX(100%);
   }
+}
+
+/* Sales Target Progress */
+.progress-indicator {
+  @apply bg-emerald-400;
+}
+
+/* Activity Indicators */
+.activity-dot {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 /* Dashboard Card Animations */
