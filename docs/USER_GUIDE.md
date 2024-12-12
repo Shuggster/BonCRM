@@ -27,30 +27,41 @@ Click on column headers to sort by:
 
 ### Adding a New Contact
 1. Click the "Add Contact" button
-2. Fill in the contact details:
-   - **Basic Information**
+2. Fill in the contact details in the organized sections:
+   - **Basic Information** (Blue)
      - Name (required)
      - Email (required)
      - Phone
-   - **Work Information**
+   - **Work Information** (Purple)
      - Company
      - Job Title
-   - **Contact Information**
+     - Industry (from predefined list)
+   - **Address Information** (Green)
      - Address Line 1
      - Address Line 2
      - City
      - Region/State
      - Postal Code
      - Country
+   - **Online Presence** (Orange/Blue)
      - Website
-   - **Social Media**
      - LinkedIn Profile
      - Twitter Profile
 
 ### Editing Contacts
 1. Click the "Edit" button next to a contact
-2. Modify the desired fields
+2. Modify the desired fields in the organized sections
 3. Click "Save Changes"
+
+### Contact Interface Features
+- Modern, responsive design with smooth transitions
+- Color-coded sections for easy navigation:
+  - Blue: Basic personal information
+  - Purple: Work-related details
+  - Green: Address information
+  - Orange/Blue: Online presence
+- Background blur effect when modals are open
+- Organized field grouping for better user experience
 
 ### Viewing Contact Details
 1. Click on a contact's name to view full details
@@ -122,4 +133,4 @@ The CSV export includes all contact fields:
 
 ---
 
-*This guide will be updated as new features are added to the system.* 
+*This guide will be updated as new features are added to the system.*

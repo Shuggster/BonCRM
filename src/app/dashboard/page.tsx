@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Users, CheckSquare, Target, BarChart3, MessageSquare, Clock, CircleDot } from 'lucide-react'
-import Sidebar from '@/components/layout/Sidebar'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Clock, CircleDot, LayoutDashboard } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Progress } from '@/components/ui/progress'
 import StickyNotes from '@/components/ui/sticky-note'
@@ -30,32 +29,25 @@ const defaultMetrics = [
     className: "card-contacts"
   },
   {
-    name: "Active Tasks",
-    value: "64",
-    change: "-2.4%",
+    name: "Tasks Completed",
+    value: "...",
+    change: "Loading...",
     icon: CheckSquare,
     className: "card-tasks"
   },
   {
-    name: "Open Leads",
-    value: "23",
-    change: "+8.7%",
+    name: "Sales Target",
+    value: "...",
+    change: "Loading...",
     icon: Target,
-    className: "card-leads"
-  },
-  {
-    name: "Sales Revenue",
-    value: "$45.2k",
-    change: "+22.4%",
-    icon: BarChart3,
     className: "card-sales"
   },
   {
-    name: "Messages",
-    value: "12",
-    change: "+4",
-    icon: MessageSquare,
-    className: "card-activity"
+    name: "Revenue",
+    value: "...",
+    change: "Loading...",
+    icon: BarChart3,
+    className: "card-revenue"
   }
 ]
 
@@ -127,121 +119,118 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="p-8">
-          <PageHeader 
-            heading="Dashboard"
-            description="Welcome back! Here's an overview of your CRM activity."
-            icon={<BarChart3 className="h-6 w-6" />}
-          />
+    <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="p-8">
+        <PageHeader
+          title="Dashboard"
+          description="Overview of your CRM activities."
+          icon={<div className="icon-dashboard"><LayoutDashboard className="h-6 w-6" /></div>}
+        />
 
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-8"
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {metrics.map((metric, index) => (
+            <motion.div
+              key={metric.name}
+              className={`dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              whileHover={{ y: -4 }}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 rounded-lg bg-white/5">
+                  <metric.icon className="h-5 w-5" />
+                </div>
+                <span className={`text-sm font-medium ${
+                  metric.change.startsWith('+') ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {metric.change}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  {metric.name}
+                </h3>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                  className="text-2xl font-bold text-primary"
+                >
+                  {metric.value}
+                </motion.div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+          {/* Sales Target Section */}
+          <motion.div
+            className="dashboard-card rounded-xl p-6 bg-emerald-950/30"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
           >
-            {metrics.map((metric, index) => (
-              <motion.div
-                key={metric.name}
-                className={`dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                whileHover={{ y: -4 }}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 rounded-lg bg-white/5">
-                    <metric.icon className="h-5 w-5" />
-                  </div>
-                  <span className={`text-sm font-medium ${
-                    metric.change.startsWith('+') ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {metric.change}
-                  </span>
+            <div className="flex items-center gap-2 mb-6">
+              <CircleDot className="h-6 w-6 text-emerald-400" />
+              <h2 className="text-xl font-semibold">Sales Target</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-muted-foreground">Monthly Goal</span>
+                <span className="text-3xl font-bold">£50,000</span>
+              </div>
+              <div className="space-y-2">
+                <Progress value={progress} className="h-2" />
+                <div className="flex justify-between text-sm">
+                  <span>Current: £37,500</span>
+                  <span className="text-muted-foreground">Remaining: £12,500</span>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    {metric.name}
-                  </h3>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                    className="text-2xl font-bold text-primary"
-                  >
-                    {metric.value}
-                  </motion.div>
-                </div>
-              </motion.div>
-            ))}
+              </div>
+            </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-            {/* Sales Target Section */}
-            <motion.div
-              className="dashboard-card rounded-xl p-6 bg-emerald-950/30"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="flex items-center gap-2 mb-6">
-                <CircleDot className="h-6 w-6 text-emerald-400" />
-                <h2 className="text-xl font-semibold">Sales Target</h2>
-              </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-muted-foreground">Monthly Goal</span>
-                  <span className="text-3xl font-bold">£50,000</span>
-                </div>
-                <div className="space-y-2">
-                  <Progress value={progress} className="h-2" />
-                  <div className="flex justify-between text-sm">
-                    <span>Current: £37,500</span>
-                    <span className="text-muted-foreground">Remaining: £12,500</span>
+          {/* Recent Activity Section */}
+          <motion.div
+            className="dashboard-card rounded-xl p-6 bg-indigo-950/30"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Clock className="h-6 w-6 text-indigo-400" />
+              <h2 className="text-xl font-semibold">Recent Activity</h2>
+            </div>
+            <div className="space-y-4">
+              {recentActivity.slice(0, 5).map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 + (index * 0.1) }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{activity.message}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimeAgo(activity.created_at)}</p>
                   </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Recent Activity Section */}
-            <motion.div
-              className="dashboard-card rounded-xl p-6 bg-indigo-950/30"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <div className="flex items-center gap-2 mb-6">
-                <Clock className="h-6 w-6 text-indigo-400" />
-                <h2 className="text-xl font-semibold">Recent Activity</h2>
-              </div>
-              <div className="space-y-4">
-                {recentActivity.slice(0, 5).map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.5 + (index * 0.1) }}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground">{formatTimeAgo(activity.created_at)}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="mt-8">
-            <StickyNotes />
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
-      </main>
-    </div>
+
+        <div className="mt-8">
+          <StickyNotes />
+        </div>
+      </div>
+    </main>
   )
 }
