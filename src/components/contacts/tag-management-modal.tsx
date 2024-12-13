@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Plus, Trash2, Edit2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabase, refreshSupabaseClient } from '@/lib/supabase'
 import {
   Dialog,
   DialogContent,
@@ -46,35 +46,46 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
         .select('*')
         .order('name')
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to fetch tags:', error.message)
+        return
+      }
+
       setTags(data || [])
-    } catch (error) {
-      console.error('Error fetching tags:', error)
+    } catch (err) {
+      console.error('Unexpected error fetching tags:', err)
     }
   }
 
-  const handleCreateTag = async () => {
-    if (!newTagName.trim()) return
-
+  const handleCreateTag = async (tagData: { name: string; color: string }) => {
+    setLoading(true)
     try {
-      setLoading(true)
+      if (!tagData.name.trim()) {
+        console.error('Tag name is required')
+        return
+      }
+
+      // Simple insert without select
       const { error } = await supabase
         .from('contact_tags')
-        .insert([
-          {
-            name: newTagName.trim(),
-            color: newTagColor
-          }
-        ])
+        .insert({
+          name: tagData.name.trim(),
+          color: tagData.color
+        })
 
-      if (error) throw error
+      if (error) {
+        // Simple error logging
+        console.error('Failed to create tag:', error.message)
+        return
+      }
 
+      // Success - clear form and refresh
       setNewTagName('')
       setNewTagColor('#3B82F6')
-      fetchTags()
+      await fetchTags()
       onTagsUpdated()
-    } catch (error) {
-      console.error('Error creating tag:', error)
+    } catch (err) {
+      console.error('Unexpected error:', err)
     } finally {
       setLoading(false)
     }
@@ -160,7 +171,7 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
               </div>
             </div>
             <Button
-              onClick={handleCreateTag}
+              onClick={() => handleCreateTag({ name: newTagName, color: newTagColor })}
               disabled={loading || !newTagName.trim()}
               className="self-end"
             >

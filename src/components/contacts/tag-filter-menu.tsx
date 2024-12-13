@@ -34,30 +34,38 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
 
     const fetchTags = async () => {
       try {
-        const { data, error } = await supabase
+        // Get distinct tag names with their counts
+        const { data: tagData, error: tagsError } = await supabase
           .from('contact_tags')
-          .select(`
-            id,
-            name,
-            color,
-            contact_tag_relations:contact_tag_relations(count)
-          `)
+          .select('name')
           .order('name')
 
-        if (error) throw error
+        if (tagsError) {
+          console.error('Error fetching tags:', tagsError.message)
+          setTags([])
+          return
+        }
 
-        const tagsWithCount = data.map(tag => ({
-          id: tag.id,
-          name: tag.name,
-          color: tag.color,
-          count: tag.contact_tag_relations.length
-        }))
+        // Count occurrences of each tag name
+        const tagCounts = tagData?.reduce((acc: { [key: string]: number }, { name }) => {
+          acc[name] = (acc[name] || 0) + 1
+          return acc
+        }, {})
 
-        // Sort by usage count descending
-        tagsWithCount.sort((a, b) => (b.count || 0) - (a.count || 0))
-        setTags(tagsWithCount)
-      } catch (error) {
-        console.error('Error fetching tags:', error)
+        // Convert to array and sort by count
+        const sortedTags = Object.entries(tagCounts || {})
+          .map(([name, count]) => ({
+            id: name,
+            name,
+            color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
+            count: count || 0
+          }))
+          .sort((a, b) => b.count - a.count)
+
+        setTags(sortedTags)
+      } catch (error: any) {
+        console.error('Error fetching tags:', error?.message || 'Unknown error')
+        setTags([]) // Set empty array to prevent undefined errors
       }
     }
 
@@ -69,20 +77,21 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
       refreshTags: fetchTags
     }))
 
-    const toggleTag = (tagId: string) => {
-      setSelectedTags(prev => {
-        const newTags = prev.includes(tagId)
-          ? prev.filter(id => id !== tagId)
-          : [...prev, tagId]
-        onTagSelect(newTags)
-        return newTags
-      })
+    const handleTagClick = async (tagName: string) => {
+      try {
+        if (selectedTags.includes(tagName)) {
+          setSelectedTags(selectedTags.filter(t => t !== tagName))
+        } else {
+          setSelectedTags([...selectedTags, tagName])
+        }
+      } catch (error: any) {
+        console.error('Error updating selected tags:', error?.message || 'Unknown error')
+      }
     }
 
-    const clearSelection = () => {
-      setSelectedTags([])
-      onTagSelect([])
-    }
+    useEffect(() => {
+      onTagSelect(selectedTags)
+    }, [selectedTags, onTagSelect])
 
     return (
       <DropdownMenu>
@@ -108,7 +117,7 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearSelection}
+                onClick={() => setSelectedTags([])}
                 className="h-auto px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
               >
                 Clear
@@ -144,7 +153,7 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
                 key={tag.id}
                 onSelect={(e) => {
                   e.preventDefault()
-                  toggleTag(tag.id)
+                  handleTagClick(tag.id)
                 }}
                 className="flex items-center justify-between hover:bg-accent focus:bg-accent"
               >

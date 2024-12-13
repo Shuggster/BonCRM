@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Users, Plus, ChevronUp, ChevronDown, Download, Trash, Tags, BarChart2, Mail, Phone, Calendar, Building2, FolderOpen, FolderClosed } from "lucide-react"
+import { useEffect, useState, useRef } from "react"
+import { Users, Plus, ChevronUp, ChevronDown, Download, Trash, Tags, BarChart2, Mail, Phone, Calendar, Building2, FolderOpen, FolderClosed, MapPin, ArrowRight, Pencil, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PageHeader } from "@/components/ui/page-header"
 import { CreateContactModal } from "@/components/contacts/create-contact-modal"
@@ -17,6 +17,10 @@ import { Avatar } from "@/components/contacts/avatar"
 import { TagFilterMenu } from "@/components/contacts/tag-filter-menu"
 import { Button } from "@/components/ui/button"
 import { Fragment } from "react"
+import { ScheduleActivityModal } from "@/components/contacts/schedule-activity-modal"
+import { validateContact } from '@/lib/validation'
+import { useToast } from '@/components/ui/toast'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface Contact {
   id: string
@@ -25,28 +29,32 @@ interface Contact {
   phone: string | null
   created_at: string
   company: string | null
-  job_title: string | null
-  address_line1: string | null
-  address_line2: string | null
-  city: string | null
-  region: string | null
-  postcode: string | null
-  country: string | null
-  website: string | null
-  linkedin: string | null
-  twitter: string | null
-  avatar_url: string | null
-  industry_id: string | null
-  industry: {
+  position: string | null
+  notes: string | null
+  avatar_url?: string
+  contact_tag_relations?: {
+    contact_tags: {
+      id: string
+      name: string
+      color: string
+    }
+  }[]
+  industries: {
     id: string
     name: string
-    description: string
-  } | null
+  }[]
   tags: {
     id: string
     name: string
     color: string
   }[]
+}
+
+interface BulkDeleteModalProps {
+  isOpen: boolean
+  onClose: () => void
+  selectedContactIds: string[]
+  onComplete: (retryCount?: number) => Promise<void>
 }
 
 type SortField = keyof Contact
@@ -72,69 +80,53 @@ export default function ContactsPage() {
   const [isTagStatsModalOpen, setIsTagStatsModalOpen] = useState(false)
   const [isTagManagementModalOpen, setIsTagManagementModalOpen] = useState(false)
   const [isIndustryManagementModalOpen, setIsIndustryManagementModalOpen] = useState(false)
+  const [isScheduleActivityModalOpen, setIsScheduleActivityModalOpen] = useState(false)
   const [groupBy, setGroupBy] = useState<'none' | 'company'>('none')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const tagFilterMenuRef = useRef<any>(null)
+  const { toasts, addToast } = useToast()
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+  const [isCreating, setIsCreating] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
+    console.log('Component mounted')
     fetchContacts()
   }, [])
 
   async function fetchContacts(retryCount = 0) {
+    console.log('Starting fetchContacts')
     try {
+      setLoading(true)
+      
       const { data, error } = await supabase
         .from('contacts')
-        .select(`
-          id,
-          name,
-          email,
-          phone,
-          created_at,
-          company,
-          job_title,
-          address_line1,
-          address_line2,
-          city,
-          region,
-          postcode,
-          country,
-          website,
-          linkedin,
-          twitter,
-          avatar_url,
-          industry_id,
-          industry:industries(
-            id,
-            name,
-            description
-          ),
-          tags:contact_tag_relations(
-            tag:contact_tags(
-              id,
-              name,
-              color
-            )
-          )
-        `)
-        .order(sortField, { ascending: sortDirection === "asc" })
+        .select('*')
+      
+      console.log('Raw Supabase response:', { data, error })
       
       if (error) {
-        if (error.message.includes('JWT') && retryCount < 3) {
-          // Wait a bit and retry
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          return fetchContacts(retryCount + 1)
-        }
+        console.error('Supabase error:', error)
         throw error
       }
       
-      const transformedData = data?.map(contact => ({
+      if (!data) {
+        console.log('No data returned from Supabase')
+        setContacts([])
+        return
+      }
+      
+      console.log('Contacts data:', data)
+      
+      const transformedData = data.map(contact => ({
         ...contact,
-        tags: contact.tags?.map((t: any) => t.tag) || [],
-        industry: contact.industry
+        tags: [],
+        industries: []
       }))
       
-      setContacts(transformedData || [])
+      setContacts(transformedData)
     } catch (err: any) {
-      console.error('Error:', err)
+      console.error('Error in fetchContacts:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -155,11 +147,11 @@ export default function ContactsPage() {
       const aValue = a[sortField]
       const bValue = b[sortField]
 
-      if (aValue === null) return sortDirection === 'asc' ? 1 : -1
-      if (bValue === null) return sortDirection === 'asc' ? -1 : 1
+      if (aValue === null || aValue === undefined) return sortDirection === 'asc' ? 1 : -1
+      if (bValue === null || bValue === undefined) return sortDirection === 'asc' ? -1 : 1
 
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+      if (String(aValue) < String(bValue)) return sortDirection === 'asc' ? -1 : 1
+      if (String(aValue) > String(bValue)) return sortDirection === 'asc' ? 1 : -1
       return 0
     })
   }
@@ -246,61 +238,55 @@ export default function ContactsPage() {
     }
   }
 
-  const exportToCSV = () => {
-    const contacts = selectedContactIds.length > 0
-      ? filteredContacts.filter(c => selectedContactIds.includes(c.id))
-      : filteredContacts
+  const exportToCSV = async () => {
+    setIsExporting(true)
+    try {
+      const contacts = selectedContactIds.length > 0
+        ? filteredContacts.filter(c => selectedContactIds.includes(c.id))
+        : filteredContacts
 
-    const csvContent = [
-      [
-        'Name',
-        'Email',
-        'Phone',
-        'Company',
-        'Job Title',
-        'Address Line 1',
-        'Address Line 2',
-        'City',
-        'Region',
-        'Postal Code',
-        'Country',
-        'Website',
-        'LinkedIn',
-        'Twitter',
-        'Created At',
-        'Tags',
-        'Industry'
-      ],
-      ...contacts.map(contact => [
-        contact.name,
-        contact.email,
-        contact.phone || '',
-        contact.company || '',
-        contact.job_title || '',
-        contact.address_line1 || '',
-        contact.address_line2 || '',
-        contact.city || '',
-        contact.region || '',
-        contact.postcode || '',
-        contact.country || '',
-        contact.website || '',
-        contact.linkedin || '',
-        contact.twitter || '',
-        new Date(contact.created_at).toLocaleDateString(),
-        contact.tags.map(tag => tag.name).join(', '),
-        contact.industry?.name || ''
-      ])
-    ].map(row => row.join(',')).join('\n')
+      const csvContent = [
+        [
+          'Name',
+          'Email',
+          'Phone',
+          'Company',
+          'Position',
+          'Notes',
+          'Created At',
+          'Tags',
+          'Industries'
+        ],
+        ...contacts.map(contact => [
+          contact.name,
+          contact.email,
+          contact.phone || '',
+          contact.company || '',
+          contact.position || '',
+          contact.notes || '',
+          new Date(contact.created_at).toLocaleDateString(),
+          contact.tags.map(tag => tag.name).join(', '),
+          contact.industries.map(industry => industry.name).join(', ')
+        ])
+      ].map(row => row.join(',')).join('\n')
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'contacts.csv'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'contacts.csv'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+      addToast('Contacts exported successfully', 'success')
+    } catch (err: any) {
+      console.error('Export error:', err)
+      addToast('Failed to export contacts', 'error')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const getAllUniqueTags = () => {
@@ -313,218 +299,395 @@ export default function ContactsPage() {
     return Array.from(tagsMap.values())
   }
 
-  if (loading) return <div className="text-white">Loading...</div>
-  if (error) return <div className="text-red-400">Error: {error}</div>
+  const handleCreateContact = async (data: ContactValidation) => {
+    setIsCreating(true)
+    try {
+      // Clear previous errors
+      setValidationErrors([])
+      
+      // Validate
+      const errors = validateContact(data)
+      if (errors.length > 0) {
+        setValidationErrors(errors)
+        addToast('Please fix the validation errors', 'error')
+        return
+      }
+
+      const { error } = await supabase
+        .from('contacts')
+        .insert([data])
+
+      if (error) throw error
+
+      addToast('Contact created successfully', 'success')
+      await fetchContacts()
+    } catch (err: any) {
+      console.error('Error creating contact:', err)
+      addToast(err.message, 'error')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  console.log('Current contacts state:', contacts)
 
   return (
     <div className="flex h-screen bg-background">
-      <main className="flex-1 overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="h-full flex flex-col p-4 md:p-6">
-          <div className="space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <main className="flex-1 overflow-hidden bg-background/95">
+        <div className="h-full flex flex-col p-2 sm:p-4 md:p-6">
+          <div className="space-y-2 sm:space-y-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <PageHeader
                 heading="Contacts"
                 description="Manage your contacts and their information."
                 icon={<div className="icon-contacts"><Users className="h-6 w-6" /></div>}
               />
-              <div className="flex flex-wrap gap-2 sm:flex-row sm:items-center">
-                <div className="w-full sm:w-auto">
+              <div className="flex flex-wrap gap-2">
+                <div className="w-full sm:w-auto order-1 sm:order-none">
                   <input
                     type="text"
                     placeholder="Search contacts..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="w-full px-3 py-2 bg-background border rounded-md"
                   />
                 </div>
-                <select
-                  value={groupBy}
-                  onChange={(e) => setGroupBy(e.target.value as 'none' | 'company')}
-                  className="px-3 py-2 bg-background border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                <Button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  disabled={isCreating}
+                  className="flex-1 sm:flex-none"
                 >
-                  <option value="none">No Grouping</option>
-                  <option value="company">Group by Company</option>
-                </select>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <TagFilterMenu 
-                    onTagSelect={(tagIds) => setSelectedTagIds(tagIds)}
-                    onOpenTagStats={() => setIsTagStatsModalOpen(true)}
-                    onManageTags={() => {
-                      setIsTagManagementModalOpen(true)
-                    }}
-                  />
-                  <Button
-                    onClick={() => setIsIndustryManagementModalOpen(true)}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Building2 className="h-4 w-4" />
-                    Manage Industries
-                  </Button>
-                  <Button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 animate-in fade-in-0 zoom-in-95"
-                    size="default"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Contact
-                  </Button>
-                </div>
+                  {isCreating ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Contact
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={exportToCSV}
+                  disabled={isExporting}
+                  variant="outline"
+                  className="flex-1 sm:flex-none"
+                >
+                  {isExporting ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                    </>
+                  )}
+                </Button>
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {selectedContactIds.length > 0 && (
-                <>
-                  <button
-                    onClick={() => setIsBulkTagModalOpen(true)}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-white rounded-lg transition-colors"
-                  >
-                    <Tags className="h-4 w-4" />
-                    Tag Selected ({selectedContactIds.length})
-                  </button>
-                  <button
-                    onClick={() => setIsBulkDeleteModalOpen(true)}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-red-900/50 hover:bg-red-800/50 text-white rounded-lg transition-colors"
-                  >
-                    <Trash className="h-4 w-4" />
-                    Delete Selected ({selectedContactIds.length})
-                  </button>
-                </>
-              )}
-              <div className="flex-1" />
-              <button
-                onClick={exportToCSV}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-white rounded-lg transition-colors"
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
-              </button>
             </div>
           </div>
 
-          <div className="relative flex-1 mt-6">
-            <div className="absolute inset-0 rounded-lg bg-gray-800/30">
-              <div className="h-full overflow-auto">
-                <div className="hidden md:block">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="sticky top-0 w-10 p-3 bg-gray-800/50">
+          <div className="relative flex-1 mt-4">
+            {loading ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : error ? (
+              <div className="absolute inset-0 flex items-center justify-center text-red-400">
+                Error: {error}
+              </div>
+            ) : contacts.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                No contacts found
+              </div>
+            ) : (
+              <div className="h-full flex flex-col p-4 md:p-6">
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-wrap gap-2 sm:flex-row sm:items-center">
+                      <select
+                        value={groupBy}
+                        onChange={(e) => setGroupBy(e.target.value as 'none' | 'company')}
+                        className="px-3 py-2 bg-background border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="none">No Grouping</option>
+                        <option value="company">Group by Company</option>
+                      </select>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <TagFilterMenu 
+                          onTagSelect={(tagIds) => setSelectedTagIds(tagIds)}
+                          onOpenTagStats={() => setIsTagStatsModalOpen(true)}
+                          onManageTags={() => {
+                            setIsTagManagementModalOpen(true)
+                          }}
+                        />
+                        <Button
+                          onClick={() => setIsIndustryManagementModalOpen(true)}
+                          className="flex items-center gap-2"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          Manage Industries
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {selectedContactIds.length > 0 && (
+                      <>
+                        <button
+                          onClick={() => setIsBulkTagModalOpen(true)}
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-white rounded-lg transition-colors"
+                        >
+                          <Tags className="h-4 w-4" />
+                          Tag Selected ({selectedContactIds.length})
+                        </button>
+                        <button
+                          onClick={() => setIsBulkDeleteModalOpen(true)}
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-red-900/50 hover:bg-red-800/50 text-white rounded-lg transition-colors"
+                        >
+                          <Trash className="h-4 w-4" />
+                          Delete Selected ({selectedContactIds.length})
+                        </button>
+                      </>
+                    )}
+                    <div className="flex-1" />
+                  </div>
+                </div>
+
+                <div className="relative flex-1 mt-6">
+                  <div className="absolute inset-0 rounded-lg bg-gray-800/30">
+                    <div className="h-full overflow-auto">
+                      <div className="hidden md:block">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr>
+                              <th className="sticky top-0 w-10 p-3 bg-gray-800/50">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedContactIds.length === filteredContacts.length}
+                                  onChange={toggleSelectAll}
+                                  className="rounded border-gray-700 bg-gray-800/50"
+                                />
+                              </th>
+                              {groupBy === 'company' && (
+                                <th className="sticky top-0 w-10 p-3 bg-gray-800/50">
+                                </th>
+                              )}
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Name
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Email
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Phone
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Company
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Created
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Tags
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Industries
+                              </th>
+                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-800/50">
+                            {Object.entries(groupedContacts()).map(([groupName, groupContacts]) => (
+                              <Fragment key={`group-${groupName}`}>
+                                {groupBy === 'company' && (
+                                  <tr key={`group-${groupName}`} className="bg-gray-800/20">
+                                    <td></td>
+                                    <td className="p-2">
+                                      <button
+                                        onClick={() => toggleGroup(groupName)}
+                                        className="p-1 hover:bg-gray-700/30 rounded"
+                                      >
+                                        {expandedGroups.has(groupName) ? (
+                                          <FolderOpen className="w-4 h-4" />
+                                        ) : (
+                                          <FolderClosed className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </td>
+                                    <td colSpan={7} className="px-4 py-2 font-medium flex items-center gap-2">
+                                      <Building2 className="w-4 h-4 text-gray-400" />
+                                      {groupName} ({groupContacts.length})
+                                    </td>
+                                  </tr>
+                                )}
+                                {(groupBy === 'none' || expandedGroups.has(groupName)) && 
+                                  groupContacts.map(contact => (
+                                    <tr
+                                      key={contact.id}
+                                      className="group hover:bg-gray-800/30 transition-colors cursor-pointer"
+                                      onClick={(e) => {
+                                        if (
+                                          (e.target as HTMLElement).closest('input[type="checkbox"]') ||
+                                          (e.target as HTMLElement).closest('button')
+                                        ) return;
+                                        setSelectedContact(contact);
+                                        setIsDetailsModalOpen(true);
+                                      }}
+                                    >
+                                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedContactIds.includes(contact.id)}
+                                          onChange={() => toggleContactSelection(contact.id)}
+                                          className="rounded border-gray-700 bg-gray-800/50"
+                                        />
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300 group-hover:text-blue-400">
+                                        <div className="flex items-center gap-2">
+                                          <Avatar url={contact.avatar_url || undefined} size="sm" name={contact.name} />
+                                          <span>{contact.name}</span>
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <a 
+                                          href={`mailto:${contact.email}`}
+                                          onClick={e => e.stopPropagation()}
+                                          className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors"
+                                        >
+                                          {contact.email}
+                                          <Mail className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </a>
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300">
+                                        {contact.phone ? (
+                                          <a 
+                                            href={`tel:${contact.phone}`}
+                                            onClick={e => e.stopPropagation()}
+                                            className="flex items-center gap-1 hover:text-green-400 transition-colors"
+                                          >
+                                            {contact.phone}
+                                            <Phone className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </a>
+                                        ) : (
+                                          '-'
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300">
+                                        {contact.company || '-'}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300">
+                                        {new Date(contact.created_at).toLocaleDateString()}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300">
+                                        <div className="flex flex-wrap gap-1">
+                                          {contact.tags.map((tag) => (
+                                            <span
+                                              key={tag.id}
+                                              style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                                              className="px-2 py-1 rounded-full text-xs font-medium"
+                                            >
+                                              {tag.name}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300">
+                                        {contact.industries.map(industry => industry.name).join(', ') || '-'}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-300" onClick={e => e.stopPropagation()}>
+                                        <div className="flex items-center gap-2">
+                                          <button 
+                                            onClick={() => {
+                                              setSelectedContact(contact)
+                                              setIsScheduleActivityModalOpen(true)
+                                            }}
+                                            className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
+                                          >
+                                            <Users className="w-5 h-5 text-purple-400" />
+                                            <span className="tooltip">Schedule Activity</span>
+                                          </button>
+                                          <button 
+                                            onClick={() => {
+                                              setSelectedContact(contact)
+                                              setIsEditModalOpen(true)
+                                            }}
+                                            className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
+                                          >
+                                            <Pencil className="w-5 h-5 text-blue-400" />
+                                            <span className="tooltip">Edit Contact</span>
+                                          </button>
+                                          <button 
+                                            onClick={() => {
+                                              setSelectedContact(contact)
+                                              setIsDeleteModalOpen(true)
+                                            }}
+                                            className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
+                                          >
+                                            <Trash2 className="w-5 h-5 text-red-400" />
+                                            <span className="tooltip">Delete Contact</span>
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile/Tablet Card View */}
+                      <div className="md:hidden">
+                        <div className="p-4 flex items-center gap-3 bg-gray-800/50 sticky top-0">
                           <input
                             type="checkbox"
                             checked={selectedContactIds.length === filteredContacts.length}
                             onChange={toggleSelectAll}
-                            className="rounded border-gray-700 bg-gray-800/50"
+                            className="mt-2 rounded border-gray-700 bg-gray-800/50"
                           />
-                        </th>
-                        {groupBy === 'company' && (
-                          <th className="sticky top-0 w-10 p-3 bg-gray-800/50">
-                          </th>
-                        )}
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Phone
-                        </th>
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Created
-                        </th>
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Tags
-                        </th>
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Industry
-                        </th>
-                        <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800/50">
-                      {Object.entries(groupedContacts()).map(([groupName, groupContacts]) => (
-                        <Fragment key={`group-${groupName}`}>
-                          {groupBy === 'company' && (
-                            <tr key={`group-${groupName}`} className="bg-gray-800/20">
-                              <td></td>
-                              <td className="p-2">
-                                <button
-                                  onClick={() => toggleGroup(groupName)}
-                                  className="p-1 hover:bg-gray-700/30 rounded"
-                                >
-                                  {expandedGroups.has(groupName) ? (
-                                    <FolderOpen className="w-4 h-4" />
-                                  ) : (
-                                    <FolderClosed className="w-4 h-4" />
-                                  )}
-                                </button>
-                              </td>
-                              <td colSpan={7} className="px-4 py-2 font-medium flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-gray-400" />
-                                {groupName} ({groupContacts.length})
-                              </td>
-                            </tr>
-                          )}
-                          {(groupBy === 'none' || expandedGroups.has(groupName)) && 
-                            groupContacts.map(contact => (
-                              <tr
-                                key={contact.id}
-                                className="group hover:bg-gray-800/30 transition-colors cursor-pointer"
-                                onClick={(e) => {
-                                  if (
-                                    (e.target as HTMLElement).closest('input[type="checkbox"]') ||
-                                    (e.target as HTMLElement).closest('button')
-                                  ) return;
-                                  setSelectedContact(contact);
-                                  setIsDetailsModalOpen(true);
-                                }}
-                              >
-                                <td className="p-3" onClick={e => e.stopPropagation()}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedContactIds.includes(contact.id)}
-                                    onChange={() => toggleContactSelection(contact.id)}
-                                    className="rounded border-gray-700 bg-gray-800/50"
-                                  />
-                                </td>
-                                <td className="px-4 py-3 text-gray-300 group-hover:text-blue-400">
-                                  <div className="flex items-center gap-2">
-                                    <Avatar url={contact.avatar_url} size="sm" name={contact.name} />
-                                    <span>{contact.name}</span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <a 
-                                    href={`mailto:${contact.email}`}
-                                    onClick={e => e.stopPropagation()}
-                                    className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors"
+                          <span className="text-sm text-gray-400">Select All</span>
+                        </div>
+                        <div className="divide-y divide-gray-800/50">
+                          {filteredContacts.map(contact => (
+                            <div key={contact.id} className="p-4 hover:bg-gray-800/30 transition-colors">
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedContactIds.includes(contact.id)}
+                                  onChange={() => toggleContactSelection(contact.id)}
+                                  className="mt-2 rounded border-gray-700 bg-gray-800/50"
+                                />
+                                <div className="flex-1 space-y-3">
+                                  <div 
+                                    onClick={() => {
+                                      setSelectedContact(contact)
+                                      setIsDetailsModalOpen(true)
+                                    }}
+                                    className="flex items-center gap-2 cursor-pointer hover:text-blue-400"
                                   >
-                                    {contact.email}
-                                    <Mail className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </a>
-                                </td>
-                                <td className="px-4 py-3 text-gray-300">
-                                  {contact.phone ? (
-                                    <a 
-                                      href={`tel:${contact.phone}`}
-                                      onClick={e => e.stopPropagation()}
-                                      className="flex items-center gap-1 hover:text-green-400 transition-colors"
-                                    >
-                                      {contact.phone}
-                                      <Phone className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </a>
-                                  ) : (
-                                    '-'
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-gray-300">
-                                  {new Date(contact.created_at).toLocaleDateString()}
-                                </td>
-                                <td className="px-4 py-3 text-gray-300">
+                                    <Avatar url={contact.avatar_url || undefined} size="sm" name={contact.name} />
+                                    <span className="text-gray-300 font-medium">{contact.name}</span>
+                                  </div>
+                                  <div className="grid gap-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="w-4 h-4 text-gray-500" />
+                                      <span className="text-gray-300">{contact.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="w-4 h-4 text-gray-500" />
+                                      <span className="text-gray-300">{contact.phone || '-'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4 text-gray-500" />
+                                      <span className="text-gray-300">{new Date(contact.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Building2 className="w-4 h-4 text-gray-500" />
+                                      <span className="text-gray-300">{contact.industries.map(industry => industry.name).join(', ') || '-'}</span>
+                                    </div>
+                                  </div>
                                   <div className="flex flex-wrap gap-1">
                                     {contact.tags.map((tag) => (
                                       <span
@@ -536,129 +699,49 @@ export default function ContactsPage() {
                                       </span>
                                     ))}
                                   </div>
-                                </td>
-                                <td className="px-4 py-3 text-gray-300">
-                                  {contact.industry?.name || '-'}
-                                </td>
-                                <td className="px-4 py-3 text-gray-300" onClick={e => e.stopPropagation()}>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-3">
+                                    <button 
+                                      onClick={() => {
+                                        setSelectedContact(contact)
+                                        setIsScheduleActivityModalOpen(true)
+                                      }}
+                                      className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
+                                    >
+                                      <Users className="w-5 h-5 text-purple-400" />
+                                      <span className="tooltip">Schedule Activity</span>
+                                    </button>
                                     <button 
                                       onClick={() => {
                                         setSelectedContact(contact)
                                         setIsEditModalOpen(true)
                                       }}
-                                      className="text-blue-400 hover:text-blue-300"
+                                      className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
                                     >
-                                      Edit
+                                      <Pencil className="w-5 h-5 text-blue-400" />
+                                      <span className="tooltip">Edit Contact</span>
                                     </button>
                                     <button 
                                       onClick={() => {
                                         setSelectedContact(contact)
                                         setIsDeleteModalOpen(true)
                                       }}
-                                      className="text-red-400 hover:text-red-300"
+                                      className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
                                     >
-                                      Delete
+                                      <Trash2 className="w-5 h-5 text-red-400" />
+                                      <span className="tooltip">Delete Contact</span>
                                     </button>
                                   </div>
-                                </td>
-                              </tr>
-                            ))}
-                        </Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile/Tablet Card View */}
-                <div className="md:hidden">
-                  <div className="p-4 flex items-center gap-3 bg-gray-800/50 sticky top-0">
-                    <input
-                      type="checkbox"
-                      checked={selectedContactIds.length === filteredContacts.length}
-                      onChange={toggleSelectAll}
-                      className="rounded border-gray-700 bg-gray-800/50"
-                    />
-                    <span className="text-sm text-gray-400">Select All</span>
-                  </div>
-                  <div className="divide-y divide-gray-800/50">
-                    {filteredContacts.map(contact => (
-                      <div key={contact.id} className="p-4 hover:bg-gray-800/30 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedContactIds.includes(contact.id)}
-                            onChange={() => toggleContactSelection(contact.id)}
-                            className="mt-2 rounded border-gray-700 bg-gray-800/50"
-                          />
-                          <div className="flex-1 space-y-3">
-                            <div 
-                              onClick={() => {
-                                setSelectedContact(contact)
-                                setIsDetailsModalOpen(true)
-                              }}
-                              className="flex items-center gap-2 cursor-pointer hover:text-blue-400"
-                            >
-                              <Avatar url={contact.avatar_url} size="sm" name={contact.name} />
-                              <span className="text-gray-300 font-medium">{contact.name}</span>
-                            </div>
-                            <div className="grid gap-2 text-sm">
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-4 h-4 text-gray-500" />
-                                <span className="text-gray-300">{contact.email}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-gray-500" />
-                                <span className="text-gray-300">{contact.phone || '-'}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gray-500" />
-                                <span className="text-gray-300">{new Date(contact.created_at).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-gray-500" />
-                                <span className="text-gray-300">{contact.industry?.name || '-'}</span>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-1">
-                              {contact.tags.map((tag) => (
-                                <span
-                                  key={tag.id}
-                                  style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                                  className="px-2 py-1 rounded-full text-xs font-medium"
-                                >
-                                  {tag.name}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <button 
-                                onClick={() => {
-                                  setSelectedContact(contact)
-                                  setIsEditModalOpen(true)
-                                }}
-                                className="text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                Edit
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  setSelectedContact(contact)
-                                  setIsDeleteModalOpen(true)
-                                }}
-                                className="text-red-400 hover:text-red-300 text-sm"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <CreateContactModal
@@ -738,8 +821,58 @@ export default function ContactsPage() {
             onClose={() => setIsIndustryManagementModalOpen(false)}
             onIndustriesUpdated={fetchContacts}
           />
+
+          <ScheduleActivityModal
+            contact={selectedContact}
+            isOpen={isScheduleActivityModalOpen}
+            onClose={() => setIsScheduleActivityModalOpen(false)}
+            onActivityScheduled={() => {
+              fetchContacts()
+            }}
+          />
         </div>
       </main>
+      <style jsx>{`
+        .tooltip-wrapper {
+          position: relative;
+        }
+        .tooltip {
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 4px 8px;
+          background-color: #374151;
+          color: white;
+          border-radius: 4px;
+          font-size: 12px;
+          white-space: nowrap;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s, visibility 0.2s;
+          z-index: 50;
+          margin-top: 4px;
+        }
+        .tooltip-wrapper:hover .tooltip {
+          opacity: 1;
+          visibility: visible;
+        }
+      `}</style>
+      <div className="fixed bottom-4 right-4 z-50">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`mb-2 p-4 rounded shadow-lg ${
+              toast.type === 'error' ? 'bg-red-500' :
+              toast.type === 'success' ? 'bg-green-500' :
+              'bg-blue-500'
+            } text-white`}
+          >
+            {toast.message}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
+

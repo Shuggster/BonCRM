@@ -124,11 +124,25 @@ export function CreateContactModal({
     setLoading(true)
 
     try {
+      // Get current user's ID
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) throw userError
+      if (!user) throw new Error('No authenticated user')
+
+      // Split name into first_name and last_name
+      const nameParts = formData.name.trim().split(/\s+/)
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ') || null
+
       const submissionData = {
-        ...formData,
-        website: formatUrl(formData.website),
-        linkedin: formatUrl(formData.linkedin),
-        twitter: formatUrl(formData.twitter),
+        user_id: user.id,  // Explicitly set user_id
+        first_name: firstName,
+        last_name: lastName,
+        email: formData.email,
+        phone: formData.phone,
+        company: formData.company,
+        position: formData.job_title,
+        notes: null,
         industry_id: formData.industry_id || null
       }
 
@@ -156,10 +170,10 @@ export function CreateContactModal({
         linkedin: '',
         twitter: '',
         avatar_url: '',
-        industry_id: '',
+        industry_id: ''
       })
-    } catch (error) {
-      console.error('Error:', error)
+    } catch (error: any) {
+      console.error('Error creating contact:', error.message)
     } finally {
       setLoading(false)
     }

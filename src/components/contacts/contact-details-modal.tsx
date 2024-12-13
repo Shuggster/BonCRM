@@ -1,7 +1,8 @@
 "use client"
 
-import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, Mail, Phone, ExternalLink, Edit, X } from "lucide-react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, Mail, Phone, ExternalLink, Edit, X, Calendar, Clock, CheckCircle2, XCircle, Users, ArrowRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { ContactNotes } from "./contact-notes"
 
@@ -28,6 +29,16 @@ interface Contact {
   }[]
 }
 
+interface ScheduledActivity {
+  id: string
+  type: 'call' | 'email' | 'meeting' | 'follow_up'
+  title: string
+  description: string | null
+  scheduled_for: string
+  status: 'pending' | 'completed' | 'cancelled'
+  completed_at: string | null
+}
+
 interface ContactDetailsModalProps {
   contact: Contact | null
   isOpen: boolean
@@ -41,7 +52,66 @@ export function ContactDetailsModal({
   onClose,
   onEdit,
 }: ContactDetailsModalProps) {
+  const [activities, setActivities] = useState<ScheduledActivity[]>([])
+
+  useEffect(() => {
+    if (contact && isOpen) {
+      fetchActivities()
+    }
+  }, [contact, isOpen])
+
+  const fetchActivities = async () => {
+    if (!contact) return
+
+    const { data, error } = await supabase
+      .from('scheduled_activities')
+      .select('*')
+      .eq('contact_id', contact.id)
+      .order('scheduled_for', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching activities:', error)
+      return
+    }
+
+    setActivities(data || [])
+  }
+
   if (!contact) return null
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'call':
+        return <Phone className="w-5 h-5 text-green-400" />
+      case 'email':
+        return <Mail className="w-5 h-5 text-blue-400" />
+      case 'meeting':
+        return <Users className="w-5 h-5 text-purple-400" />
+      default:
+        return <ArrowRight className="w-5 h-5 text-orange-400" />
+    }
+  }
+
+  const formatDateTime = (date: string) => {
+    return new Date(date).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-400'
+      case 'cancelled':
+        return 'text-red-400'
+      default:
+        return 'text-yellow-400'
+    }
+  }
 
   const formatAddress = () => {
     const parts = [
@@ -52,7 +122,16 @@ export function ContactDetailsModal({
       contact.postcode,
       contact.country
     ].filter(Boolean)
-    return parts.join(', ')
+    return parts.length > 0 ? (
+      <div className="flex flex-col">
+        {contact.address_line1 && <span>{contact.address_line1}</span>}
+        {contact.address_line2 && <span>{contact.address_line2}</span>}
+        {contact.city && <span>{contact.city}</span>}
+        {contact.region && <span>{contact.region}</span>}
+        {contact.postcode && <span>{contact.postcode}</span>}
+        {contact.country && <span>{contact.country}</span>}
+      </div>
+    ) : null
   }
 
   return (
@@ -188,6 +267,73 @@ export function ContactDetailsModal({
                 <Section title="Notes" className="col-span-full">
                   <ContactNotes contactId={contact.id} />
                 </Section>
+
+                {/* Scheduled Activities */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-purple-400" />
+                    Scheduled Activities
+                  </h3>
+                  <div className="space-y-4">
+                    {activities.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No activities scheduled</p>
+                    ) : (
+                      activities.map((activity) => (
+                        <div
+                          key={activity.id}
+                          className="bg-gray-800/50 rounded-lg p-4 border border-gray-700"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                              {getActivityIcon(activity.type)}
+                              <div>
+                                <h4 className="text-white font-medium">{activity.title}</h4>
+                                {activity.description && (
+                                  <p className="text-gray-400 text-sm mt-1">{activity.description}</p>
+                                )}
+                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
+                                  <Clock className="w-4 h-4" />
+                                  {formatDateTime(activity.scheduled_for)}
+                                  <span className={`ml-2 ${getStatusColor(activity.status)}`}>
+                                    • {activity.status}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={async () => {
+                                  const { error } = await supabase
+                                    .from('scheduled_activities')
+                                    .update({ status: 'completed', completed_at: new Date().toISOString() })
+                                    .eq('id', activity.id)
+                                  if (!error) fetchActivities()
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-gray-700 text-green-400"
+                                title="Mark as completed"
+                              >
+                                <CheckCircle2 className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const { error } = await supabase
+                                    .from('scheduled_activities')
+                                    .update({ status: 'cancelled' })
+                                    .eq('id', activity.id)
+                                  if (!error) fetchActivities()
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-gray-700 text-red-400"
+                                title="Cancel activity"
+                              >
+                                <XCircle className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -213,7 +359,7 @@ const Section = ({ title, children, className = "" }: {
 const InfoItem = ({ icon: Icon, label, value, href, isEmail, isPhone }: {
   icon: any
   label: string
-  value: string | null
+  value: string | null | JSX.Element
   href?: string
   isEmail?: boolean
   isPhone?: boolean
@@ -254,7 +400,11 @@ const InfoItem = ({ icon: Icon, label, value, href, isEmail, isPhone }: {
       <Icon className={`w-5 h-5 ${getIconColor(Icon)} transition-colors duration-200`} />
       <div className="flex-grow min-w-0">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className={`text-sm truncate ${finalHref ? 'group-hover:text-primary' : ''}`}>{value}</p>
+        {typeof value === 'string' ? (
+          <p className={`text-sm truncate ${finalHref ? 'group-hover:text-primary' : ''}`}>{value}</p>
+        ) : (
+          value
+        )}
       </div>
       {finalHref && (
         <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />

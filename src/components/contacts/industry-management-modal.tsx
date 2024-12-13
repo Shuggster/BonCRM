@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Trash2, Edit2, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { verifyDatabaseConnection } from '@/lib/verify-db'
 import {
   Dialog,
   DialogContent,
@@ -37,13 +36,6 @@ export function IndustryManagementModal({ isOpen, onClose, onIndustriesUpdated }
 
   useEffect(() => {
     if (isOpen) {
-      // Verify database connection when modal opens
-      verifyDatabaseConnection().then((result) => {
-        if (!result.success) {
-          console.error('Database verification failed:', result.error)
-          alert(`Database connection error: ${result.error}`)
-        }
-      })
       fetchIndustries()
     }
   }, [isOpen])
@@ -55,42 +47,44 @@ export function IndustryManagementModal({ isOpen, onClose, onIndustriesUpdated }
         .select('*')
         .order('name')
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to fetch industries:', error.message)
+        return
+      }
+
       setIndustries(data || [])
-    } catch (error) {
-      console.error('Error fetching industries:', error)
+    } catch (err) {
+      console.error('Unexpected error fetching industries:', err)
     }
   }
 
   const handleCreateIndustry = async () => {
-    if (!newIndustryName.trim()) return
-
+    setLoading(true)
     try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('industries')
-        .insert([
-          {
-            name: newIndustryName.trim(),
-            description: newIndustryDescription.trim() || null
-          }
-        ])
-        .select()
-
-      if (error) {
-        console.error('Supabase error creating industry:', error.message)
-        alert(`Error creating industry: ${error.message}`)
+      if (!newIndustryName.trim()) {
+        console.error('Industry name is required')
         return
       }
 
-      await fetchIndustries()
+      const { error } = await supabase
+        .from('industries')
+        .insert({
+          name: newIndustryName.trim(),
+          description: newIndustryDescription.trim() || null
+        })
+
+      if (error) {
+        console.error('Failed to create industry:', error.message)
+        return
+      }
+
+      // Success - clear form and refresh
       setNewIndustryName('')
       setNewIndustryDescription('')
+      await fetchIndustries()
       onIndustriesUpdated()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error occurred'
-      console.error('Error creating industry:', message)
-      alert(`Error creating industry: ${message}`)
+    } catch (err) {
+      console.error('Unexpected error:', err)
     } finally {
       setLoading(false)
     }
