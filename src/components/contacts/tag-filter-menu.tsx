@@ -24,20 +24,21 @@ interface TagFilterMenuProps {
   onTagSelect: (tagIds: string[]) => void
   onOpenTagStats: () => void
   onManageTags: () => void
+  selectedTags?: string[]
+  filterMode?: 'AND' | 'OR'
+  onFilterModeChange?: () => void
 }
 
 export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMenuProps>(
-  ({ onTagSelect, onOpenTagStats, onManageTags }, ref) => {
+  ({ onTagSelect, onOpenTagStats, onManageTags, selectedTags = [], filterMode = 'OR', onFilterModeChange }, ref) => {
     const [tags, setTags] = useState<Tag[]>([])
-    const [selectedTags, setSelectedTags] = useState<string[]>([])
-    const [filterMode, setFilterMode] = useState<'AND' | 'OR'>('OR')
 
     const fetchTags = async () => {
       try {
-        // Get distinct tag names with their counts
-        const { data: tagData, error: tagsError } = await supabase
-          .from('contact_tags')
-          .select('name')
+        // Get all tags
+        const { data: tags, error: tagsError } = await supabase
+          .from('tags')
+          .select('id, name, color')
           .order('name')
 
         if (tagsError) {
@@ -46,26 +47,27 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
           return
         }
 
-        // Count occurrences of each tag name
-        const tagCounts = tagData?.reduce((acc: { [key: string]: number }, { name }) => {
-          acc[name] = (acc[name] || 0) + 1
-          return acc
-        }, {})
+        // Get counts for each tag from contacts
+        const tagsWithCounts = await Promise.all(
+          (tags || []).map(async (tag) => {
+            const { count, error: countError } = await supabase
+              .from('contacts')
+              .select('id', { count: 'exact', head: true })
+              .contains('tags', [tag.id])
 
-        // Convert to array and sort by count
-        const sortedTags = Object.entries(tagCounts || {})
-          .map(([name, count]) => ({
-            id: name,
-            name,
-            color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
-            count: count || 0
-          }))
-          .sort((a, b) => b.count - a.count)
+            if (countError) {
+              console.error('Error getting count for tag:', tag.name, countError.message)
+              return { ...tag, count: 0 }
+            }
 
-        setTags(sortedTags)
-      } catch (error: any) {
-        console.error('Error fetching tags:', error?.message || 'Unknown error')
-        setTags([]) // Set empty array to prevent undefined errors
+            return { ...tag, count: count || 0 }
+          })
+        )
+
+        setTags(tagsWithCounts)
+      } catch (err) {
+        console.error('Error:', err)
+        setTags([])
       }
     }
 
@@ -77,48 +79,33 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
       refreshTags: fetchTags
     }))
 
-    const handleTagClick = async (tagName: string) => {
-      try {
-        if (selectedTags.includes(tagName)) {
-          setSelectedTags(selectedTags.filter(t => t !== tagName))
-        } else {
-          setSelectedTags([...selectedTags, tagName])
-        }
-      } catch (error: any) {
-        console.error('Error updating selected tags:', error?.message || 'Unknown error')
-      }
+    const handleTagClick = (tagId: string) => {
+      const newSelectedTags = selectedTags.includes(tagId)
+        ? selectedTags.filter(t => t !== tagId)
+        : [...selectedTags, tagId]
+      onTagSelect(newSelectedTags)
     }
-
-    useEffect(() => {
-      onTagSelect(selectedTags)
-    }, [selectedTags, onTagSelect])
 
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
             variant={selectedTags.length > 0 ? "default" : "outline"}
-            className={`
-              transition-all duration-200
-              ${selectedTags.length > 0 
-                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                : "hover:bg-accent hover:text-accent-foreground"
-              }
-            `}
+            className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 duration-1000"
           >
-            <Tags className="mr-2 h-4 w-4" />
-            {selectedTags.length > 0 ? `${selectedTags.length} Tags` : "Filter Tags"}
+            <Tags className="h-4 w-4" />
+            {selectedTags.length > 0 ? `${selectedTags.length} Tags` : 'Filter by Tags'}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuLabel className="flex items-center justify-between">
             <span>Filter by Tags</span>
             {selectedTags.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedTags([])}
-                className="h-auto px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
+                onClick={() => onTagSelect([])}
+                className="h-auto py-0 px-1 text-xs hover:bg-transparent hover:text-blue-500"
               >
                 Clear
               </Button>
@@ -126,80 +113,60 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          {selectedTags.length > 1 && (
+          {selectedTags.length > 0 && (
             <>
-              <div className="px-2 py-1.5 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={filterMode === 'AND'}
-                    onChange={() => {
-                      const newMode = filterMode === 'AND' ? 'OR' : 'AND'
-                      setFilterMode(newMode)
-                      onTagSelect(selectedTags)
-                    }}
-                    className="h-4 w-4 rounded border-input bg-background"
-                  />
-                  <span>Match all tags (AND)</span>
-                </label>
-              </div>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault()
+                  onFilterModeChange?.()
+                }}
+                className="flex items-center justify-between"
+              >
+                <span>Filter Mode:</span>
+                <span className="text-sm font-medium">{filterMode}</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
           )}
 
-          <div className="max-h-[300px] overflow-y-auto">
-            {tags.map(tag => (
+          <div className="max-h-[300px] overflow-y-auto py-1">
+            {tags.map((tag) => (
               <DropdownMenuItem
                 key={tag.id}
                 onSelect={(e) => {
                   e.preventDefault()
                   handleTagClick(tag.id)
                 }}
-                className="flex items-center justify-between hover:bg-accent focus:bg-accent"
+                className="flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedTags.includes(tag.id)}
-                    onChange={() => {}}
-                    className="h-4 w-4 rounded border-input bg-background"
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: tag.color }}
                   />
-                  <span
-                    className="px-2 py-1 rounded-full text-sm font-medium transition-colors"
-                    style={{
-                      backgroundColor: tag.color + '20',
-                      color: tag.color
-                    }}
-                  >
-                    {tag.name}
-                  </span>
+                  <span>{tag.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {tag.count}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">{tag.count}</span>
+                  {selectedTags.includes(tag.id) && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  )}
+                </div>
               </DropdownMenuItem>
             ))}
           </div>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onSelect={onOpenTagStats}
-            className="hover:bg-accent focus:bg-accent"
-          >
+          <DropdownMenuItem onSelect={() => onOpenTagStats()}>
             <BarChart2 className="mr-2 h-4 w-4" />
-            Tag Statistics
+            <span>Tag Statistics</span>
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            onSelect={onManageTags}
-            className="hover:bg-accent focus:bg-accent"
-          >
+          <DropdownMenuItem onSelect={() => onManageTags()}>
             <Settings className="mr-2 h-4 w-4" />
-            Manage Tags
+            <span>Manage Tags</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     )
   }
 )
-
-TagFilterMenu.displayName = 'TagFilterMenu'

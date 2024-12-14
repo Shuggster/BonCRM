@@ -22,11 +22,11 @@ interface Contact {
   website: string | null
   linkedin: string | null
   twitter: string | null
-  tags: {
+  tags: (string | {
     id: string
     name: string
     color: string
-  }[]
+  })[]
 }
 
 interface ScheduledActivity {
@@ -247,16 +247,15 @@ export function ContactDetailsModal({
                 </div>
 
                 {/* Tags - Full Width */}
-                {contact.tags.length > 0 && (
+                {contact.tags && contact.tags.length > 0 && (
                   <Section title="Tags" className="col-span-full">
                     <div className="flex flex-wrap gap-2">
-                      {contact.tags.map(tag => (
+                      {contact.tags.map((tag, index) => (
                         <span
-                          key={tag.id}
-                          style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                          className="px-3 py-1.5 rounded-full text-sm font-medium"
+                          key={`${tag}-${index}`}
+                          className="px-3 py-1.5 rounded-full text-sm font-medium bg-primary/20 text-primary-foreground"
                         >
-                          {tag.name}
+                          {tag}
                         </span>
                       ))}
                     </div>

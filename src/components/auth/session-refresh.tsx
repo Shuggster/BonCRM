@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 
 export default function SessionRefresh() {
   useEffect(() => {
-    // Temporarily disable session refresh
+    // Disable session refresh for now
     return () => {}
   }, [])
 

@@ -7,7 +7,7 @@ import { logActivity } from "@/lib/activity-logger"
 
 interface Tag {
   id: string
-  tag_name: string
+  name: string
   color: string
 }
 
@@ -48,7 +48,7 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
 
       setTags(data.map(item => ({
         id: item.contact_tags.id,
-        tag_name: item.contact_tags.tag_name,
+        name: item.contact_tags.tag_name,
         color: item.contact_tags.color
       })))
     } catch (err: any) {
@@ -67,7 +67,7 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
 
       setAvailableTags(data.map(tag => ({
         id: tag.id,
-        tag_name: tag.tag_name,
+        name: tag.tag_name,
         color: tag.color
       })))
     } catch (err: any) {
@@ -84,7 +84,7 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
 
       if (error) throw error
 
-      const tagName = availableTags.find(t => t.id === tagId)?.tag_name
+      const tagName = availableTags.find(t => t.id === tagId)?.name
 
       await logActivity(
         contactId,
@@ -105,7 +105,7 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
   const removeTag = async (tagId: string) => {
     setLoading(true)
     try {
-      const tagName = tags.find(t => t.id === tagId)?.tag_name
+      const tagName = tags.find(t => t.id === tagId)?.name
 
       const { error } = await supabase
         .from('contact_tag_relations')
@@ -202,7 +202,7 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm"
             style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
           >
-            {tag.tag_name}
+            {tag.name}
             <button
               onClick={() => removeTag(tag.id)}
               className="hover:opacity-75"

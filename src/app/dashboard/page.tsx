@@ -10,7 +10,8 @@ import { supabase } from "@/lib/supabase"
 
 interface Contact {
   id: string
-  name: string
+  first_name: string
+  last_name: string
   created_at: string
 }
 
@@ -65,14 +66,21 @@ export default function DashboardPage() {
 
   async function fetchDashboardData() {
     try {
-      // Fetch contacts
+      console.log('Fetching dashboard data...')
+      
+      // Fetch contacts without user_id filter
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select('id, name, created_at')
+        .select('id, first_name, last_name, created_at')
         .order('created_at', { ascending: false })
         .limit(10)
 
-      if (contactsError) throw contactsError
+      if (contactsError) {
+        console.error('Error fetching contacts:', contactsError.message, contactsError.details)
+        throw contactsError
+      }
+
+      console.log('Fetched contacts:', contactsData)
 
       // Calculate contact metrics
       const totalContacts = contactsData?.length || 0
@@ -91,14 +99,14 @@ export default function DashboardPage() {
       // Create recent activity from new contacts
       const activities = contactsData?.map(contact => ({
         id: contact.id,
-        message: `New contact added: ${contact.name}`,
+        message: `New contact added: ${contact.first_name} ${contact.last_name || ''}`.trim(),
         created_at: contact.created_at
       })) || []
 
       setContacts(contactsData || [])
       setRecentActivity(activities)
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err)
+    } catch (err: any) {
+      console.error('Error fetching dashboard data:', err.message || err, err.details || '')
     }
   }
 

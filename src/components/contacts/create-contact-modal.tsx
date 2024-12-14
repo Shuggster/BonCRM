@@ -5,6 +5,7 @@ import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter } from "lu
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import { AvatarUpload } from "./avatar-upload"
+import { formatUrl } from "@/lib/utils"
 
 interface Industry {
   id: string
@@ -71,14 +72,12 @@ export function CreateContactModal({
   onClose,
   onContactCreated,
 }: CreateContactModalProps) {
-  const [loading, setLoading] = useState(false)
-  const [industries, setIndustries] = useState<Industry[]>([])
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     name: '',
     email: '',
     phone: '',
     company: '',
-    job_title: '',
+    jobTitle: '',
     address_line1: '',
     address_line2: '',
     city: '',
@@ -90,7 +89,17 @@ export function CreateContactModal({
     twitter: '',
     avatar_url: '',
     industry_id: '',
-  })
+  }
+
+  const [loading, setLoading] = useState(false)
+  const [industries, setIndustries] = useState<Industry[]>([])
+  const [formData, setFormData] = useState(initialFormData)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData(initialFormData)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isOpen) {
@@ -112,68 +121,53 @@ export function CreateContactModal({
     }
   }
 
-  const formatUrl = (url: string) => {
-    if (!url) return url
-    if (url.startsWith('http://') || url.startsWith('https://')) return url
-    if (url.startsWith('www.')) return `https://${url}`
-    return `https://${url}`
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
     try {
-      // Get current user's ID
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError) throw userError
-      if (!user) throw new Error('No authenticated user')
+      e.preventDefault()
+      setLoading(true)
+      console.log('Submitting contact data:', formData)
 
       // Split name into first_name and last_name
       const nameParts = formData.name.trim().split(/\s+/)
-      const firstName = nameParts[0]
-      const lastName = nameParts.slice(1).join(' ') || null
-
       const submissionData = {
-        user_id: user.id,  // Explicitly set user_id
-        first_name: firstName,
-        last_name: lastName,
+        first_name: nameParts[0],
+        last_name: nameParts.length > 1 ? nameParts.slice(1).join(' ') : null,
         email: formData.email,
         phone: formData.phone,
         company: formData.company,
-        position: formData.job_title,
-        notes: null,
+        job_title: formData.jobTitle, // Note: changed from jobTitle to job_title to match DB
+        address_line1: formData.address_line1,
+        address_line2: formData.address_line2,
+        city: formData.city,
+        region: formData.region,
+        postcode: formData.postcode,
+        country: formData.country,
+        website: formData.website.trim(),
+        linkedin: formData.linkedin.trim(),
+        twitter: formData.twitter.trim(),
+        avatar_url: formData.avatar_url,
         industry_id: formData.industry_id || null
       }
 
-      const { error } = await supabase
+      console.log('Submitting to Supabase:', submissionData)
+
+      const { data, error: insertError } = await supabase
         .from('contacts')
         .insert([submissionData])
+        .select('*')
 
-      if (error) throw error
+      if (insertError) {
+        console.error('Insert error:', insertError.message, insertError.details)
+        throw insertError
+      }
 
+      console.log('Contact created successfully:', data)
       onContactCreated()
       onClose()
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        job_title: '',
-        address_line1: '',
-        address_line2: '',
-        city: '',
-        region: '',
-        postcode: '',
-        country: '',
-        website: '',
-        linkedin: '',
-        twitter: '',
-        avatar_url: '',
-        industry_id: ''
-      })
+      setFormData(initialFormData)
     } catch (error: any) {
-      console.error('Error creating contact:', error.message)
+      console.error('Failed to create contact:', error.message || error)
+      alert('Error creating contact: ' + (error.message || 'Something went wrong. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -294,8 +288,8 @@ export function CreateContactModal({
                     <InputField
                       icon={Briefcase}
                       label="Job Title"
-                      value={formData.job_title}
-                      onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                      value={formData.jobTitle}
+                      onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
                       placeholder="Job title"
                       iconColor="text-purple-400"
                     />

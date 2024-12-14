@@ -3,23 +3,23 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-console.log('Supabase URL:', supabaseUrl)
-console.log('Initializing Supabase client')
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
 
+console.log('Initializing Supabase client with URL:', supabaseUrl)
+
+// Create client with no schema cache
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  db: {
+    schema: 'public'
   },
   global: {
-    headers: {
-      Authorization: `Bearer ${supabaseAnonKey}`
-    }
+    headers: { 'x-my-custom-header': 'my-app-name' }
   }
 })
-
-export const refreshSupabaseClient = async () => {
-  await supabase.auth.refreshSession()
-  return supabase
-}

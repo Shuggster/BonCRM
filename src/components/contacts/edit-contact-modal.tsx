@@ -5,6 +5,7 @@ import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, X } from 
 import { motion, AnimatePresence } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import { AvatarUpload } from "./avatar-upload"
+import { formatUrl } from "@/lib/utils"
 
 interface Industry {
   id: string
@@ -14,6 +15,8 @@ interface Industry {
 
 interface Contact {
   id: string
+  first_name: string
+  last_name: string | null
   name: string
   email: string
   phone: string | null
@@ -45,15 +48,63 @@ export function EditContactModal({
   onClose,
   onContactUpdated,
 }: EditContactModalProps) {
+  const initialFormData: Contact = {
+    id: '',
+    first_name: '',
+    last_name: '',
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    job_title: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    region: '',
+    postcode: '',
+    country: '',
+    website: '',
+    linkedin: '',
+    twitter: '',
+    avatar_url: '',
+    industry_id: ''
+  }
+
   const [isLoading, setIsLoading] = useState(false)
   const [industries, setIndustries] = useState<Industry[]>([])
-  const [formData, setFormData] = useState<Contact | null>(null)
+  const [formData, setFormData] = useState<Contact>(initialFormData)
 
   useEffect(() => {
-    if (contact) {
-      setFormData(contact)
+    if (!isOpen) {
+      setFormData(initialFormData)
     }
-  }, [contact])
+  }, [isOpen])
+
+  useEffect(() => {
+    if (contact && isOpen) {
+      setFormData({
+        id: contact.id || '',
+        first_name: contact.first_name || '',
+        last_name: contact.last_name || '',
+        name: contact.name || '',
+        email: contact.email || '',
+        phone: contact.phone || '',
+        company: contact.company || '',
+        job_title: contact.job_title || '',
+        address_line1: contact.address_line1 || '',
+        address_line2: contact.address_line2 || '',
+        city: contact.city || '',
+        region: contact.region || '',
+        postcode: contact.postcode || '',
+        country: contact.country || '',
+        website: contact.website || '',
+        linkedin: contact.linkedin || '',
+        twitter: contact.twitter || '',
+        avatar_url: contact.avatar_url || '',
+        industry_id: contact.industry_id || ''
+      })
+    }
+  }, [contact, isOpen])
 
   useEffect(() => {
     if (isOpen) {
@@ -82,15 +133,36 @@ export function EditContactModal({
     try {
       const { error } = await supabase
         .from('contacts')
-        .update(formData)
+        .update({
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name?.trim() || null,
+          email: formData.email.trim(),
+          phone: formData.phone?.trim() || null,
+          company: formData.company?.trim() || null,
+          job_title: formData.job_title?.trim() || null,
+          address_line1: formData.address_line1?.trim() || null,
+          address_line2: formData.address_line2?.trim() || null,
+          city: formData.city?.trim() || null,
+          region: formData.region?.trim() || null,
+          postcode: formData.postcode?.trim() || null,
+          country: formData.country?.trim() || null,
+          website: formData.website?.trim() || null,
+          linkedin: formData.linkedin?.trim() || null,
+          twitter: formData.twitter?.trim() || null,
+          industry_id: formData.industry_id || null
+        })
         .eq('id', contact?.id)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
 
       onContactUpdated()
       onClose()
-    } catch (error) {
-      console.error('Error updating contact:', error)
+    } catch (error: any) {
+      console.error('Error updating contact:', error.message || error)
     } finally {
       setIsLoading(false)
     }
@@ -98,10 +170,10 @@ export function EditContactModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => prev ? ({ ...prev, [name]: value }) : null)
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  if (!formData) return null
+  if (!contact) return null
 
   return (
     <AnimatePresence>
@@ -148,11 +220,18 @@ export function EditContactModal({
                       <Section title="Basic Information">
                         <InputField
                           icon={User}
-                          label="Name"
-                          name="name"
-                          value={formData.name}
+                          label="First Name"
+                          name="first_name"
+                          value={formData.first_name}
                           onChange={handleChange}
                           required
+                        />
+                        <InputField
+                          icon={User}
+                          label="Last Name"
+                          name="last_name"
+                          value={formData.last_name || ""}
+                          onChange={handleChange}
                         />
                         <InputField
                           icon={User}
@@ -270,7 +349,6 @@ export function EditContactModal({
                           icon={Globe}
                           label="Website"
                           name="website"
-                          type="url"
                           value={formData.website || ""}
                           onChange={handleChange}
                         />
@@ -278,7 +356,6 @@ export function EditContactModal({
                           icon={Linkedin}
                           label="LinkedIn"
                           name="linkedin"
-                          type="url"
                           value={formData.linkedin || ""}
                           onChange={handleChange}
                         />
@@ -286,7 +363,6 @@ export function EditContactModal({
                           icon={Twitter}
                           label="Twitter"
                           name="twitter"
-                          type="url"
                           value={formData.twitter || ""}
                           onChange={handleChange}
                         />
