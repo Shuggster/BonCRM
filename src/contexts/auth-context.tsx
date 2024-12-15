@@ -1,65 +1,43 @@
-"use client"
+'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 
-interface AuthContextType {
-  session: Session | null
-  loading: boolean
-}
+export const AuthContext = createContext({})
 
-const AuthContext = createContext<AuthContextType>({
-  session: null,
-  loading: true,
-})
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
+export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session ? 'Logged in' : 'Not logged in')
-      setSession(session)
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user ?? null)
       setLoading(false)
+    }
 
-      // Handle initial navigation
-      if (session) {
-        console.log('Initial redirect to dashboard')
-        router.push('/(authenticated)/dashboard')
-      }
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      router.refresh()
     })
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state changed:', _event, session ? 'Logged in' : 'Not logged in')
-      setSession(session)
-      setLoading(false)
-      
-      // Handle navigation based on session state
-      if (session) {
-        console.log('Redirecting to dashboard after auth change')
-        router.push('/(authenticated)/dashboard')
-      } else {
-        console.log('Redirecting to login after auth change')
-        router.push('/login')
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [router])
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, router])
 
   return (
-    <AuthContext.Provider value={{ session, loading }}>
-      {children}
+    <AuthContext.Provider value={{ user }}>
+      {!loading && children}
     </AuthContext.Provider>
   )
 }
 
-export const useAuth = () => useContext(AuthContext) 
+export const useAuth = () => {
+  return useContext(AuthContext)
+}

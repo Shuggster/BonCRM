@@ -203,6 +203,11 @@ export function ContactDetailsModal({
                         )}
                       </Section>
                     )}
+
+                    {/* Notes Section */}
+                    <Section title="Notes">
+                      <ContactNotes contactId={contact.id} />
+                    </Section>
                   </div>
 
                   {/* Right Column */}
@@ -250,22 +255,28 @@ export function ContactDetailsModal({
                 {contact.tags && contact.tags.length > 0 && (
                   <Section title="Tags" className="col-span-full">
                     <div className="flex flex-wrap gap-2">
-                      {contact.tags.map((tag, index) => (
-                        <span
-                          key={`${tag}-${index}`}
-                          className="px-3 py-1.5 rounded-full text-sm font-medium bg-primary/20 text-primary-foreground"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                      {contact.tags.map((tag, index) => {
+                        // Handle both string and object tag types
+                        const tagObj = typeof tag === 'string' 
+                          ? { id: tag, name: tag, color: '#3B82F6' }  // Default color if tag is string
+                          : tag;
+                        
+                        return (
+                          <span
+                            key={tagObj.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm"
+                            style={{ 
+                              backgroundColor: `${tagObj.color}20`,
+                              color: tagObj.color 
+                            }}
+                          >
+                            {tagObj.name}
+                          </span>
+                        );
+                      })}
                     </div>
                   </Section>
                 )}
-
-                {/* Notes - Full Width */}
-                <Section title="Notes" className="col-span-full">
-                  <ContactNotes contactId={contact.id} />
-                </Section>
 
                 {/* Scheduled Activities */}
                 <div className="mt-8">
@@ -336,7 +347,7 @@ export function ContactDetailsModal({
               </div>
             </motion.div>
           </div>
-        </>
+        </> 
       )}
     </AnimatePresence>
   )
