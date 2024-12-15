@@ -11,7 +11,6 @@ interface User {
   email: string
   role: Role
   created_at: string
-  department?: string
   name: string
 }
 
@@ -41,7 +40,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('user') // default role
+  const [role, setRole] = useState<Role>('operational') // default to operational role
   const [name, setName] = useState('')
   const [department, setDepartment] = useState<typeof DEPARTMENTS[number] | ''>('')
 
@@ -54,18 +53,24 @@ export default function UserManagement() {
       setLoading(true)
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, email, role, created_at, name')
         .order('created_at', { ascending: false })
 
       if (error) {
+        console.error('Supabase error:', error)
         throw error
       }
 
       if (data) {
+        console.log('Fetched users:', data)
         setUsers(data)
+      } else {
+        console.log('No users found')
+        setUsers([])
       }
-    } catch (error) {
-      console.error('Error fetching users:', error)
+    } catch (error: any) {
+      console.error('Error fetching users:', error.message || error)
+      alert('Failed to fetch users: ' + (error.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }
@@ -76,42 +81,56 @@ export default function UserManagement() {
     try {
       setLoading(true)
 
-      // First create the user in Supabase Auth
+      // Create new user in Auth with role in metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role,
+            name
+          }
+        }
       })
 
-      if (authError) throw authError
-
-      if (authData.user) {
-        // Then store additional user data in your users table
-        const { error: dbError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: authData.user.id,
-              email,
-              role,
-              name,
-              department,
-            },
-          ])
-
-        if (dbError) throw dbError
-
-        // Clear form
-        setEmail('')
-        setPassword('')
-        setRole('user')
-        setName('')
-        setDepartment('')
-
-        // Refresh user list
-        fetchUsers()
+      if (authError) {
+        console.error('Auth Error:', authError)
+        throw authError
       }
-    } catch (error) {
-      console.error('Error creating user:', error)
+
+      if (!authData.user?.id) {
+        throw new Error('Failed to create user in Auth')
+      }
+
+      // Add user to users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: authData.user.id,
+            email,
+            role,
+            name
+          },
+        ])
+
+      if (dbError) {
+        console.error('Database Error:', dbError)
+        throw dbError
+      }
+
+      // Clear form
+      setEmail('')
+      setPassword('')
+      setRole('operational')
+      setName('')
+      setDepartment('')
+
+      // Refresh user list
+      fetchUsers()
+    } catch (error: any) {
+      console.error('Error creating user:', error.message || error)
+      alert(error.message || 'Failed to create user')
     } finally {
       setLoading(false)
     }
@@ -134,11 +153,6 @@ export default function UserManagement() {
                   {ROLE_LEVELS[user.role]?.label || user.role}
                 </span>
               </div>
-              {user.department && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Department: {user.department}
-                </p>
-              )}
             </div>
           ))}
         </div>
@@ -149,41 +163,41 @@ export default function UserManagement() {
         <h2 className="text-xl font-semibold mb-4">Add New User</h2>
         <form onSubmit={createUser} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 rounded border"
+              className="w-full p-2 rounded border bg-background text-foreground"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 rounded border"
+              className="w-full p-2 rounded border bg-background text-foreground"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 rounded border"
+              className="w-full p-2 rounded border bg-background text-foreground"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full p-2 rounded border"
+              className="w-full p-2 rounded border bg-background text-foreground"
               required
             >
               {Object.entries(ROLE_LEVELS).map(([value, { label }]) => (
@@ -194,11 +208,11 @@ export default function UserManagement() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Department</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">Department</label>
             <select
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full p-2 rounded border"
+              className="w-full p-2 rounded border bg-background text-foreground"
             >
               <option value="">Select Department</option>
               {DEPARTMENTS.map((dept) => (
