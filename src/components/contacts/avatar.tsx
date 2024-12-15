@@ -46,9 +46,9 @@ export function Avatar({ url, size = "md", name }: AvatarProps) {
     return (
       <div 
         className={`${sizeClasses[size]} rounded-full bg-gray-700 flex items-center justify-center text-gray-300`}
-        title={name}
+        title={name || 'User'}
       >
-        {name.charAt(0).toUpperCase()}
+        {name ? name.charAt(0).toUpperCase() : <User size={16} />}
       </div>
     )
   }

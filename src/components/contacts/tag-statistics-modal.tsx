@@ -36,21 +36,25 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
     setLoading(true)
     setError(null)
     try {
-      // First get all tags
+      // Get all tags
       const { data: tags, error: tagsError } = await supabase
-        .from('contact_tags')
+        .from('tags')
         .select('id, name, color')
+        .order('name')
 
       if (tagsError) throw tagsError
 
-      // Then get the count for each tag
+      // Get counts for each tag from contacts
       const statsPromises = (tags || []).map(async (tag) => {
         const { count, error: countError } = await supabase
-          .from('contact_tag_relations')
-          .select('*', { count: 'exact', head: true })
-          .eq('tag_id', tag.id)
+          .from('contacts')
+          .select('id', { count: 'exact', head: true })
+          .contains('tags', [tag.id])
 
-        if (countError) throw countError
+        if (countError) {
+          console.error('Error getting count for tag:', tag.name, countError.message)
+          return { ...tag, count: 0 }
+        }
 
         return {
           ...tag,
@@ -87,20 +91,30 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
           ) : statistics.length === 0 ? (
             <div className="text-center text-gray-500">No tags found</div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {statistics.map((stat) => (
                 <div
                   key={stat.id}
-                  className="flex items-center justify-between p-2 rounded-md border"
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800/70 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <div
                       className="w-4 h-4 rounded-full"
                       style={{ backgroundColor: stat.color }}
                     />
-                    <span>{stat.name}</span>
+                    <span
+                      className="px-2 py-1 rounded-full text-sm"
+                      style={{
+                        backgroundColor: stat.color + '20',
+                        color: stat.color
+                      }}
+                    >
+                      {stat.name}
+                    </span>
                   </div>
-                  <span className="font-medium">{stat.count} contacts</span>
+                  <span className="text-sm text-gray-400">
+                    {stat.count} {stat.count === 1 ? 'contact' : 'contacts'}
+                  </span>
                 </div>
               ))}
             </div>
@@ -109,4 +123,4 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
       </DialogContent>
     </Dialog>
   )
-} 
+}

@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import { Users, Plus, ChevronUp, ChevronDown, Download, Trash, Tags, BarChart2, Mail, Phone, Calendar, Building2, FolderOpen, FolderClosed, MapPin, ArrowRight, Pencil, Trash2 } from "lucide-react"
+import { useEffect, useState, useRef, useMemo } from "react"
+import { Users, Plus, ChevronUp, ChevronDown, Download, Trash, Tags, BarChart2, Mail, Phone, Calendar, Building2, FolderOpen, FolderClosed, MapPin, ArrowRight, Pencil, Trash2, Search } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PageHeader } from "@/components/ui/page-header"
 import { CreateContactModal } from "@/components/contacts/create-contact-modal"
@@ -21,33 +21,35 @@ import { ScheduleActivityModal } from "@/components/contacts/schedule-activity-m
 import { validateContact } from '@/lib/validation'
 import { useToast } from '@/components/ui/toast'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
 interface Contact {
   id: string
-  name: string
-  email: string
+  first_name: string
+  last_name: string | null
+  email: string | null
   phone: string | null
   created_at: string
   company: string | null
-  position: string | null
-  notes: string | null
-  avatar_url?: string
-  contact_tag_relations?: {
-    contact_tags: {
-      id: string
-      name: string
-      color: string
-    }
-  }[]
+  job_title: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  region: string | null
+  postcode: string | null
+  country: string | null
+  website: string | null
+  linkedin: string | null
+  twitter: string | null
+  avatar_url: string | null
+  industry_id: string | null
+  tags: string[]
   industries: {
     id: string
     name: string
-  }[]
-  tags: {
-    id: string
-    name: string
-    color: string
-  }[]
+  } | null
+  // Virtual field for display
+  name?: string
 }
 
 interface BulkDeleteModalProps {
@@ -65,7 +67,7 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortField, setSortField] = useState<SortField>('first_name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
@@ -88,48 +90,108 @@ export default function ContactsPage() {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string; count: number }>>([])
+  const [tagDetails, setTagDetails] = useState<{ [key: string]: { name: string; color: string } }>({});
 
   useEffect(() => {
     console.log('Component mounted')
     fetchContacts()
+    fetchTags()
+    fetchTagDetails()
   }, [])
 
   async function fetchContacts(retryCount = 0) {
     console.log('Starting fetchContacts')
     try {
       setLoading(true)
+      setError(null)
       
       const { data, error } = await supabase
         .from('contacts')
-        .select('*')
+        .select(`
+          *,
+          industries (
+            id,
+            name
+          )
+        `)
+        .order(sortField, { ascending: sortDirection === 'asc' })
       
-      console.log('Raw Supabase response:', { data, error })
-      
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      
+      if (error) throw error
+
       if (!data) {
-        console.log('No data returned from Supabase')
         setContacts([])
         return
       }
-      
-      console.log('Contacts data:', data)
-      
+
       const transformedData = data.map(contact => ({
         ...contact,
-        tags: [],
-        industries: []
+        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+        tags: contact.tags || [],
+        industries: contact.industries || null
       }))
-      
+
       setContacts(transformedData)
-    } catch (err: any) {
-      console.error('Error in fetchContacts:', err)
-      setError(err.message)
+    } catch (error: any) {
+      console.error('Error fetching contacts:', error.message || error)
+      setError(error.message || 'Failed to fetch contacts')
+      
+      if (retryCount < 3) {
+        setTimeout(() => fetchContacts(retryCount + 1), 1000 * Math.pow(2, retryCount))
+      }
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchTags() {
+    try {
+      const { data: tags, error } = await supabase
+        .from('tags')
+        .select('id, name, color')
+        .order('name')
+      
+      if (error) throw error
+      
+      // Get counts for each tag
+      const tagsWithCounts = await Promise.all(
+        (tags || []).map(async (tag) => {
+          const { count, error: countError } = await supabase
+            .from('contacts')
+            .select('id', { count: 'exact', head: true })
+            .contains('tags', [tag.id])
+
+          if (countError) {
+            console.error('Error getting count for tag:', tag.name, countError.message)
+            return { ...tag, count: 0 }
+          }
+
+          return { ...tag, count: count || 0 }
+        })
+      )
+      
+      setAllTags(tagsWithCounts)
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+    }
+  }
+
+  async function fetchTagDetails() {
+    try {
+      const { data: tags, error } = await supabase
+        .from('tags')
+        .select('id, name, color')
+
+      if (error) throw error;
+
+      const tagMap = (tags || []).reduce((acc, tag) => {
+        acc[tag.id] = { name: tag.name, color: tag.color };
+        return acc;
+      }, {} as { [key: string]: { name: string; color: string } });
+
+      setTagDetails(tagMap);
+    } catch (error) {
+      console.error('Error fetching tag details:', error);
     }
   }
 
@@ -162,18 +224,19 @@ export default function ContactsPage() {
       const searchLower = searchQuery.toLowerCase()
       const matchesSearch = !searchQuery || 
         contact.name.toLowerCase().includes(searchLower) ||
-        contact.email.toLowerCase().includes(searchLower) ||
+        contact.email?.toLowerCase().includes(searchLower) ||
         contact.phone?.toLowerCase().includes(searchLower) ||
-        contact.company?.toLowerCase().includes(searchLower)
+        contact.company?.toLowerCase().includes(searchLower) ||
+        (contact.job_title?.toLowerCase() || '').includes(searchLower)
 
       // Tag filter
       const matchesTags = selectedTagIds.length === 0 || (
         tagFilterMode === 'AND'
           ? selectedTagIds.every(tagId => 
-              contact.tags.some(t => t.id === tagId)
+              contact.tags.includes(tagId)
             )
           : selectedTagIds.some(tagId => 
-              contact.tags.some(t => t.id === tagId)
+              contact.tags.includes(tagId)
             )
       )
 
@@ -222,6 +285,28 @@ export default function ContactsPage() {
     fetchContacts()
   }
 
+  const handleContactClick = (contact: Contact, event: React.MouseEvent) => {
+    // If the click is on or within the checkbox container, don't do anything
+    // The checkbox has its own handler
+    const target = event.target as HTMLElement;
+    if (target.closest('.checkbox-container')) {
+      return;
+    }
+    
+    // Otherwise show contact details
+    setSelectedContact(contact);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleContactSelect = (contactId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setSelectedContactIds(prev =>
+      prev.includes(contactId)
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
+    );
+  };
+
   const toggleSelectAll = () => {
     if (selectedContactIds.length === filteredContacts.length) {
       setSelectedContactIds([])
@@ -251,22 +336,38 @@ export default function ContactsPage() {
           'Email',
           'Phone',
           'Company',
-          'Position',
-          'Notes',
+          'Job Title',
+          'Address Line 1',
+          'Address Line 2',
+          'City',
+          'Region',
+          'Postcode',
+          'Country',
+          'Website',
+          'LinkedIn',
+          'Twitter',
           'Created At',
           'Tags',
-          'Industries'
+          'Industry'
         ],
         ...contacts.map(contact => [
           contact.name,
-          contact.email,
+          contact.email || '',
           contact.phone || '',
           contact.company || '',
-          contact.position || '',
-          contact.notes || '',
+          contact.job_title || '',
+          contact.address_line1 || '',
+          contact.address_line2 || '',
+          contact.city || '',
+          contact.region || '',
+          contact.postcode || '',
+          contact.country || '',
+          contact.website || '',
+          contact.linkedin || '',
+          contact.twitter || '',
           new Date(contact.created_at).toLocaleDateString(),
-          contact.tags.map(tag => tag.name).join(', '),
-          contact.industries.map(industry => industry.name).join(', ')
+          contact.tags.join(', '),
+          contact.industries?.name || '-'
         ])
       ].map(row => row.join(',')).join('\n')
 
@@ -293,7 +394,7 @@ export default function ContactsPage() {
     const tagsMap = new Map()
     contacts.forEach(contact => {
       contact.tags.forEach(tag => {
-        tagsMap.set(tag.id, tag)
+        tagsMap.set(tag, tag)
       })
     })
     return Array.from(tagsMap.values())
@@ -329,540 +430,394 @@ export default function ContactsPage() {
     }
   }
 
+  const handleBulkTagClick = () => {
+    if (selectedContactIds.length === 0) {
+      addToast('Please select at least one contact to tag', 'error')
+      return
+    }
+    setIsBulkTagModalOpen(true)
+  }
+
+  const handleTagClick = (tagId: string) => {
+    setSelectedTagIds(prev => {
+      if (prev.includes(tagId)) {
+        return prev.filter(id => id !== tagId)
+      }
+      return [...prev, tagId]
+    })
+  }
+
+  const handleTagFilterModeToggle = () => {
+    setTagFilterMode(prev => prev === 'AND' ? 'OR' : 'AND')
+  }
+
   console.log('Current contacts state:', contacts)
 
   return (
-    <div className="flex h-screen bg-background">
-      <main className="flex-1 overflow-hidden bg-background/95">
-        <div className="h-full flex flex-col p-2 sm:p-4 md:p-6">
-          <div className="space-y-2 sm:space-y-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <PageHeader
-                heading="Contacts"
-                description="Manage your contacts and their information."
-                icon={<div className="icon-contacts"><Users className="h-6 w-6" /></div>}
-              />
-              <div className="flex flex-wrap gap-2">
-                <div className="w-full sm:w-auto order-1 sm:order-none">
-                  <input
-                    type="text"
-                    placeholder="Search contacts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border rounded-md"
-                  />
-                </div>
-                <Button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  disabled={isCreating}
-                  className="flex-1 sm:flex-none"
-                >
-                  {isCreating ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Contact
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={exportToCSV}
-                  disabled={isExporting}
-                  variant="outline"
-                  className="flex-1 sm:flex-none"
-                >
-                  {isExporting ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <>
-                      <Download className="mr-2 h-4 w-4" />
-                      Export
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+    <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="p-8">
+        <PageHeader 
+          heading="Contacts"
+          description="Manage your contacts and relationships"
+          icon={<div className="icon-contacts animate-in fade-in slide-in-from-bottom-3 duration-1000"><Users className="h-6 w-6 text-blue-500" /></div>}
+        />
+        <div className="flex items-center gap-4 mt-6 animate-in fade-in slide-in-from-bottom-5 duration-1000">
+          <div className="flex-1 relative group">
+            <input
+              type="text"
+              placeholder="Search contacts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 px-4 pl-10 rounded-lg bg-background border border-input hover:border-accent focus:border-accent focus:ring-2 focus:ring-accent focus:ring-opacity-50 transition-colors"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors" />
           </div>
 
-          <div className="relative flex-1 mt-4">
-            {loading ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : error ? (
-              <div className="absolute inset-0 flex items-center justify-center text-red-400">
-                Error: {error}
-              </div>
-            ) : contacts.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                No contacts found
-              </div>
-            ) : (
-              <div className="h-full flex flex-col p-4 md:p-6">
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex flex-wrap gap-2 sm:flex-row sm:items-center">
-                      <select
-                        value={groupBy}
-                        onChange={(e) => setGroupBy(e.target.value as 'none' | 'company')}
-                        className="px-3 py-2 bg-background border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <option value="none">No Grouping</option>
-                        <option value="company">Group by Company</option>
-                      </select>
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        <TagFilterMenu 
-                          onTagSelect={(tagIds) => setSelectedTagIds(tagIds)}
-                          onOpenTagStats={() => setIsTagStatsModalOpen(true)}
-                          onManageTags={() => {
-                            setIsTagManagementModalOpen(true)
-                          }}
-                        />
-                        <Button
-                          onClick={() => setIsIndustryManagementModalOpen(true)}
-                          className="flex items-center gap-2"
-                        >
-                          <Building2 className="h-4 w-4" />
-                          Manage Industries
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                <FolderClosed className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setGroupBy('none')}>
+                <FolderClosed className="mr-2 h-4 w-4" /> No Grouping
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setGroupBy('company')}>
+                <Building2 className="mr-2 h-4 w-4" /> Group by Company
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-                  <div className="flex flex-wrap gap-2">
-                    {selectedContactIds.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => setIsBulkTagModalOpen(true)}
-                          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-white rounded-lg transition-colors"
-                        >
-                          <Tags className="h-4 w-4" />
-                          Tag Selected ({selectedContactIds.length})
-                        </button>
-                        <button
-                          onClick={() => setIsBulkDeleteModalOpen(true)}
-                          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-red-900/50 hover:bg-red-800/50 text-white rounded-lg transition-colors"
-                        >
-                          <Trash className="h-4 w-4" />
-                          Delete Selected ({selectedContactIds.length})
-                        </button>
-                      </>
-                    )}
-                    <div className="flex-1" />
-                  </div>
-                </div>
-
-                <div className="relative flex-1 mt-6">
-                  <div className="absolute inset-0 rounded-lg bg-gray-800/30">
-                    <div className="h-full overflow-auto">
-                      <div className="hidden md:block">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr>
-                              <th className="sticky top-0 w-10 p-3 bg-gray-800/50">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedContactIds.length === filteredContacts.length}
-                                  onChange={toggleSelectAll}
-                                  className="rounded border-gray-700 bg-gray-800/50"
-                                />
-                              </th>
-                              {groupBy === 'company' && (
-                                <th className="sticky top-0 w-10 p-3 bg-gray-800/50">
-                                </th>
-                              )}
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Name
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Email
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Phone
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Company
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Created
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Tags
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Industries
-                              </th>
-                              <th className="sticky top-0 px-4 py-3 bg-gray-800/50 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-800/50">
-                            {Object.entries(groupedContacts()).map(([groupName, groupContacts]) => (
-                              <Fragment key={`group-${groupName}`}>
-                                {groupBy === 'company' && (
-                                  <tr key={`group-${groupName}`} className="bg-gray-800/20">
-                                    <td></td>
-                                    <td className="p-2">
-                                      <button
-                                        onClick={() => toggleGroup(groupName)}
-                                        className="p-1 hover:bg-gray-700/30 rounded"
-                                      >
-                                        {expandedGroups.has(groupName) ? (
-                                          <FolderOpen className="w-4 h-4" />
-                                        ) : (
-                                          <FolderClosed className="w-4 h-4" />
-                                        )}
-                                      </button>
-                                    </td>
-                                    <td colSpan={7} className="px-4 py-2 font-medium flex items-center gap-2">
-                                      <Building2 className="w-4 h-4 text-gray-400" />
-                                      {groupName} ({groupContacts.length})
-                                    </td>
-                                  </tr>
-                                )}
-                                {(groupBy === 'none' || expandedGroups.has(groupName)) && 
-                                  groupContacts.map(contact => (
-                                    <tr
-                                      key={contact.id}
-                                      className="group hover:bg-gray-800/30 transition-colors cursor-pointer"
-                                      onClick={(e) => {
-                                        if (
-                                          (e.target as HTMLElement).closest('input[type="checkbox"]') ||
-                                          (e.target as HTMLElement).closest('button')
-                                        ) return;
-                                        setSelectedContact(contact);
-                                        setIsDetailsModalOpen(true);
-                                      }}
-                                    >
-                                      <td className="p-3" onClick={e => e.stopPropagation()}>
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedContactIds.includes(contact.id)}
-                                          onChange={() => toggleContactSelection(contact.id)}
-                                          className="rounded border-gray-700 bg-gray-800/50"
-                                        />
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300 group-hover:text-blue-400">
-                                        <div className="flex items-center gap-2">
-                                          <Avatar url={contact.avatar_url || undefined} size="sm" name={contact.name} />
-                                          <span>{contact.name}</span>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-3">
-                                        <a 
-                                          href={`mailto:${contact.email}`}
-                                          onClick={e => e.stopPropagation()}
-                                          className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors"
-                                        >
-                                          {contact.email}
-                                          <Mail className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </a>
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300">
-                                        {contact.phone ? (
-                                          <a 
-                                            href={`tel:${contact.phone}`}
-                                            onClick={e => e.stopPropagation()}
-                                            className="flex items-center gap-1 hover:text-green-400 transition-colors"
-                                          >
-                                            {contact.phone}
-                                            <Phone className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                          </a>
-                                        ) : (
-                                          '-'
-                                        )}
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300">
-                                        {contact.company || '-'}
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300">
-                                        {new Date(contact.created_at).toLocaleDateString()}
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300">
-                                        <div className="flex flex-wrap gap-1">
-                                          {contact.tags.map((tag) => (
-                                            <span
-                                              key={tag.id}
-                                              style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                                              className="px-2 py-1 rounded-full text-xs font-medium"
-                                            >
-                                              {tag.name}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300">
-                                        {contact.industries.map(industry => industry.name).join(', ') || '-'}
-                                      </td>
-                                      <td className="px-4 py-3 text-gray-300" onClick={e => e.stopPropagation()}>
-                                        <div className="flex items-center gap-2">
-                                          <button 
-                                            onClick={() => {
-                                              setSelectedContact(contact)
-                                              setIsScheduleActivityModalOpen(true)
-                                            }}
-                                            className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
-                                          >
-                                            <Users className="w-5 h-5 text-purple-400" />
-                                            <span className="tooltip">Schedule Activity</span>
-                                          </button>
-                                          <button 
-                                            onClick={() => {
-                                              setSelectedContact(contact)
-                                              setIsEditModalOpen(true)
-                                            }}
-                                            className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
-                                          >
-                                            <Pencil className="w-5 h-5 text-blue-400" />
-                                            <span className="tooltip">Edit Contact</span>
-                                          </button>
-                                          <button 
-                                            onClick={() => {
-                                              setSelectedContact(contact)
-                                              setIsDeleteModalOpen(true)
-                                            }}
-                                            className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
-                                          >
-                                            <Trash2 className="w-5 h-5 text-red-400" />
-                                            <span className="tooltip">Delete Contact</span>
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                              </Fragment>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Mobile/Tablet Card View */}
-                      <div className="md:hidden">
-                        <div className="p-4 flex items-center gap-3 bg-gray-800/50 sticky top-0">
-                          <input
-                            type="checkbox"
-                            checked={selectedContactIds.length === filteredContacts.length}
-                            onChange={toggleSelectAll}
-                            className="mt-2 rounded border-gray-700 bg-gray-800/50"
-                          />
-                          <span className="text-sm text-gray-400">Select All</span>
-                        </div>
-                        <div className="divide-y divide-gray-800/50">
-                          {filteredContacts.map(contact => (
-                            <div key={contact.id} className="p-4 hover:bg-gray-800/30 transition-colors">
-                              <div className="flex items-start gap-3">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedContactIds.includes(contact.id)}
-                                  onChange={() => toggleContactSelection(contact.id)}
-                                  className="mt-2 rounded border-gray-700 bg-gray-800/50"
-                                />
-                                <div className="flex-1 space-y-3">
-                                  <div 
-                                    onClick={() => {
-                                      setSelectedContact(contact)
-                                      setIsDetailsModalOpen(true)
-                                    }}
-                                    className="flex items-center gap-2 cursor-pointer hover:text-blue-400"
-                                  >
-                                    <Avatar url={contact.avatar_url || undefined} size="sm" name={contact.name} />
-                                    <span className="text-gray-300 font-medium">{contact.name}</span>
-                                  </div>
-                                  <div className="grid gap-2 text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <Mail className="w-4 h-4 text-gray-500" />
-                                      <span className="text-gray-300">{contact.email}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Phone className="w-4 h-4 text-gray-500" />
-                                      <span className="text-gray-300">{contact.phone || '-'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Calendar className="w-4 h-4 text-gray-500" />
-                                      <span className="text-gray-300">{new Date(contact.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="w-4 h-4 text-gray-500" />
-                                      <span className="text-gray-300">{contact.industries.map(industry => industry.name).join(', ') || '-'}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {contact.tags.map((tag) => (
-                                      <span
-                                        key={tag.id}
-                                        style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                                        className="px-2 py-1 rounded-full text-xs font-medium"
-                                      >
-                                        {tag.name}
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <button 
-                                      onClick={() => {
-                                        setSelectedContact(contact)
-                                        setIsScheduleActivityModalOpen(true)
-                                      }}
-                                      className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
-                                    >
-                                      <Users className="w-5 h-5 text-purple-400" />
-                                      <span className="tooltip">Schedule Activity</span>
-                                    </button>
-                                    <button 
-                                      onClick={() => {
-                                        setSelectedContact(contact)
-                                        setIsEditModalOpen(true)
-                                      }}
-                                      className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
-                                    >
-                                      <Pencil className="w-5 h-5 text-blue-400" />
-                                      <span className="tooltip">Edit Contact</span>
-                                    </button>
-                                    <button 
-                                      onClick={() => {
-                                        setSelectedContact(contact)
-                                        setIsDeleteModalOpen(true)
-                                      }}
-                                      className="p-1.5 rounded-lg hover:bg-gray-700 group tooltip-wrapper"
-                                    >
-                                      <Trash2 className="w-5 h-5 text-red-400" />
-                                      <span className="tooltip">Delete Contact</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <CreateContactModal
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onContactCreated={fetchContacts}
+          <TagFilterMenu
+            onTagSelect={setSelectedTagIds}
+            onOpenTagStats={() => setIsTagStatsModalOpen(true)}
+            onManageTags={() => setIsTagManagementModalOpen(true)}
+            ref={tagFilterMenuRef}
+            selectedTags={selectedTagIds}
+            filterMode={tagFilterMode}
+            onFilterModeChange={handleTagFilterModeToggle}
           />
 
-          <EditContactModal
-            contact={selectedContact}
-            isOpen={isEditModalOpen}
-            onClose={() => {
-              setIsEditModalOpen(false)
-              setSelectedContact(null)
-            }}
-            onContactUpdated={fetchContacts}
-          />
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 ease-in-out animate-in fade-in slide-in-from-bottom-5 duration-1000"
+          >
+            <Plus className="h-4 w-4" />
+            Add Contact
+          </Button>
 
-          <DeleteContactModal
-            contactId={selectedContact?.id || null}
-            contactName={selectedContact?.name || null}
-            isOpen={isDeleteModalOpen}
-            onClose={() => {
-              setIsDeleteModalOpen(false)
-              setSelectedContact(null)
-            }}
-            onContactDeleted={fetchContacts}
-          />
-
-          <ContactDetailsModal
-            contact={selectedContact}
-            isOpen={isDetailsModalOpen}
-            onClose={() => {
-              setIsDetailsModalOpen(false)
-              setSelectedContact(null)
-            }}
-            onEdit={() => {
-              setIsDetailsModalOpen(false)
-              setIsEditModalOpen(true)
-            }}
-          />
-
-          <BulkDeleteModal
-            isOpen={isBulkDeleteModalOpen}
-            onClose={() => setIsBulkDeleteModalOpen(false)}
-            selectedContactIds={selectedContactIds}
-            onComplete={fetchContacts}
-          />
-
-          <BulkTagModal
-            isOpen={isBulkTagModalOpen}
-            onClose={() => setIsBulkTagModalOpen(false)}
-            selectedContactIds={selectedContactIds}
-            existingTags={getAllUniqueTags()}
-            onComplete={fetchContacts}
-          />
-
-          <TagStatisticsModal
-            isOpen={isTagStatsModalOpen}
-            onClose={() => setIsTagStatsModalOpen(false)}
-          />
-
-          <TagManagementModal 
-            isOpen={isTagManagementModalOpen}
-            onClose={() => setIsTagManagementModalOpen(false)}
-            onTagsUpdated={() => {
-              fetchContacts()
-              // Refresh tag filter menu
-              if (tagFilterMenuRef.current?.refreshTags) {
-                tagFilterMenuRef.current.refreshTags()
-              }
-            }}
-          />
-
-          <IndustryManagementModal
-            isOpen={isIndustryManagementModalOpen}
-            onClose={() => setIsIndustryManagementModalOpen(false)}
-            onIndustriesUpdated={fetchContacts}
-          />
-
-          <ScheduleActivityModal
-            contact={selectedContact}
-            isOpen={isScheduleActivityModalOpen}
-            onClose={() => setIsScheduleActivityModalOpen(false)}
-            onActivityScheduled={() => {
-              fetchContacts()
-            }}
-          />
+          {selectedContactIds.length > 0 && (
+            <Button
+              onClick={handleBulkTagClick}
+              variant="outline"
+              className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 duration-1000"
+            >
+              <Tags className="h-4 w-4" />
+              Add Tags ({selectedContactIds.length})
+            </Button>
+          )}
         </div>
-      </main>
-      <style jsx>{`
-        .tooltip-wrapper {
-          position: relative;
-        }
-        .tooltip {
-          position: absolute;
-          top: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          padding: 4px 8px;
-          background-color: #374151;
-          color: white;
-          border-radius: 4px;
-          font-size: 12px;
-          white-space: nowrap;
-          opacity: 0;
-          visibility: hidden;
-          transition: opacity 0.2s, visibility 0.2s;
-          z-index: 50;
-          margin-top: 4px;
-        }
-        .tooltip-wrapper:hover .tooltip {
-          opacity: 1;
-          visibility: visible;
-        }
-      `}</style>
-      <div className="fixed bottom-4 right-4 z-50">
+
+        {selectedContactIds.length > 0 && (
+          <div className="flex gap-2 mt-4 animate-in fade-in slide-in-from-bottom-7 duration-1000">
+            <Button
+              onClick={async () => {
+                const selectedContacts = filteredContacts.filter(c => 
+                  selectedContactIds.includes(c.id)
+                );
+                const csv = selectedContacts.map(contact => ({
+                  Name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                  Email: contact.email || '',
+                  Phone: contact.phone || '',
+                  Company: contact.company || '',
+                  'Job Title': contact.job_title || '',
+                  Address: [
+                    contact.address_line1,
+                    contact.address_line2,
+                    contact.city,
+                    contact.region,
+                    contact.postcode,
+                    contact.country
+                  ].filter(Boolean).join(', '),
+                  Website: contact.website || '',
+                  LinkedIn: contact.linkedin || '',
+                  Twitter: contact.twitter || '',
+                  Tags: contact.tags?.join(', ') || ''
+                }));
+                
+                const csvContent = [
+                  Object.keys(csv[0]).join(','),
+                  ...csv.map(row => 
+                    Object.values(row)
+                      .map(val => `"${String(val).replace(/"/g, '""')}"`)
+                      .join(',')
+                  )
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'contacts.csv';
+                link.click();
+              }}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export ({selectedContactIds.length})
+            </Button>
+            <Button
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              variant="destructive"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Trash className="h-4 w-4" />
+              Delete ({selectedContactIds.length})
+            </Button>
+          </div>
+        )}
+
+        <div className="mt-6">
+          {/* Contact Cards View */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Object.entries(groupedContacts()).map(([groupName, groupContacts]) => (
+              <Fragment key={`group-${groupName}`}>
+                {groupBy === 'company' && (
+                  <div className="col-span-full bg-gray-800/20 p-3 rounded-lg flex items-center gap-2">
+                    <button
+                      onClick={() => toggleGroup(groupName)}
+                      className="p-1 hover:bg-gray-700/30 rounded transition-colors"
+                    >
+                      {expandedGroups.has(groupName) ? (
+                        <FolderOpen className="h-4 w-4" />
+                      ) : (
+                        <FolderClosed className="h-4 w-4" />
+                      )}
+                    </button>
+                    <div className="flex items-center gap-2 font-medium">
+                      <Building2 className="h-4 w-4 text-gray-400" />
+                      {groupName} ({groupContacts.length})
+                    </div>
+                  </div>
+                )}
+                {(groupBy === 'none' || expandedGroups.has(groupName)) &&
+                  groupContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="group relative bg-gradient-to-br from-gray-800/50 via-gray-800/30 to-gray-800/50 hover:from-gray-700/50 hover:via-gray-700/30 hover:to-gray-700/50 rounded-lg p-4 transition-all duration-300 cursor-pointer border border-gray-700/50 hover:border-gray-600/50 backdrop-blur-sm shadow-lg hover:shadow-xl"
+                      onClick={(e) => handleContactClick(contact, e)}
+                    >
+                      {/* Gradient Overlay on Hover */}
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-primary-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      {/* Selection Checkbox */}
+                      <div className="absolute top-3 right-3 z-10 checkbox-container">
+                        <input
+                          type="checkbox"
+                          checked={selectedContactIds.includes(contact.id)}
+                          onChange={(e) => {
+                            handleContactSelect(contact.id, e as unknown as React.MouseEvent);
+                          }}
+                          className="rounded border-gray-600 bg-gray-700/50 focus:ring-primary focus:ring-offset-0 transition-colors"
+                        />
+                      </div>
+
+                      {/* Contact Info */}
+                      <div className="space-y-4 relative z-0">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 relative">
+                            <Avatar contact={contact} size={48} />
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-100 group-hover:text-primary transition-colors">
+                              {contact.name}
+                            </h3>
+                            {contact.job_title && (
+                              <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                {contact.job_title}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div className="space-y-2 text-sm">
+                          {contact.company && (
+                            <div className="flex items-center gap-2 text-gray-300 group-hover:text-gray-200 transition-colors">
+                              <Building2 className="w-4 h-4 text-purple-400" />
+                              {contact.company}
+                            </div>
+                          )}
+                          {contact.email && (
+                            <div className="flex items-center gap-2 text-gray-300 group-hover:text-gray-200 transition-colors">
+                              <Mail className="w-4 h-4 text-blue-400" />
+                              {contact.email}
+                            </div>
+                          )}
+                          {contact.phone && (
+                            <div className="flex items-center gap-2 text-gray-300 group-hover:text-gray-200 transition-colors">
+                              <Phone className="w-4 h-4 text-green-400" />
+                              {contact.phone}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Tags */}
+                        {contact.tags && contact.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-2">
+                            {contact.tags.map((tagId) => {
+                              const tag = tagDetails[tagId];
+                              if (!tag) return null;
+                              return (
+                                <span
+                                  key={tagId}
+                                  className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{
+                                    backgroundColor: tag.color + '20',
+                                    color: tag.color
+                                  }}
+                                >
+                                  {tag.name}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-1 z-10">
+                        <div className="flex gap-1.5 p-1 rounded-lg bg-gray-800/90 backdrop-blur-sm border border-gray-700/50">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedContact(contact)
+                              setIsEditModalOpen(true)
+                            }}
+                            className="p-1.5 rounded-md hover:bg-gray-700/50 text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedContact(contact)
+                              setIsDeleteModalOpen(true)
+                            }}
+                            className="p-1.5 rounded-md hover:bg-gray-700/50 text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <CreateContactModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onContactCreated={fetchContacts}
+      />
+
+      <EditContactModal
+        contact={selectedContact}
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setSelectedContact(null)
+        }}
+        onContactUpdated={fetchContacts}
+      />
+
+      <DeleteContactModal
+        contactId={selectedContact?.id || null}
+        contactName={selectedContact?.name || null}
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setSelectedContact(null)
+        }}
+        onContactDeleted={fetchContacts}
+      />
+
+      <ContactDetailsModal
+        contact={selectedContact}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false)
+          setSelectedContact(null)
+        }}
+        onEdit={() => {
+          setIsDetailsModalOpen(false)
+          setIsEditModalOpen(true)
+        }}
+      />
+
+      <BulkDeleteModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        selectedContactIds={selectedContactIds}
+        onComplete={fetchContacts}
+      />
+
+      <BulkTagModal
+        isOpen={isBulkTagModalOpen}
+        onClose={() => setIsBulkTagModalOpen(false)}
+        selectedContactIds={selectedContactIds}
+        existingTags={allTags}
+        onComplete={() => {
+          fetchContacts()
+          setIsBulkTagModalOpen(false)
+        }}
+      />
+
+      <TagStatisticsModal
+        isOpen={isTagStatsModalOpen}
+        onClose={() => setIsTagStatsModalOpen(false)}
+      />
+
+      <TagManagementModal 
+        isOpen={isTagManagementModalOpen}
+        onClose={() => setIsTagManagementModalOpen(false)}
+        onTagsUpdated={() => {
+          fetchContacts()
+          // Refresh tag filter menu
+          if (tagFilterMenuRef.current?.refreshTags) {
+            tagFilterMenuRef.current.refreshTags()
+          }
+        }}
+      />
+
+      <IndustryManagementModal
+        isOpen={isIndustryManagementModalOpen}
+        onClose={() => setIsIndustryManagementModalOpen(false)}
+        onIndustriesUpdated={fetchContacts}
+      />
+
+      <ScheduleActivityModal
+        contact={selectedContact}
+        isOpen={isScheduleActivityModalOpen}
+        onClose={() => setIsScheduleActivityModalOpen(false)}
+        onActivityScheduled={() => {
+          fetchContacts()
+        }}
+      />
+
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`mb-2 p-4 rounded shadow-lg ${
+            className={`p-4 rounded-lg shadow-lg animate-in fade-in slide-in-from-right duration-300 ${
               toast.type === 'error' ? 'bg-red-500' :
               toast.type === 'success' ? 'bg-green-500' :
               'bg-blue-500'
@@ -872,7 +827,6 @@ export default function ContactsPage() {
           </div>
         ))}
       </div>
-    </div>
+    </main>
   )
 }
-

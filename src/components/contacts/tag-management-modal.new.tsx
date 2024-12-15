@@ -16,8 +16,10 @@ import { Label } from '@/components/ui/label'
 
 interface Tag {
   id: string
-  name: string
+  tag_name: string
   color: string
+  created_at: string
+  updated_at: string
 }
 
 interface TagManagementModalProps {
@@ -42,9 +44,15 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
   const fetchTags = async () => {
     try {
       const { data, error } = await supabase
-        .from('tags')
-        .select('id, name, color')
-        .order('name')
+        .from('contact_tags')
+        .select(`
+          id,
+          tag_name,
+          color,
+          created_at,
+          updated_at
+        `)
+        .order('tag_name')
 
       if (error) {
         console.error('Failed to fetch tags:', error.message)
@@ -62,10 +70,10 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
 
     try {
       const { error } = await supabase
-        .from('tags')
+        .from('contact_tags')
         .insert([
           { 
-            name: newTagName.trim(),
+            tag_name: newTagName.trim(),
             color: newTagColor
           }
         ])
@@ -78,21 +86,18 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
       onTagsUpdated()
     } catch (err) {
       console.error('Error creating tag:', err)
-      if (err instanceof Error) {
-        console.error('Error message:', err.message)
-      }
     }
   }
 
   const updateTag = async () => {
-    if (!editingTag || !editingTag.name.trim()) return
+    if (!editingTag || !editingTag.tag_name.trim()) return
 
     try {
       setLoading(true)
       const { error } = await supabase
-        .from('tags')
-        .update({ 
-          name: editingTag.name.trim(),
+        .from('contact_tags')
+        .update({
+          tag_name: editingTag.tag_name.trim(),
           color: editingTag.color
         })
         .eq('id', editingTag.id)
@@ -113,7 +118,7 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
     try {
       setLoading(true)
       const { error } = await supabase
-        .from('tags')
+        .from('contact_tags')
         .delete()
         .eq('id', tagId)
 
@@ -175,9 +180,9 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
                   {editingTag?.id === tag.id ? (
                     <>
                       <Input
-                        value={editingTag.name}
+                        value={editingTag.tag_name}
                         onChange={(e) =>
-                          setEditingTag({ ...editingTag, name: e.target.value })
+                          setEditingTag({ ...editingTag, tag_name: e.target.value })
                         }
                         className="flex-1"
                       />
@@ -211,7 +216,7 @@ export function TagManagementModal({ isOpen, onClose, onTagsUpdated }: TagManage
                         className="h-4 w-4 rounded-full"
                         style={{ backgroundColor: tag.color }}
                       />
-                      <span className="flex-1">{tag.name}</span>
+                      <span className="flex-1">{tag.tag_name}</span>
                       <Button
                         variant="ghost"
                         size="sm"

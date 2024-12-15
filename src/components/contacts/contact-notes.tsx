@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Pencil, Trash2, Save, X } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 interface Note {
   id: string
@@ -23,21 +24,30 @@ export function ContactNotes({ contactId }: ContactNotesProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const { session } = useAuth()
+
   useEffect(() => {
     fetchNotes()
   }, [contactId])
 
   const fetchNotes = async () => {
     try {
+      console.log('Fetching notes for contact:', contactId) // Debug log
       const { data, error } = await supabase
         .from('contact_notes')
         .select('*')
         .eq('contact_id', contactId)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setNotes(data)
+      if (error) {
+        console.error('Error fetching notes:', error)
+        throw error
+      }
+      
+      console.log('Fetched notes:', data) // Debug log
+      setNotes(data || [])
     } catch (err: any) {
+      console.error('Error in fetchNotes:', err)
       setError(err.message)
     }
   }
@@ -50,13 +60,18 @@ export function ContactNotes({ contactId }: ContactNotesProps) {
     try {
       const { error } = await supabase
         .from('contact_notes')
-        .insert([{ contact_id: contactId, content: newNote }])
+        .insert([{
+          contact_id: contactId,
+          content: newNote,
+          user_id: session?.user?.id || '00000000-0000-0000-0000-000000000000' // Use actual user ID if available
+        }])
 
       if (error) throw error
 
       setNewNote("")
       fetchNotes()
     } catch (err: any) {
+      console.error('Error adding note:', err)
       setError(err.message)
     } finally {
       setLoading(false)
