@@ -1,4 +1,5 @@
 import { Inter } from 'next/font/google'
+import { Providers } from '@/components/providers'
 import './globals.css'
 import 'react-datepicker/dist/react-datepicker.css'
 import '@/styles/icons.css'
@@ -22,7 +23,9 @@ export default function RootLayout({
         inter.className,
         "h-full bg-zinc-950 text-white antialiased"
       )}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

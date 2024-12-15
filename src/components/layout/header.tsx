@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Settings, User2, LogOut, Bell } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { signOut, useSession } from 'next-auth/react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button"
 
 export function Header() {
+  const { data: session } = useSession()
+
   return (
     <header className="border-b bg-card/50">
       <div className="flex h-16 items-center gap-4 px-6">
@@ -71,7 +73,9 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {session?.user?.email || 'My Account'}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Link href="/settings/profile" className="flex items-center gap-2">
@@ -84,7 +88,10 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem 
+                className="text-red-600 cursor-pointer"
+                onClick={() => signOut({ callbackUrl: '/login' })}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

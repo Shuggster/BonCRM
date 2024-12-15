@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { 
   LayoutDashboard, 
   Users, 
@@ -11,7 +12,9 @@ import {
   MessageSquare,
   BarChart3,
   Menu,
-  X
+  X,
+  Shield,
+  Settings,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ShugbotButton } from '@/components/ai/shugbot-button'
@@ -62,9 +65,80 @@ const navigation = [
   },
 ]
 
+const adminNavigation = [
+  {
+    name: "User Management",
+    href: "/admin/users",
+    icon: Users,
+    iconClass: "icon-users",
+  },
+  {
+    name: "Role Management",
+    href: "/admin/roles",
+    icon: Shield,
+    iconClass: "icon-roles",
+  },
+  {
+    name: "System Settings",
+    href: "/admin/settings",
+    icon: Settings,
+    iconClass: "icon-settings",
+  },
+]
+
 export default function Sidebar() {
   const pathname = usePathname()
   const { isOpen, setIsOpen, isMobile } = useSidebar()
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
+
+  const renderNavItems = (items: typeof navigation) => {
+    return items.map((item) => {
+      const isActive = pathname === item.href
+      return (
+        <motion.div
+          key={item.href}
+          className="relative"
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Link
+            href={item.href}
+            className={`nav-item flex items-center gap-3 ${
+              isActive ? 'text-white bg-white/[0.08]' : ''
+            }`}
+            onClick={() => {
+              if (isMobile) {
+                setIsOpen(false)
+              }
+            }}
+          >
+            <motion.div
+              initial={false}
+              animate={{
+                scale: isActive ? 1.15 : 1,
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className={`p-1 rounded-md ${item.iconClass}`}
+            >
+              <item.icon className="h-5 w-5" />
+            </motion.div>
+            {isOpen && <span>{item.name}</span>}
+            {isActive && isOpen && (
+              <motion.div
+                layoutId="activeNav"
+                className="absolute inset-0 rounded-lg bg-white/[0.08]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              />
+            )}
+          </Link>
+        </motion.div>
+      )
+    })
+  }
 
   return (
     <>
@@ -112,55 +186,23 @@ export default function Sidebar() {
               </Link>
             </div>
 
-            <nav className="space-y-1 px-3 py-4">
-              <AnimatePresence>
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href
-                  return (
-                    <motion.div
-                      key={item.href}
-                      className="relative"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    >
-                      <Link
-                        href={item.href}
-                        className={`nav-item flex items-center gap-3 ${
-                          isActive ? 'text-white bg-white/[0.08]' : ''
-                        }`}
-                        onClick={() => {
-                          if (isMobile) {
-                            setIsOpen(false)
-                          }
-                        }}
-                      >
-                        <motion.div
-                          initial={false}
-                          animate={{
-                            scale: isActive ? 1.15 : 1,
-                          }}
-                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                          className={`p-1 rounded-md ${item.iconClass}`}
-                        >
-                          <item.icon className="h-5 w-5" />
-                        </motion.div>
-                        {isOpen && <span>{item.name}</span>}
-                        {isActive && isOpen && (
-                          <motion.div
-                            layoutId="activeNav"
-                            className="absolute inset-0 rounded-lg bg-white/[0.08]"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                          />
-                        )}
-                      </Link>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-              <div className="mt-auto">
+            <nav className="flex flex-col flex-1 px-3 py-4">
+              <div className="flex-1">
+                <AnimatePresence>
+                  {renderNavItems(navigation)}
+                </AnimatePresence>
+              </div>
+
+              {isAdmin && (
+                <div className="pt-4 mt-4 border-t border-border/40">
+                  <AnimatePresence>
+                    {isOpen && <div className="mb-2 text-sm font-medium text-muted-foreground">Admin</div>}
+                    {renderNavItems(adminNavigation)}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              <div className="pt-4">
                 {isOpen && <ShugbotButton />}
               </div>
             </nav>
