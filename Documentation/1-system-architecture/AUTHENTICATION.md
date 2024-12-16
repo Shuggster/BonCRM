@@ -1,7 +1,7 @@
 # Authentication System Documentation
 
 ## Overview
-The Lovable CRM authentication system uses NextAuth.js with JWT strategy and Supabase for user management.
+The Lovable CRM authentication system uses NextAuth.js with JWT strategy and Supabase for user management. The system implements secure password hashing, middleware-based route protection, and role-based access control.
 
 ## Components
 
@@ -11,160 +11,163 @@ sequenceDiagram
     participant User
     participant Frontend
     participant NextAuth
+    participant Middleware
     participant Supabase
     
-    User->>Frontend: Login Request
-    Frontend->>NextAuth: Credentials
-    NextAuth->>Supabase: Verify User
-    Supabase-->>NextAuth: User Data
-    NextAuth-->>Frontend: JWT Token
-    Frontend-->>User: Redirect to Dashboard
+    User->>Frontend: Access Protected Route
+    Middleware->>NextAuth: Check Session
+    alt No Session
+        Middleware-->>User: Redirect to Login
+        User->>Frontend: Login Request
+        Frontend->>NextAuth: Credentials
+        NextAuth->>Supabase: Verify User
+        Supabase-->>NextAuth: User Data
+        NextAuth-->>Frontend: JWT Token
+        Frontend-->>User: Redirect to Dashboard
+    else Has Session
+        NextAuth-->>Middleware: Valid Session
+        Middleware-->>User: Access Granted
+    end
 ```
 
-### 2. JWT Structure
+### 2. Key Components
+
+#### A. Middleware (`middleware.ts`)
+- Protects all routes except public paths
+- Redirects unauthenticated users to login
+- Handles API routes protection
 ```typescript
-interface JWT {
+export const config = {
+    matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico|login).*)']
+}
+```
+
+#### B. User Management
+- Password hashing using bcrypt
+- User creation/update API
+- Admin reset endpoint for testing
+```typescript
+interface User {
     id: string;
     email: string;
-    role: 'admin' | 'senior_management' | 'department_manager' | 'operational';
+    role: string;
     name: string;
+    password_hash: string;
 }
 ```
 
-### 3. Session Management
-```typescript
-// Session configuration
-session: {
-    strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
-}
+#### C. Environment Configuration
+Required environment variables:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_key
+NEXTAUTH_SECRET=your_secret
+NEXTAUTH_URL=http://localhost:3001
 ```
 
-### 4. Protected Routes
-- All routes under `(main)` require authentication
-- Admin routes require admin role
-- Department-specific routes check department access
+### 3. Implementation Details
 
-## Implementation Details
-
-### 1. NextAuth Configuration
+#### A. NextAuth Configuration (`auth-options.ts`)
 ```typescript
-// auth-options.ts
 export const authOptions: NextAuthOptions = {
-    providers: [
-        CredentialsProvider({
-            // Credentials configuration
-            async authorize(credentials) {
-                // User verification logic
-            }
-        })
-    ],
-    callbacks: {
-        async jwt({ token, user }) {
-            // JWT token customization
-        },
-        async session({ session, token }) {
-            // Session customization
-        }
+    providers: [CredentialsProvider],
+    session: {
+        strategy: "jwt",
+        maxAge: 24 * 60 * 60, // 24 hours
+    },
+    pages: {
+        signIn: "/login",
+        error: "/login"
     }
 }
 ```
 
-### 2. Route Protection
+#### B. User Authentication (`auth.ts`)
+- Email-based user lookup
+- Password verification using bcrypt
+- Role-based session management
+
+#### C. User Creation/Update (`create-user.ts`)
 ```typescript
-// Layout-based protection
-export default async function ProtectedLayout({
-    children,
-}: {
-    children: React.ReactNode
-}) {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-        redirect('/login')
-    }
-    return children
+export async function createOrUpdateUser(
+    email: string,
+    password: string,
+    role: string = 'admin'
+) {
+    // Hash password
+    const password_hash = await hashPassword(password);
+    
+    // Create or update user in Supabase
+    // Returns success/error message
 }
 ```
 
-### 3. Role-Based Access
-```typescript
-// Role verification
-export async function requireRole(allowedRoles: string[]) {
-    const user = await requireAuth()
-    if (!allowedRoles.includes(user.role)) {
-        throw new Error('Not authorized')
-    }
-    return user
-}
-```
+### 4. Security Features
 
-## Security Measures
-
-### 1. Password Handling
-- Passwords hashed using bcrypt
+#### A. Password Security
+- Passwords are hashed using bcrypt
+- Salt rounds: 10
 - Never stored in plain text
-- Minimum password requirements enforced
 
-### 2. Session Security
-- JWT tokens stored in HTTP-only cookies
-- CSRF protection enabled
-- Session expiration after 24 hours
+#### B. Session Management
+- JWT-based sessions
+- 24-hour session lifetime
+- HTTP-only cookies
 
-### 3. RLS Policies
-- Row Level Security enforced at database level
+#### C. Route Protection
+- Middleware-based protection
 - Role-based access control
-- Department-level data isolation
+- Protected API routes
 
-## User Roles
+### 5. Testing and Maintenance
 
-### Admin
-- Full system access
-- User management capabilities
-- System configuration access
+#### A. Admin Reset Endpoint
+- Available at `/api/auth/reset-admin`
+- Creates/updates admin user
+- Default credentials:
+  - Email: admin@test.com
+  - Password: test123456
+  - Role: admin
 
-### Senior Management
-- Cross-department access
-- Reporting capabilities
-- User oversight
+#### B. Error Handling
+- Detailed error logging
+- User-friendly error messages
+- Security-conscious error responses
 
-### Department Manager
-- Department-specific access
-- Team management
-- Department reporting
+## Usage Examples
 
-### Operational
-- Basic CRM functions
-- Personal dashboard
-- Assigned tasks only
-
-## Error Handling
-
-### Authentication Errors
-- Invalid credentials
-- Session expiration
-- Unauthorized access attempts
-
-### Response Format
+### 1. Protected Route Implementation
 ```typescript
-interface AuthError {
-    message: string;
-    code: string;
-    status: number;
+// In page.tsx
+import { getServerSession } from "next-auth/next";
+import { redirect } from "next/navigation";
+
+export default async function ProtectedPage() {
+    const session = await getServerSession(authOptions);
+    if (!session) redirect("/login");
+    return <div>Protected Content</div>;
 }
 ```
 
-## Testing
-
-### Test Cases
-1. Login flow
-2. Session management
-3. Role-based access
-4. Password security
-5. Error handling
-
-### Test Credentials
+### 2. Role-Based Access
+```typescript
+// In admin pages
+if (session?.user?.role !== 'admin') {
+    redirect("/unauthorized");
+}
 ```
-Admin User:
-Email: admin@example.com
-Password: password123
-```
+
+### 3. API Route Protection
+```typescript
+// In API routes
+import { getServerSession } from "next-auth/next";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Protected API logic
+}
