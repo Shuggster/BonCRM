@@ -15,19 +15,27 @@ export type UserResponse = {
  */
 export async function getUserByEmail(email: string): Promise<UserResponse> {
     try {
+        console.log('Querying user with email:', email);
+        
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, email, role, name, password_hash')
+            .select('*')  // Select all fields for debugging
             .eq('email', email)
             .single();
 
+        console.log('Supabase response:', { user, error });
+
         if (error) {
+            console.error('Supabase error:', error);
             return { user: null, error: new Error(error.message) };
         }
 
         if (!user) {
+            console.log('No user found');
             return { user: null, error: new Error('User not found') };
         }
+
+        console.log('User found:', { ...user, password_hash: '[REDACTED]' });
 
         return {
             user: {
@@ -39,6 +47,7 @@ export async function getUserByEmail(email: string): Promise<UserResponse> {
             error: null
         };
     } catch (error) {
+        console.error('Unexpected error:', error);
         return {
             user: null,
             error: error instanceof Error ? error : new Error('Unknown error occurred')
