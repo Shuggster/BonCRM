@@ -1,90 +1,56 @@
 "use client"
 
+import { useState, useEffect } from 'react'
 import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { useState } from "react"
-import { useDebounce } from "@/hooks/use-debounce"
-import { format } from "date-fns"
 import { CalendarEvent } from "@/types/calendar"
-import { cn } from "@/lib/utils"
-import { EVENT_CATEGORIES } from "@/lib/constants/categories"
+import { format } from "date-fns"
 
 interface EventSearchProps {
-  onSearch: (query: string) => void
-  events: CalendarEvent[]
+  value: string
+  onChange: (value: string) => void
+  events?: CalendarEvent[]
 }
 
-export function EventSearch({ onSearch, events }: EventSearchProps) {
-  const [value, setValue] = useState("")
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const debouncedSearch = useDebounce(onSearch, 300)
+export function EventSearch({ value, onChange, events = [] }: EventSearchProps) {
+  const [isFocused, setIsFocused] = useState(false)
 
   const suggestions = value ? events
     .filter(event => 
-      event.title.toLowerCase().includes(value.toLowerCase())
+      event.title.toLowerCase().includes(value.toLowerCase()) ||
+      event.description?.toLowerCase().includes(value.toLowerCase())
     )
     .slice(0, 5) : []
 
   return (
-    <div className="relative group">
-      <motion.div 
-        className="relative"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-500" />
-        <Input
-          type="text"
-          placeholder="Search events..."
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value)
-            debouncedSearch(e.target.value)
-          }}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          className="w-full pl-9 bg-white/5 border-white/10 hover:bg-white/10 
-                   focus:bg-white/10 focus:ring-purple-500/20"
-        />
-      </motion.div>
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search events..."
+        className="bg-white/5"
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+      />
 
-      <AnimatePresence>
-        {showSuggestions && suggestions.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute z-50 w-full mt-1 bg-background/95 backdrop-blur 
-                     rounded-lg border border-white/10 shadow-lg overflow-hidden"
-          >
-            {suggestions.map((event) => (
-              <div
-                key={event.id}
-                className="p-2 hover:bg-white/5 cursor-pointer flex items-start gap-3"
-                onClick={() => {
-                  setValue(event.title)
-                  onSearch(event.title)
-                  setShowSuggestions(false)
-                }}
-              >
-                <div 
-                  className={cn(
-                    "w-2 h-2 mt-2 rounded-full",
-                    EVENT_CATEGORIES[event.category || 'default']?.bgClass
-                  )}
-                />
-                <div>
-                  <div className="font-medium">{event.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {format(event.start, 'MMM d, yyyy h:mm a')}
-                  </div>
-                </div>
+      {isFocused && suggestions.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0F1629] border border-white/10 rounded-md shadow-lg overflow-hidden z-50">
+          {suggestions.map((event) => (
+            <div
+              key={event.id}
+              className="px-3 py-2 hover:bg-white/5 cursor-pointer"
+              onClick={() => {
+                onChange(event.title)
+                setIsFocused(false)
+              }}
+            >
+              <div className="font-medium">{event.title}</div>
+              <div className="text-sm text-muted-foreground">
+                {format(event.start, 'MMM d, h:mm a')}
               </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,49 +9,69 @@ import { EVENT_CATEGORIES } from "@/lib/constants/categories"
 import { CalendarEvent } from "@/types/calendar"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
+import { addMinutes } from 'date-fns'
 
 interface EventModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (event: Partial<CalendarEvent>) => void
   event?: CalendarEvent
+  initialData?: { start: Date; end: Date }
 }
 
-type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
-
-interface RecurrenceRule {
-  type: RecurrenceType
-  interval: number
-  endDate?: Date
-}
-
-export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) {
+export function EventModal({ isOpen, onClose, onSave, event, initialData }: EventModalProps) {
   const [title, setTitle] = useState(event?.title || '')
   const [description, setDescription] = useState(event?.description || '')
   const [category, setCategory] = useState(event?.category || 'default')
-  const [date, setDate] = useState<Date | null>(event?.start ? new Date(event.start) : null)
-  const [recurrence, setRecurrence] = useState<RecurrenceType>('none')
-  const [recurrenceInterval, setRecurrenceInterval] = useState(1)
-  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | null>(null)
+  const [date, setDate] = useState<Date | null>(event?.start || initialData?.start || null)
+  const [endDate, setEndDate] = useState<Date | null>(event?.end || initialData?.end || null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Set default end time to 1 hour after start time when start time changes
+  useEffect(() => {
+    if (date && !endDate) {
+      setEndDate(addMinutes(date, 60))
+    }
+  }, [date])
+
+  // Reset form when event changes
+  useEffect(() => {
+    if (event) {
+      setTitle(event.title)
+      setDescription(event.description || '')
+      setCategory(event.category || 'default')
+      setDate(new Date(event.start))
+      setEndDate(new Date(event.end))
+    } else if (initialData) {
+      setTitle('')
+      setDescription('')
+      setCategory('default')
+      setDate(initialData.start)
+      setEndDate(initialData.end)
+    }
+    setError(null)
+  }, [event, initialData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!date) return
+    setError(null)
+
+    if (!date || !endDate) {
+      setError('Please select both start and end times')
+      return
+    }
+
+    if (endDate <= date) {
+      setError('End time must be after start time')
+      return
+    }
 
     const eventData: Partial<CalendarEvent> = {
-      title,
+      title: title || 'Untitled Event',
       description,
       category,
       start: date,
-      end: date,
-    }
-
-    if (recurrence !== 'none') {
-      eventData.recurrenceRule = {
-        type: recurrence,
-        interval: recurrenceInterval,
-        endDate: recurrenceEndDate || undefined
-      }
+      end: endDate
     }
 
     await onSave(eventData)
@@ -65,6 +85,12 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
           <DialogTitle>{event ? 'Edit Event' : 'Add Event'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="text-sm text-red-500 bg-red-500/10 p-2 rounded-md">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label htmlFor="title" className="text-sm font-medium">Title</label>
             <Input
@@ -107,204 +133,52 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Date & Time</label>
-            <DatePicker
-              selected={date}
-              onChange={(date) => setDate(date)}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={1}
-              dateFormat="MMMM d, yyyy h:mm aa"
-              className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              required
-              placeholderText="Select date and time"
-              popperClassName="date-picker-popper"
-              calendarClassName="date-picker-calendar"
-              dayClassName={date => "hover:bg-white/10 rounded"}
-              timeClassName={() => "text-white hover:bg-white/10"}
-              wrapperClassName="date-picker-wrapper"
-            />
-            <style jsx global>{`
-              .date-picker-popper {
-                background: #0F1629 !important;
-                border: 1px solid rgba(255, 255, 255, 0.08) !important;
-                border-radius: 0.5rem !important;
-                box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
-                font-family: ui-sans-serif, system-ui, sans-serif !important;
-                margin-top: 8px !important;
-              }
-              .date-picker-calendar {
-                background: #0F1629 !important;
-                border: none !important;
-                font-family: ui-sans-serif, system-ui, sans-serif !important;
-                padding: 1rem !important;
-              }
-              .react-datepicker {
-                display: flex !important;
-                flex-direction: row !important;
-                background: #0F1629 !important;
-              }
-              .react-datepicker__input-container input {
-                color: white !important;
-                background: #0F1629 !important;
-              }
-              .react-datepicker__time-container {
-                border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
-                width: 110px !important;
-                margin-left: 0 !important;
-              }
-              .react-datepicker__time-container .react-datepicker__time {
-                background: #0F1629 !important;
-              }
-              .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
-                width: 110px !important;
-                margin: 0 !important;
-              }
-              .react-datepicker__time-list {
-                height: 264px !important;
-                overflow-y: scroll !important;
-                background: #0F1629 !important;
-              }
-              .react-datepicker__time-list::-webkit-scrollbar {
-                width: 6px !important;
-              }
-              .react-datepicker__time-list::-webkit-scrollbar-track {
-                background: rgba(255, 255, 255, 0.05) !important;
-                border-radius: 3px !important;
-              }
-              .react-datepicker__time-list::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.2) !important;
-                border-radius: 3px !important;
-              }
-              .react-datepicker__time-list-item {
-                color: #E5E7EB !important;
-                background: transparent !important;
-                height: 32px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 0.875rem !important;
-                padding: 0 !important;
-              }
-              .react-datepicker__time-list-item:hover {
-                background: rgba(255, 255, 255, 0.1) !important;
-              }
-              .react-datepicker__time-list-item--selected {
-                background: rgba(255, 255, 255, 0.2) !important;
-                font-weight: 600 !important;
-              }
-              .react-datepicker__header {
-                background: #0F1629 !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-                padding: 0.5rem !important;
-              }
-              .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list {
-                padding: 0 !important;
-              }
-              .react-datepicker__current-month {
-                color: #E5E7EB !important;
-                font-size: 1rem !important;
-                font-weight: 600 !important;
-                margin-bottom: 0.5rem !important;
-              }
-              .react-datepicker__day-name {
-                color: #9CA3AF !important;
-                margin: 0.4rem !important;
-                width: 2rem !important;
-              }
-              .react-datepicker__day {
-                color: #E5E7EB !important;
-                margin: 0.4rem !important;
-                width: 2rem !important;
-                height: 2rem !important;
-                line-height: 2rem !important;
-                border-radius: 9999px !important;
-              }
-              .react-datepicker__day:hover {
-                background: rgba(255, 255, 255, 0.1) !important;
-              }
-              .react-datepicker__day--selected {
-                background: rgba(255, 255, 255, 0.2) !important;
-                font-weight: 600 !important;
-              }
-              .react-datepicker__day--keyboard-selected {
-                background: rgba(255, 255, 255, 0.15) !important;
-              }
-              .react-datepicker__day--outside-month {
-                color: #6B7280 !important;
-              }
-              .react-datepicker__navigation {
-                top: 1rem !important;
-              }
-              .react-datepicker__navigation-icon::before {
-                border-color: #9CA3AF !important;
-              }
-              .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
-                border-color: #E5E7EB !important;
-              }
-              .react-datepicker__time-container .react-datepicker__time {
-                background: #0F1629 !important;
-              }
-            `}</style>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Start Time</label>
+              <DatePicker
+                selected={date}
+                onChange={(date) => {
+                  setDate(date)
+                  setError(null)
+                }}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="MMMM d, yyyy h:mm aa"
+                className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                required
+                placeholderText="Select start date and time"
+                minDate={new Date()}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">End Time</label>
+              <DatePicker
+                selected={endDate}
+                onChange={(date) => {
+                  setEndDate(date)
+                  setError(null)
+                }}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="MMMM d, yyyy h:mm aa"
+                className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                required
+                placeholderText="Select end date and time"
+                minDate={date || new Date()}
+              />
+            </div>
           </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Recurrence</label>
-            <Select value={recurrence} onValueChange={setRecurrence}>
-              <SelectTrigger className="bg-white/5">
-                <SelectValue placeholder="No recurrence" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No recurrence</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {recurrence !== 'none' && (
-            <>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Repeat every</label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={recurrenceInterval}
-                    onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
-                    className="bg-white/5 w-20"
-                  />
-                  <span className="text-sm">{recurrence}(s)</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">End recurrence</label>
-                <DatePicker
-                  selected={recurrenceEndDate}
-                  onChange={(date) => setRecurrenceEndDate(date)}
-                  dateFormat="MMMM d, yyyy"
-                  className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  placeholderText="Select end date (optional)"
-                  minDate={date || undefined}
-                  popperClassName="date-picker-popper"
-                  calendarClassName="date-picker-calendar"
-                  dayClassName={date => "hover:bg-white/10 rounded"}
-                  wrapperClassName="date-picker-wrapper"
-                />
-              </div>
-            </>
-          )}
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={onClose}>
+            <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit">
-              {event ? 'Update' : 'Create'}
+              {event ? 'Update' : 'Create'} Event
             </Button>
           </div>
         </form>
