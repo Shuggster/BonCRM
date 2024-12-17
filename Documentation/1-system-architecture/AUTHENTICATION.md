@@ -140,10 +140,11 @@ export async function createOrUpdateUser(
 #### Secure Public Access Pattern
 When using NextAuth with Supabase, we can implement a simplified but secure RLS policy by leveraging NextAuth's server-side authentication as the primary security gate.
 
-Example implementation in Calendar component:
+Example implementations:
 
 1. Server-side authentication gate:
 ```typescript
+// Calendar Page
 export default async function CalendarPage() {
   const session = await getServerSession(authOptions)
   if (!session) {
@@ -151,12 +152,29 @@ export default async function CalendarPage() {
   }
   return <CalendarClient session={session} />
 }
+
+// Tasks Page
+export default async function TasksPage() {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return redirect('/login')
+  }
+  return <TasksClient session={session} />
+}
 ```
 
-2. Simplified RLS policy:
+2. Simplified RLS policies:
 ```sql
+-- Calendar Events
 CREATE POLICY "Allow authenticated access"
 ON calendar_events
+FOR ALL
+TO PUBLIC
+USING (true);
+
+-- Tasks
+CREATE POLICY "Allow authenticated access"
+ON tasks
 FOR ALL
 TO PUBLIC
 USING (true);
@@ -187,7 +205,70 @@ This pattern is secure because:
 - Maintainable and scalable approach
 
 #### Implementation Notes
-This pattern was successfully implemented in the Calendar component, solving authentication issues that were previously overcomplicating the solution with unnecessary token synchronization.
+This pattern has been successfully implemented in both Calendar and Tasks components, solving authentication issues that were previously overcomplicating the solution with unnecessary token synchronization.
+
+#### Client-Side Implementation
+```typescript
+// Calendar Client
+export function CalendarClient({ session }: { session: Session }) {
+  const handleCreateEvent = async (eventData: Partial<CalendarEvent>) => {
+    try {
+      await calendarService.createEvent({
+        ...eventData,
+      }, session)
+    } catch (error) {
+      console.error('Failed to create event:', error)
+    }
+  }
+}
+
+// Tasks Client
+export function TasksClient({ session }: { session: Session }) {
+  const handleCreateTask = async (taskData: Partial<Task>) => {
+    try {
+      const newTask = await taskService.createTask(taskData, session)
+      setTasks([newTask, ...tasks])
+    } catch (error) {
+      console.error('Failed to create task:', error)
+    }
+  }
+}
+```
+
+#### Service Layer Implementation
+```typescript
+// Calendar Service
+export const calendarService = {
+  async createEvent(event: CalendarEvent, session: Session) {
+    if (!session) {
+      throw new Error('User must be authenticated')
+    }
+    // Create event with user_id from session
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .insert({
+        ...event,
+        user_id: session.user.id
+      })
+  }
+}
+
+// Tasks Service
+export const taskService = {
+  async createTask(task: Task, session: Session) {
+    if (!session) {
+      throw new Error('User must be authenticated')
+    }
+    // Create task with user_id from session
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        ...task,
+        user_id: session.user.id
+      })
+  }
+}
+```
 
 ## Usage Examples
 
@@ -224,4 +305,5 @@ export async function GET() {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // Protected API logic
+    return NextResponse.json({ data: "Protected data" });
 }

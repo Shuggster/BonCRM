@@ -1,19 +1,14 @@
-"use client"
+import { getServerSession } from "next-auth"
+import { redirect } from 'next/navigation'
+import { authOptions } from "@/app/(auth)/lib/auth-options"
+import { TasksClient } from "./tasks-client"
 
-import { CheckSquare } from "lucide-react"
-import { PageHeader } from "@/components/ui/page-header"
+export default async function TasksPage() {
+  const session = await getServerSession(authOptions)
+  
+  if (!session) {
+    return redirect('/login')
+  }
 
-export default function TasksPage() {
-  return (
-    <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="p-8">
-        <PageHeader 
-          heading="Tasks"
-          description="Manage your tasks and to-dos"
-          icon={<div className="icon-tasks"><CheckSquare className="h-6 w-6" /></div>}
-        />
-        {/* Content will go here */}
-      </div>
-    </main>
-  )
+  return <TasksClient session={session} />
 }
