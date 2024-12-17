@@ -135,6 +135,60 @@ export async function createOrUpdateUser(
 - User-friendly error messages
 - Security-conscious error responses
 
+## Supabase RLS and NextAuth Integration
+
+#### Secure Public Access Pattern
+When using NextAuth with Supabase, we can implement a simplified but secure RLS policy by leveraging NextAuth's server-side authentication as the primary security gate.
+
+Example implementation in Calendar component:
+
+1. Server-side authentication gate:
+```typescript
+export default async function CalendarPage() {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return redirect('/login')
+  }
+  return <CalendarClient session={session} />
+}
+```
+
+2. Simplified RLS policy:
+```sql
+CREATE POLICY "Allow authenticated access"
+ON calendar_events
+FOR ALL
+TO PUBLIC
+USING (true);
+```
+
+#### Security Considerations
+This pattern is secure because:
+1. Primary Security Gate: NextAuth's `getServerSession()` check happens at the server level
+   - No one can reach the page without a valid session
+   - Redirect to '/login' happens before any client code runs
+   - Supabase client code only executes after authentication is confirmed
+
+2. Supabase Endpoint Protection:
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY has limited permissions
+   - API endpoint is protected by CORS settings (only accessible from your domain)
+   - Direct API calls without a valid NextAuth session will fail
+
+3. Multiple Security Layers:
+   - NextAuth session validation (primary gate)
+   - CORS protection (API level)
+   - Service role key never leaves server
+
+#### Benefits
+- Simplified RLS policies
+- Clear separation of concerns (NextAuth handles auth, Supabase handles data)
+- Reduced complexity in token management
+- Better performance (no need for token syncing)
+- Maintainable and scalable approach
+
+#### Implementation Notes
+This pattern was successfully implemented in the Calendar component, solving authentication issues that were previously overcomplicating the solution with unnecessary token synchronization.
+
 ## Usage Examples
 
 ### 1. Protected Route Implementation

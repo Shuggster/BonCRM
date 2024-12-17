@@ -9,7 +9,10 @@ export const calendarService = {
       .select('*')
       .order('start_time', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
     return data?.map((row: CalendarEventRow): CalendarEvent => ({
       id: row.id,
@@ -36,7 +39,11 @@ export const calendarService = {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
     return data
   },
 
@@ -55,7 +62,11 @@ export const calendarService = {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
     return data
   },
 
@@ -65,6 +76,9 @@ export const calendarService = {
       .delete()
       .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
   }
 } 
