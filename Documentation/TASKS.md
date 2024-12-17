@@ -24,21 +24,6 @@ CREATE TABLE public.tasks (
 )
 ```
 
-### Field Descriptions
-- `id`: Unique identifier for the task
-- `title`: Task title (required)
-- `description`: Detailed description of the task (optional)
-- `status`: Current status of the task (required)
-  - Valid values: 'todo', 'in-progress', 'completed'
-- `priority`: Task priority level (required)
-  - Valid values: 'low', 'medium', 'high'
-- `due_date`: When the task is due (optional)
-- `assigned_to`: UUID of the user assigned to the task (optional)
-- `related_event`: UUID of a related calendar event (optional)
-- `created_at`: Timestamp when the task was created
-- `updated_at`: Timestamp when the task was last updated
-- `user_id`: UUID of the user who created the task
-
 ## Security
 
 ### Authentication Architecture
@@ -58,19 +43,59 @@ The system uses a dual-layer authentication approach:
      - Public client (`NEXT_PUBLIC_SUPABASE_ANON_KEY`): For authenticated user operations
      - Service client (`SUPABASE_SERVICE_ROLE_KEY`): For admin operations only
 
-3. **Security Pattern**
-   - Server-side authentication gate using NextAuth's `getServerSession()`
-   - Pages are protected at the server component level
-   - Example:
-     ```typescript
-     export default async function TasksPage() {
-       const session = await getServerSession(authOptions)
-       if (!session) {
-         return redirect('/login')
-       }
-       return <TasksClient session={session} />
-     }
-     ```
+### Authentication Flow and Data Fetching Pattern
+
+We discovered an important pattern for handling authenticated data fetching with Supabase:
+
+1. **Session Token is Sufficient**
+   - Once authenticated via NextAuth, the session token contains all necessary user info
+   - No need to join with auth.users or profiles tables in most queries
+   - The user_id in the session is already verified and trusted
+
+2. **Simplified Query Pattern**
+   ```typescript
+   // Instead of complex joins like:
+   .select(`*, user:auth.users(id,email,raw_user_meta_data)`)
+
+   // Simply use:
+   .select('*')
+   .eq('user_id', session.user.id)  // When filtering by user
+   ```
+
+3. **Why This Works**
+   - Supabase RLS policies verify the authenticated user
+   - The session token is already validated
+   - Joining with user tables adds unnecessary complexity
+   - Better performance without joins
+   - Simpler error handling and type safety
+
+4. **Example Implementation**
+   ```typescript
+   async getComments(taskId: string, session: Session) {
+     const { data, error } = await supabase
+       .from('task_comments')
+       .select('*')  // Simple select
+       .eq('task_id', taskId)
+       .order('created_at', { ascending: true })
+
+     if (error) throw new Error(error.message)
+
+     return data.map(row => ({
+       id: row.id,
+       taskId: row.task_id,
+       userId: row.user_id,
+       content: row.content,
+       createdAt: new Date(row.created_at),
+       updatedAt: new Date(row.updated_at)
+     }))
+   }
+   ```
+
+5. **Security Considerations**
+   - RLS policies still enforce data access rules
+   - Use session.user.id for operations that need user context
+   - Keep user_id in tables for ownership tracking
+   - Let RLS handle permission checks
 
 ### Required Environment Variables
 ```env
@@ -83,14 +108,6 @@ NEXT_PUBLIC_SUPABASE_URL=your_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key  # Only for admin operations
 ```
-
-### Authentication Flow
-1. User attempts to access a protected route
-2. Server component checks for valid session using `getServerSession()`
-3. If no session, redirects to login
-4. After login, NextAuth creates a JWT session
-5. Session is passed to client components
-6. Client components use session.user.id for data filtering in Supabase queries
 
 ### Data Access Pattern
 ```typescript
@@ -156,6 +173,12 @@ CREATE POLICY "Allow authenticated access"
    - Verify NextAuth secret is properly set
    - Check Supabase URL and keys are correct
    - Ensure database tables have correct RLS policies
+
+4. **Select Query Parse Errors**
+   - Keep queries simple, avoid complex joins when possible
+   - Use basic select('*') when full table data is needed
+   - Only join when additional table data is absolutely required
+   - Remember that session already contains user context
 
 ## Usage
 

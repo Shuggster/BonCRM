@@ -252,12 +252,12 @@ export function TasksClient({ session }: TasksClientProps) {
     }
   }
 
-  const handleDeleteGroup = async (group: TaskGroup) => {
+  const handleDeleteGroup = async (groupToDelete: TaskGroup) => {
     try {
-      await taskGroupService.deleteGroup(group.id, session)
-      setGroups(groups.filter(g => g.id !== group.id))
+      await taskGroupService.deleteGroup(groupToDelete.id, session)
+      setGroups(groups.filter(g => g.id !== groupToDelete.id))
       // Reset group filter if the deleted group was selected
-      if (group.id === group) {
+      if (groupToDelete.id === group) {
         setGroup("all")
       }
       toast.success('Group deleted successfully')
@@ -382,6 +382,7 @@ export function TasksClient({ session }: TasksClientProps) {
         onSave={selectedTask ? handleUpdateTask : handleCreateTask}
         task={selectedTask}
         groups={groups}
+        session={session}
       />
       <GroupModal
         isOpen={showGroupModal}
