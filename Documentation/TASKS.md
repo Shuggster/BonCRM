@@ -41,8 +41,74 @@ CREATE TABLE public.tasks (
 
 ## Security
 
+### Authentication Architecture
+
+The system uses a dual-layer authentication approach:
+
+1. **Primary Authentication: NextAuth.js**
+   - Uses JWT strategy with 24-hour session duration
+   - Handles user sessions and authentication state
+   - Configured in `src/lib/auth/options.ts`
+   - Uses Credentials provider for email/password login
+   - Session contains user ID which is used for data filtering
+
+2. **Database Access: Supabase**
+   - Used primarily as a database with RLS policies
+   - Two client configurations:
+     - Public client (`NEXT_PUBLIC_SUPABASE_ANON_KEY`): For authenticated user operations
+     - Service client (`SUPABASE_SERVICE_ROLE_KEY`): For admin operations only
+
+3. **Security Pattern**
+   - Server-side authentication gate using NextAuth's `getServerSession()`
+   - Pages are protected at the server component level
+   - Example:
+     ```typescript
+     export default async function TasksPage() {
+       const session = await getServerSession(authOptions)
+       if (!session) {
+         return redirect('/login')
+       }
+       return <TasksClient session={session} />
+     }
+     ```
+
+### Required Environment Variables
+```env
+# NextAuth Configuration
+NEXTAUTH_SECRET=your_jwt_secret_here
+NEXTAUTH_URL=http://localhost:3000
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key  # Only for admin operations
+```
+
+### Authentication Flow
+1. User attempts to access a protected route
+2. Server component checks for valid session using `getServerSession()`
+3. If no session, redirects to login
+4. After login, NextAuth creates a JWT session
+5. Session is passed to client components
+6. Client components use session.user.id for data filtering in Supabase queries
+
+### Data Access Pattern
+```typescript
+// Example of correct data filtering in service
+async getTasks(session: Session) {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', session.user.id)  // Always filter by user_id
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+```
+
 ### Row Level Security (RLS)
-The tasks table uses a simplified RLS policy that allows all authenticated users to access all tasks:
+The tasks table uses a simplified RLS policy that allows authenticated users to access tasks:
 
 ```sql
 CREATE POLICY "Allow authenticated access"
@@ -51,6 +117,45 @@ CREATE POLICY "Allow authenticated access"
     TO PUBLIC
     USING (true);
 ```
+
+### Important Security Notes
+
+1. **DO NOT Modify**:
+   - RLS policies to use `auth.uid()`
+   - Supabase client authentication settings
+   - Complex authentication checks in RLS policies
+   - NextAuth session duration without understanding implications
+   - Service role key usage in client-side code
+
+2. **DO Use**:
+   - NextAuth's `getServerSession()` for page protection
+   - Pass the session to client components
+   - Use session's user ID for data filtering in service calls
+   - Keep the simplified RLS policies as they are
+   - Service role key only in admin scripts or secure server endpoints
+
+3. **Security Layers**:
+   - Primary security handled by NextAuth at server level
+   - Supabase anon key has limited permissions
+   - API endpoints protected by CORS settings
+   - Service role key never leaves server
+   - Data filtering always applied at the service level
+
+### Troubleshooting Common Issues
+1. **Unauthorized Access**
+   - Check if `getServerSession()` is implemented in the page
+   - Verify environment variables are correctly set
+   - Ensure session is being passed to client components
+
+2. **Data Not Filtering Correctly**
+   - Verify user_id is being used in service queries
+   - Check session object contains correct user information
+   - Ensure service is receiving session parameter
+
+3. **Authentication Errors**
+   - Verify NextAuth secret is properly set
+   - Check Supabase URL and keys are correct
+   - Ensure database tables have correct RLS policies
 
 ## Usage
 
