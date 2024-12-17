@@ -7,6 +7,7 @@ export interface Task {
   dueDate?: Date
   assignedTo?: string // Contact ID
   relatedEvent?: string // Calendar Event ID
+  taskGroupId?: string // Task Group ID
   createdAt: Date
   updatedAt: Date
 } 

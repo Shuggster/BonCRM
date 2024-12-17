@@ -6,7 +6,15 @@ export const taskService = {
   async getTasks(session: Session) {
     const { data, error } = await supabase
       .from('tasks')
-      .select('*')
+      .select(`
+        *,
+        task_groups (
+          id,
+          name,
+          color,
+          description
+        )
+      `)
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
 
@@ -19,7 +27,8 @@ export const taskService = {
       ...row,
       dueDate: row.due_date ? new Date(row.due_date) : undefined,
       createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
+      updatedAt: new Date(row.updated_at),
+      taskGroupId: row.task_group_id
     })) as Task[]
   },
 
@@ -34,9 +43,18 @@ export const taskService = {
         due_date: task.dueDate?.toISOString(),
         assigned_to: task.assignedTo,
         related_event: task.relatedEvent,
+        task_group_id: task.taskGroupId,
         user_id: session.user.id
       })
-      .select()
+      .select(`
+        *,
+        task_groups (
+          id,
+          name,
+          color,
+          description
+        )
+      `)
       .single()
 
     if (error) {
@@ -48,7 +66,8 @@ export const taskService = {
       ...data,
       dueDate: data.due_date ? new Date(data.due_date) : undefined,
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      updatedAt: new Date(data.updated_at),
+      taskGroupId: data.task_group_id
     } as Task
   },
 
@@ -62,11 +81,20 @@ export const taskService = {
         priority: task.priority,
         due_date: task.dueDate?.toISOString(),
         assigned_to: task.assignedTo,
-        related_event: task.relatedEvent
+        related_event: task.relatedEvent,
+        task_group_id: task.taskGroupId
       })
       .eq('id', task.id)
       .eq('user_id', session.user.id)
-      .select()
+      .select(`
+        *,
+        task_groups (
+          id,
+          name,
+          color,
+          description
+        )
+      `)
       .single()
 
     if (error) {
@@ -78,7 +106,8 @@ export const taskService = {
       ...data,
       dueDate: data.due_date ? new Date(data.due_date) : undefined,
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      updatedAt: new Date(data.updated_at),
+      taskGroupId: data.task_group_id
     } as Task
   },
 

@@ -4,6 +4,7 @@ import './globals.css'
 import 'react-datepicker/dist/react-datepicker.css'
 import '@/styles/icons.css'
 import { cn } from '@/lib/utils'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,6 +27,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <Toaster richColors />
       </body>
     </html>
   )

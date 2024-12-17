@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,6 +10,7 @@ import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { format } from "date-fns"
 import { Task } from "@/types/tasks"
+import { TaskGroup } from "@/lib/supabase/services/task-groups"
 import { cn } from "@/lib/utils"
 
 interface TaskModalProps {
@@ -17,14 +18,28 @@ interface TaskModalProps {
   onClose: () => void
   onSave: (task: Partial<Task>) => void
   task?: Task
+  groups: TaskGroup[]
 }
 
-export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSave, task, groups }: TaskModalProps) {
   const [title, setTitle] = useState(task?.title || '')
   const [description, setDescription] = useState(task?.description || '')
-  const [status, setStatus] = useState(task?.status || 'todo')
-  const [priority, setPriority] = useState(task?.priority || 'medium')
+  const [status, setStatus] = useState<'todo' | 'in-progress' | 'completed'>(task?.status || 'todo')
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
   const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate)
+  const [taskGroupId, setTaskGroupId] = useState<string | undefined>(task?.taskGroupId)
+
+  // Reset form when task changes or modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(task?.title || '')
+      setDescription(task?.description || '')
+      setStatus(task?.status || 'todo')
+      setPriority(task?.priority || 'medium')
+      setDueDate(task?.dueDate)
+      setTaskGroupId(task?.taskGroupId)
+    }
+  }, [isOpen, task])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +48,8 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
       description,
       status,
       priority,
-      dueDate
+      dueDate,
+      taskGroupId
     })
   }
 
@@ -41,7 +57,7 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md bg-background p-6 rounded-lg shadow-lg">
+      <div className="w-full max-w-lg bg-background p-6 rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">{task ? 'Edit Task' : 'Create Task'}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -71,96 +87,141 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="status"
-                  value="todo"
-                  checked={status === 'todo'}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                />
-                To Do
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="status"
-                  value="in-progress"
-                  checked={status === 'in-progress'}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                />
-                In Progress
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="status"
-                  value="completed"
-                  checked={status === 'completed'}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                />
-                Completed
-              </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="todo"
+                    checked={status === 'todo'}
+                    onChange={(e) => setStatus(e.target.value as any)}
+                  />
+                  To Do
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="in-progress"
+                    checked={status === 'in-progress'}
+                    onChange={(e) => setStatus(e.target.value as any)}
+                  />
+                  In Progress
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="completed"
+                    checked={status === 'completed'}
+                    onChange={(e) => setStatus(e.target.value as any)}
+                  />
+                  Completed
+                </label>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>Priority</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="priority"
-                  value="low"
-                  checked={priority === 'low'}
-                  onChange={(e) => setPriority(e.target.value as any)}
-                />
-                Low
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="priority"
-                  value="medium"
-                  checked={priority === 'medium'}
-                  onChange={(e) => setPriority(e.target.value as any)}
-                />
-                Medium
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="priority"
-                  value="high"
-                  checked={priority === 'high'}
-                  onChange={(e) => setPriority(e.target.value as any)}
-                />
-                High
-              </label>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="priority"
+                    value="low"
+                    checked={priority === 'low'}
+                    onChange={(e) => setPriority(e.target.value as any)}
+                  />
+                  Low
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="priority"
+                    value="medium"
+                    checked={priority === 'medium'}
+                    onChange={(e) => setPriority(e.target.value as any)}
+                  />
+                  Medium
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="priority"
+                    value="high"
+                    checked={priority === 'high'}
+                    onChange={(e) => setPriority(e.target.value as any)}
+                  />
+                  High
+                </label>
+              </div>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Due Date</Label>
             <div className="relative">
-              <DatePicker
-                selected={dueDate}
-                onChange={(date) => setDueDate(date)}
-                dateFormat="MMM d, yyyy"
-                placeholderText="Select due date..."
+              <Button
+                type="button"
+                variant="outline"
                 className={cn(
-                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2",
-                  "text-sm ring-offset-background file:border-0 file:bg-transparent",
-                  "file:text-sm file:font-medium placeholder:text-muted-foreground",
-                  "focus-visible:outline-none focus-visible:ring-2",
-                  "focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "disabled:cursor-not-allowed disabled:opacity-50"
+                  "w-full justify-start text-left font-normal",
+                  !dueDate && "text-muted-foreground"
                 )}
-              />
-              <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                onClick={() => setDueDate(dueDate || new Date())}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dueDate ? format(dueDate, "PPP") : "Pick a date"}
+              </Button>
+              {dueDate && (
+                <DatePicker
+                  selected={dueDate}
+                  onChange={(date) => setDueDate(date)}
+                  dateFormat="MMMM d, yyyy"
+                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Group</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "justify-start gap-2",
+                  !taskGroupId && "border-dashed"
+                )}
+                onClick={() => setTaskGroupId(undefined)}
+              >
+                <div 
+                  className="h-3 w-3 rounded-full bg-transparent border-2"
+                />
+                No Group
+              </Button>
+              {groups.map((group) => (
+                <Button
+                  key={group.id}
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "justify-start gap-2",
+                    taskGroupId === group.id && "border-2"
+                  )}
+                  onClick={() => setTaskGroupId(group.id)}
+                >
+                  <div 
+                    className="h-3 w-3 rounded-full" 
+                    style={{ backgroundColor: group.color }}
+                  />
+                  {group.name}
+                </Button>
+              ))}
             </div>
           </div>
 
