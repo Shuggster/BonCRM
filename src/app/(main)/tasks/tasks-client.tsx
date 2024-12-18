@@ -93,6 +93,10 @@ export function TasksClient({ session }: TasksClientProps) {
   const [sortBy, setSortBy] = useState<string>("created-desc")
 
   useEffect(() => {
+    if (!session?.user) {
+      console.error('No session or user')
+      return
+    }
     const loadTasks = async () => {
       try {
         const data = await taskService.getTasks(session)

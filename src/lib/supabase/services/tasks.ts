@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { supabase } from '../client'
 import { Task } from '@/types/tasks'
 import { Session } from '@supabase/supabase-js'
 
@@ -11,8 +11,7 @@ export const taskService = {
         task_groups (
           id,
           name,
-          color,
-          description
+          color
         )
       `)
       .eq('user_id', session.user.id)
@@ -33,42 +32,58 @@ export const taskService = {
   },
 
   async createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, session: Session) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        due_date: task.dueDate?.toISOString(),
-        assigned_to: task.assignedTo,
-        related_event: task.relatedEvent,
-        task_group_id: task.taskGroupId,
-        user_id: session.user.id
-      })
-      .select(`
-        *,
-        task_groups (
-          id,
-          name,
-          color,
-          description
-        )
-      `)
-      .single()
+    console.log('[Tasks Service] Creating task:', {
+      task,
+      sessionUserId: session?.user?.id
+    })
 
-    if (error) {
-      console.error('Error creating task:', error)
-      throw error
+    if (!session?.user?.id) {
+      throw new Error('No session found')
     }
 
-    return {
-      ...data,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      taskGroupId: data.task_group_id
-    } as Task
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: task.title,
+          description: task.description,
+          status: task.status,
+          priority: task.priority,
+          due_date: task.dueDate?.toISOString(),
+          task_group_id: task.taskGroupId,
+          user_id: session.user.id
+        })
+        .select(`
+          *,
+          task_groups (
+            id,
+            name,
+            color
+          )
+        `)
+        .single()
+
+      if (error) {
+        console.error('[Tasks Service] Create error:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details
+        })
+        throw error
+      }
+
+      return {
+        ...data,
+        dueDate: data.due_date ? new Date(data.due_date) : undefined,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+        taskGroupId: data.task_group_id
+      } as Task
+    } catch (err) {
+      console.error('[Tasks Service] Unexpected error:', err)
+      throw err
+    }
   },
 
   async updateTask(task: Task, session: Session) {
@@ -80,8 +95,6 @@ export const taskService = {
         status: task.status,
         priority: task.priority,
         due_date: task.dueDate?.toISOString(),
-        assigned_to: task.assignedTo,
-        related_event: task.relatedEvent,
         task_group_id: task.taskGroupId
       })
       .eq('id', task.id)
@@ -91,8 +104,7 @@ export const taskService = {
         task_groups (
           id,
           name,
-          color,
-          description
+          color
         )
       `)
       .single()

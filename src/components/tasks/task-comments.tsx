@@ -1,60 +1,70 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { TaskComment, TaskActivity } from "@/types/comments"
+import { TaskComment } from "@/types/comments"
 import { Session } from "@supabase/supabase-js"
 import { taskCommentsService } from "@/lib/supabase/services/task-comments"
 import { formatDistanceToNow } from "date-fns"
-import { MessageSquare, Activity, MoreVertical, Pencil, Trash2 } from "lucide-react"
-import { toast } from "sonner"
+import { MessageSquare, MoreVertical, Pencil, Trash2, Loader2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from 'sonner'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 interface TaskCommentsProps {
   taskId: string
   session: Session
 }
 
+function CommentSkeleton() {
+  return (
+    <div className="flex gap-3">
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/4" />
+      </div>
+    </div>
+  )
+}
+
 export function TaskComments({ taskId, session }: TaskCommentsProps) {
   const [comments, setComments] = useState<TaskComment[]>([])
-  const [activities, setActivities] = useState<TaskActivity[]>([])
   const [newComment, setNewComment] = useState("")
   const [editingComment, setEditingComment] = useState<TaskComment | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingComments, setIsLoadingComments] = useState(true)
+  const [loadingStates, setLoadingStates] = useState<{
+    [key: string]: 'editing' | 'deleting' | null
+  }>({})
 
   useEffect(() => {
     loadComments()
-    loadActivities()
   }, [taskId])
 
   const loadComments = async () => {
+    setIsLoadingComments(true)
     try {
       const data = await taskCommentsService.getComments(taskId, session)
       setComments(data)
     } catch (error) {
       console.error('Failed to load comments:', error)
       toast.error('Failed to load comments')
+    } finally {
+      setIsLoadingComments(false)
     }
   }
 
-  const loadActivities = async () => {
-    try {
-      const data = await taskCommentsService.getActivities(taskId, session)
-      setActivities(data)
-    } catch (error) {
-      console.error('Failed to load activities:', error)
-      toast.error('Failed to load activities')
-    }
-  }
-
-  const handleSubmitComment = async () => {
-    if (!newComment.trim()) return
+  const handleSubmitComment = useCallback(async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!newComment.trim() || isLoading) return
 
     setIsLoading(true)
     try {
@@ -71,12 +81,23 @@ export function TaskComments({ taskId, session }: TaskCommentsProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [newComment, isLoading, taskId, session])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        handleSubmitComment()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleSubmitComment])
 
   const handleUpdateComment = async (comment: TaskComment) => {
     if (!editingComment || !editingComment.content.trim()) return
 
-    setIsLoading(true)
+    setLoadingStates(prev => ({ ...prev, [comment.id]: 'editing' }))
     try {
       const updatedComment = await taskCommentsService.updateComment({
         ...comment,
@@ -91,11 +112,12 @@ export function TaskComments({ taskId, session }: TaskCommentsProps) {
       console.error('Failed to update comment:', error)
       toast.error('Failed to update comment')
     } finally {
-      setIsLoading(false)
+      setLoadingStates(prev => ({ ...prev, [comment.id]: null }))
     }
   }
 
   const handleDeleteComment = async (commentId: string) => {
+    setLoadingStates(prev => ({ ...prev, [commentId]: 'deleting' }))
     try {
       await taskCommentsService.deleteComment(commentId, session)
       setComments(comments.filter(c => c.id !== commentId))
@@ -103,83 +125,53 @@ export function TaskComments({ taskId, session }: TaskCommentsProps) {
     } catch (error) {
       console.error('Failed to delete comment:', error)
       toast.error('Failed to delete comment')
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [commentId]: null }))
     }
   }
 
-  const formatActivityMessage = (activity: TaskActivity) => {
-    const userName = activity.user?.name || activity.user?.email || 'Unknown user'
-    
-    switch (activity.actionType) {
-      case 'status_change':
-        return `${userName} changed status from ${activity.previousValue} to ${activity.newValue}`
-      case 'priority_change':
-        return `${userName} changed priority from ${activity.previousValue} to ${activity.newValue}`
-      case 'group_change':
-        return `${userName} moved task to ${activity.newValue ? `group "${activity.newValue}"` : 'no group'}`
-      case 'due_date_change':
-        return `${userName} changed due date to ${activity.newValue ? new Date(activity.newValue).toLocaleDateString() : 'none'}`
-      default:
-        return `${userName} updated the task`
-    }
-  }
+  const handleRealtimeInsert = useCallback((payload: any) => {
+    const newComment = payload.new as TaskComment
+    setComments(prev => [...prev, newComment])
+  }, [])
+
+  const handleRealtimeDelete = useCallback((payload: any) => {
+    const deletedComment = payload.old as TaskComment
+    setComments(prev => prev.filter(c => c.id !== deletedComment.id))
+  }, [])
+
+  useRealtimeSubscription('task_comments', 'INSERT', handleRealtimeInsert)
+  useRealtimeSubscription('task_comments', 'DELETE', handleRealtimeDelete)
 
   return (
-    <div className="space-y-6">
-      {/* Comments Section */}
-      <div className="space-y-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MessageSquare className="h-4 w-4" />
           <h3 className="font-medium">Comments</h3>
         </div>
+        {comments.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {comments.length} comment{comments.length !== 1 && 's'}
+          </span>
+        )}
+      </div>
 
+      {isLoadingComments ? (
+        <div className="space-y-4">
+          <CommentSkeleton />
+          <CommentSkeleton />
+          <CommentSkeleton />
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="text-center text-sm text-muted-foreground py-8">
+          No comments yet. Be the first to comment!
+        </div>
+      ) : (
         <div className="space-y-4">
           {comments.map(comment => (
             <div key={comment.id} className="group flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                {comment.user?.name?.[0] || comment.user?.email?.[0] || '?'}
-              </div>
-              
-              <div className="flex-1 space-y-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="font-medium">
-                      {comment.user?.name || comment.user?.email || 'Unknown user'}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
-                    </span>
-                  </div>
-
-                  {comment.userId === session.user.id && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-32">
-                        <DropdownMenuItem 
-                          onClick={() => setEditingComment(comment)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-
+              <div className="flex-1">
                 {editingComment?.id === comment.id ? (
                   <div className="space-y-2">
                     <Textarea
@@ -201,61 +193,87 @@ export function TaskComments({ taskId, session }: TaskCommentsProps) {
                       <Button
                         size="sm"
                         onClick={() => handleUpdateComment(comment)}
-                        disabled={isLoading}
+                        disabled={loadingStates[comment.id] === 'editing'}
                       >
-                        Save
+                        {loadingStates[comment.id] === 'editing' ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save'
+                        )}
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm">{comment.content}</p>
+                  <>
+                    <div className="flex items-start justify-between">
+                      <p className="text-sm">{comment.content}</p>
+                      {comment.userId === session.user.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-32">
+                            <DropdownMenuItem 
+                              onClick={() => setEditingComment(comment)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-red-600"
+                              disabled={loadingStates[comment.id] === 'deleting'}
+                            >
+                              {loadingStates[comment.id] === 'deleting' ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
+                    </span>
+                  </>
                 )}
               </div>
             </div>
           ))}
-
-          <div className="space-y-2">
-            <Textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="min-h-[60px]"
-            />
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSubmitComment}
-                disabled={!newComment.trim() || isLoading}
-              >
-                Comment
-              </Button>
-            </div>
-          </div>
         </div>
-      </div>
+      )}
 
-      {/* Activity Log */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Activity className="h-4 w-4" />
-          <h3 className="font-medium">Activity</h3>
-        </div>
-
-        <div className="space-y-2">
-          {activities.map(activity => (
-            <div key={activity.id} className="flex items-start gap-3">
-              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                {activity.user?.name?.[0] || activity.user?.email?.[0] || '?'}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm">
-                  {formatActivityMessage(activity)}
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {formatDistanceToNow(activity.createdAt, { addSuffix: true })}
-                  </span>
-                </p>
-              </div>
-            </div>
-          ))}
+      <div className="space-y-2">
+        <Textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment..."
+          className="min-h-[60px]"
+        />
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSubmitComment}
+            disabled={!newComment.trim() || isLoading}
+          >
+            Comment
+          </Button>
         </div>
       </div>
     </div>

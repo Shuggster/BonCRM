@@ -5,9 +5,7 @@ export interface Task {
   status: 'todo' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
   dueDate?: Date
-  assignedTo?: string // Contact ID
-  relatedEvent?: string // Calendar Event ID
-  taskGroupId?: string // Task Group ID
+  taskGroupId?: string
   createdAt: Date
   updatedAt: Date
 } 

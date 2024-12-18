@@ -14,11 +14,19 @@ import { TaskGroup } from "@/lib/supabase/services/task-groups"
 import { cn } from "@/lib/utils"
 import { TaskComments } from './task-comments'
 import { Session } from '@supabase/supabase-js'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog"
+import { TaskActivities } from './task-activities'
+import { taskActivitiesService } from '@/lib/supabase/services/task-activities'
 
 interface TaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (task: Partial<Task>) => void
+  onSave: (task: Partial<Task>) => Promise<void>
   task?: Task
   groups: TaskGroup[]
   session: Session
@@ -44,32 +52,84 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
     }
   }, [isOpen, task])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({
-      title,
-      description,
-      status,
-      priority,
-      dueDate,
-      taskGroupId
-    })
+    
+    try {
+      // Log changes before saving
+      if (task) {
+        // Status change
+        if (status !== task.status) {
+          await taskActivitiesService.logActivity({
+            taskId: task.id,
+            actionType: 'status_change',
+            previousValue: task.status,
+            newValue: status
+          }, session)
+        }
+
+        // Priority change
+        if (priority !== task.priority) {
+          await taskActivitiesService.logActivity({
+            taskId: task.id,
+            actionType: 'priority_change',
+            previousValue: task.priority,
+            newValue: priority
+          }, session)
+        }
+
+        // Title change
+        if (title !== task.title) {
+          await taskActivitiesService.logActivity({
+            taskId: task.id,
+            actionType: 'title_change',
+            previousValue: task.title,
+            newValue: title
+          }, session)
+        }
+
+        // Group change
+        if (taskGroupId !== task.taskGroupId) {
+          await taskActivitiesService.logActivity({
+            taskId: task.id,
+            actionType: 'group_change',
+            previousValue: task.taskGroupId,
+            newValue: taskGroupId
+          }, session)
+        }
+      }
+
+      // Save task
+      await onSave({
+        title,
+        description,
+        status,
+        priority,
+        dueDate,
+        taskGroupId
+      })
+    } catch (error) {
+      console.error('Failed to save task:', error)
+    }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-4xl bg-background rounded-lg shadow-lg">
-        <div className="flex">
-          <div className="flex-1 p-6 border-r border-border">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">{task ? 'Edit Task' : 'Create Task'}</h2>
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-                ✕
-              </button>
-            </div>
-            
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogContent className="max-w-6xl">
+        <DialogHeader>
+          <DialogTitle>
+            {task ? 'Edit Task' : 'Create Task'}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex gap-6">
+          {/* Left side - Task form */}
+          <div className="flex-1">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
@@ -241,16 +301,21 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
             </form>
           </div>
 
+          {/* Right side - Comments & Activities */}
           {task && (
-            <div className="w-[400px] p-6 max-h-[80vh] overflow-y-auto">
+            <div className="w-[400px] max-h-[700px] overflow-y-auto space-y-8 border-l border-border pl-6">
               <TaskComments 
+                taskId={task.id}
+                session={session}
+              />
+              <TaskActivities 
                 taskId={task.id}
                 session={session}
               />
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 } 
