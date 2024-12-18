@@ -1,7 +1,32 @@
 # Authentication System Documentation
 
+## CRITICAL: Agent Compliance Requirements
+Before modifying ANY authentication or RLS related code, agents MUST:
+1. Confirm understanding of this document
+2. Provide written confirmation of:
+   - Current authentication flow
+   - RLS policy implementation
+   - Key usage (anon vs service)
+3. Get explicit user approval for changes
+
 ## Overview
 The Lovable CRM authentication system uses NextAuth.js with JWT strategy and Supabase for user management. The system implements secure password hashing, middleware-based route protection, and role-based access control.
+
+## Key Principles
+1. Client-Side Operations
+   - MUST use NEXT_PUBLIC_SUPABASE_ANON_KEY
+   - NEVER use service role key
+   - Always respect RLS policies
+
+2. Server-Side Operations
+   - Use service role key only when necessary
+   - Implement proper error handling
+   - Validate all inputs
+
+3. RLS Policies
+   - MUST be tested in isolation
+   - NEVER bypass RLS
+   - Document all policy changes
 
 ## Components
 
@@ -307,3 +332,31 @@ export async function GET() {
     // Protected API logic
     return NextResponse.json({ data: "Protected data" });
 }
+
+## Required Agent Confirmations
+Before making changes, agents must confirm understanding of:
+1. Authentication Flow
+   - [ ] NextAuth.js implementation
+   - [ ] Middleware protection
+   - [ ] Session management
+
+2. RLS Policies
+   - [ ] Current policy structure
+   - [ ] Impact of changes
+   - [ ] Testing approach
+
+3. Key Usage
+   - [ ] Anon key for client
+   - [ ] Service role limitations
+   - [ ] Security implications
+
+## Required Confirmation Format
+Agents must provide this confirmation:
+```
+I confirm understanding of:
+1. Authentication Flow: [Describe current implementation]
+2. RLS Policies: [Describe current policies]
+3. Key Usage: [Describe where each key is used]
+4. Proposed Changes: [Describe changes]
+5. Rollback Plan: [Describe rollback approach]
+```
