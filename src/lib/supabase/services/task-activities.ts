@@ -1,6 +1,15 @@
 import { supabase } from '../client'
 import { Session } from '@supabase/supabase-js'
-import { TaskActivity } from '@/types/comments'
+
+export interface TaskActivity {
+  id: string
+  taskId: string
+  userId: string
+  actionType: 'status_change' | 'priority_change' | 'title_change' | 'description_change' | 'due_date_change' | 'group_change'
+  previousValue: any
+  newValue: any
+  createdAt: Date
+}
 
 export const taskActivitiesService = {
   async getActivities(taskId: string, session: Session) {
@@ -22,10 +31,11 @@ export const taskActivitiesService = {
       createdAt: new Date(row.created_at)
     })) as TaskActivity[]
   },
+
   async logActivity(activity: {
-    taskId: string,
-    actionType: ActivityType,
-    previousValue: any,
+    taskId: string
+    actionType: TaskActivity['actionType']
+    previousValue: any
     newValue: any
   }, session: Session) {
     const { error } = await supabase

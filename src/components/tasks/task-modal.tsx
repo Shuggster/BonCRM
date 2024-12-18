@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog"
 import { TaskActivities } from './task-activities'
 import { taskActivitiesService } from '@/lib/supabase/services/task-activities'
+import { Switch } from "@/components/ui/switch"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface TaskModalProps {
   isOpen: boolean
@@ -39,6 +41,10 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
   const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate)
   const [taskGroupId, setTaskGroupId] = useState<string | undefined>(task?.taskGroupId)
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
+  const [recurringInterval, setRecurringInterval] = useState(1)
+  const [recurringEndDate, setRecurringEndDate] = useState<Date>()
 
   // Reset form when task changes or modal opens/closes
   useEffect(() => {
@@ -236,20 +242,41 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
                       "w-full justify-start text-left font-normal",
                       !dueDate && "text-muted-foreground"
                     )}
-                    onClick={() => setDueDate(dueDate || new Date())}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : "Pick a date"}
+                    {dueDate ? format(dueDate, "PPP") : "No due date"}
                   </Button>
-                  {dueDate && (
+                  <div className="absolute top-0 left-0 w-full">
                     <DatePicker
                       selected={dueDate}
                       onChange={(date: Date | null) => setDueDate(date || undefined)}
                       dateFormat="MMMM d, yyyy"
-                      className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                      isClearable={true}
+                      showTimeSelect={false}
+                      placeholderText="No due date"
+                      customInput={
+                        <input 
+                          className="w-full h-full opacity-0 cursor-pointer" 
+                        />
+                      }
+                      popperProps={{
+                        strategy: "fixed"
+                      }}
+                      popperClassName="z-50"
                     />
-                  )}
+                  </div>
                 </div>
+                {dueDate && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setDueDate(undefined)}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Clear date
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -288,6 +315,62 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                  />
+                  <Label>Recurring Task</Label>
+                </div>
+
+                {isRecurring && (
+                  <div className="space-y-4 pl-6">
+                    <RadioGroup
+                      value={recurringFrequency}
+                      onValueChange={(v) => setRecurringFrequency(v as any)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="daily" id="daily" />
+                        <Label htmlFor="daily">Daily</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="weekly" id="weekly" />
+                        <Label htmlFor="weekly">Weekly</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="monthly" id="monthly" />
+                        <Label htmlFor="monthly">Monthly</Label>
+                      </div>
+                    </RadioGroup>
+
+                    <div className="space-y-2">
+                      <Label>Repeat every</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={recurringInterval}
+                          onChange={(e) => setRecurringInterval(parseInt(e.target.value))}
+                          className="w-20"
+                        />
+                        <span>{recurringFrequency}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>End Date (Optional)</Label>
+                      <DatePicker
+                        selected={recurringEndDate}
+                        onChange={setRecurringEndDate}
+                        placeholderText="Select end date"
+                        isClearable
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2">
