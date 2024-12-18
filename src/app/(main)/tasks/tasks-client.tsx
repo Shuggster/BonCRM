@@ -5,11 +5,12 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Plus, ListTodo, ArrowUpDown, FolderPlus } from "lucide-react"
 import { TaskList } from "@/components/tasks/task-list"
-import { TaskFilters } from "@/components/tasks/task-filters"
+import { AdvancedFilters, TaskFilters } from "@/components/tasks/advanced-filters"
 import { TaskModal } from '@/components/tasks/task-modal'
 import { GroupModal } from '@/components/tasks/group-modal'
 import { taskService } from '@/lib/supabase/services/tasks'
 import { taskGroupService, TaskGroup } from '@/lib/supabase/services/task-groups'
+import { taskFilterPresetService, TaskFilterPreset } from '@/lib/supabase/services/task-filter-presets'
 import { Task } from "@/types/tasks"
 import { Session } from '@supabase/supabase-js'
 import { toast } from "sonner"
@@ -82,10 +83,17 @@ interface TasksClientProps {
 export function TasksClient({ session }: TasksClientProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [groups, setGroups] = useState<TaskGroup[]>([])
-  const [search, setSearch] = useState("")
-  const [status, setStatus] = useState("all")
-  const [priority, setPriority] = useState("all")
-  const [group, setGroup] = useState("all")
+  const [filterPresets, setFilterPresets] = useState<TaskFilterPreset[]>([])
+  const [filters, setFilters] = useState<TaskFilters>({
+    search: "",
+    statuses: [],
+    priorities: [],
+    groups: [],
+    dateRange: {},
+    assignedToMe: false,
+    hasComments: false,
+    isOverdue: false
+  })
   const [selectedTask, setSelectedTask] = useState<Task | undefined>()
   const [selectedGroup, setSelectedGroup] = useState<TaskGroup | undefined>()
   const [showTaskModal, setShowTaskModal] = useState(false)
@@ -122,26 +130,67 @@ export function TasksClient({ session }: TasksClientProps) {
     loadGroups()
   }, [session])
 
+  useEffect(() => {
+    const loadFilterPresets = async () => {
+      try {
+        console.log('Loading filter presets...')
+        const data = await taskFilterPresetService.getPresets(session)
+        console.log('Loaded presets:', data)
+        setFilterPresets(data)
+      } catch (error: any) {
+        console.error('Failed to load filter presets:', error.message || error)
+        toast.error(`Failed to load filter presets: ${error.message || 'Unknown error'}`)
+      }
+    }
+    loadFilterPresets()
+  }, [session])
+
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
     // First filter
     const filtered = tasks.filter(task => {
       // Search filter
-      const matchesSearch = search === "" || 
-        task.title.toLowerCase().includes(search.toLowerCase()) ||
-        task.description?.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = filters.search === "" || 
+        task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        task.description?.toLowerCase().includes(filters.search.toLowerCase());
 
       // Status filter
-      const matchesStatus = status === "all" || task.status === status;
+      const matchesStatus = filters.statuses.length === 0 || filters.statuses.includes(task.status);
 
       // Priority filter
-      const matchesPriority = priority === "all" || task.priority === priority;
+      const matchesPriority = filters.priorities.length === 0 || filters.priorities.includes(task.priority);
 
       // Group filter
-      const matchesGroup = group === "all" || task.taskGroupId === group;
+      const matchesGroup = filters.groups.length === 0 || filters.groups.includes(task.taskGroupId || "");
+
+      // Date range filter
+      const matchesDateRange = (() => {
+        if (!filters.dateRange.from && !filters.dateRange.to) return true;
+        if (!task.dueDate) return false;
+        const dueDate = new Date(task.dueDate);
+        const fromDate = filters.dateRange.from ? new Date(filters.dateRange.from) : null;
+        const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : null;
+        
+        if (fromDate && toDate) {
+          return dueDate >= fromDate && dueDate <= toDate;
+        }
+        if (fromDate) {
+          return dueDate >= fromDate;
+        }
+        if (toDate) {
+          return dueDate <= toDate;
+        }
+        return true;
+      })();
+
+      // Additional filters
+      const matchesAssigned = !filters.assignedToMe || task.assignedTo === session.user.id;
+      const matchesComments = !filters.hasComments || (task.comments && task.comments.length > 0);
+      const matchesOverdue = !filters.isOverdue || (task.dueDate && new Date(task.dueDate) < new Date());
 
       // All filters must match
-      return matchesSearch && matchesStatus && matchesPriority && matchesGroup;
+      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && 
+             matchesDateRange && matchesAssigned && matchesComments && matchesOverdue;
     });
 
     // Then sort
@@ -150,7 +199,7 @@ export function TasksClient({ session }: TasksClientProps) {
       return [...filtered].sort(sortOption.compareFn);
     }
     return filtered;
-  }, [tasks, search, status, priority, group, sortBy]);
+  }, [tasks, filters, sortBy, session.user.id]);
 
   const handleCreateTask = async (taskData: Partial<Task>) => {
     try {
@@ -261,13 +310,38 @@ export function TasksClient({ session }: TasksClientProps) {
       await taskGroupService.deleteGroup(groupToDelete.id, session)
       setGroups(groups.filter(g => g.id !== groupToDelete.id))
       // Reset group filter if the deleted group was selected
-      if (groupToDelete.id === group) {
-        setGroup("all")
+      if (groupToDelete.id === filters.groups[0]) {
+        setFilters({
+          ...filters,
+          groups: []
+        })
       }
       toast.success('Group deleted successfully')
     } catch (error) {
       console.error('Failed to delete group:', error)
       toast.error('Failed to delete group')
+    }
+  }
+
+  const handleSavePreset = async (preset: Omit<TaskFilterPreset, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newPreset = await taskFilterPresetService.createPreset(preset, session)
+      setFilterPresets([newPreset, ...filterPresets])
+      toast.success('Filter preset saved successfully')
+    } catch (error) {
+      console.error('Failed to save filter preset:', error)
+      toast.error('Failed to save filter preset')
+    }
+  }
+
+  const handleDeletePreset = async (presetId: string) => {
+    try {
+      await taskFilterPresetService.deletePreset(presetId, session)
+      setFilterPresets(filterPresets.filter(p => p.id !== presetId))
+      toast.success('Filter preset deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete filter preset:', error)
+      toast.error('Failed to delete filter preset')
     }
   }
 
@@ -328,16 +402,21 @@ export function TasksClient({ session }: TasksClientProps) {
             <div className="bg-[#0F1629]/50 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/50 
                           rounded-lg border border-white/[0.08] shadow-xl p-4">
               <h3 className="font-medium mb-4">Filters</h3>
-              <TaskFilters
-                search={search}
-                onSearchChange={setSearch}
-                status={status}
-                onStatusChange={setStatus}
-                priority={priority}
-                onPriorityChange={setPriority}
-                group={group}
-                onGroupChange={setGroup}
-                groups={groups}
+              <AdvancedFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                groups={groups.map(g => ({
+                  id: g.id,
+                  name: g.name,
+                  color: g.color
+                }))}
+                presets={filterPresets}
+                onSavePreset={(preset) => handleSavePreset({
+                  ...preset,
+                  userId: session.user.id,
+                  filters: filters
+                })}
+                onDeletePreset={handleDeletePreset}
               />
             </div>
           </div>
