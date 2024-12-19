@@ -261,7 +261,7 @@ export default function ContactsPage() {
         <PageHeader 
           heading="Contacts"
           description="Manage your contacts and relationships"
-          icon={<Users className="h-6 w-6" />}
+          icon={<div className="icon-contacts"><Users className="h-6 w-6 text-blue-500" /></div>}
         >
           <div className="flex items-center gap-2">
             <Button onClick={() => setIsCreateModalOpen(true)}>
@@ -359,52 +359,63 @@ export default function ContactsPage() {
                 {(groupBy === 'none' || expandedGroups.has(groupName)) && groupContacts.map((contact) => (
                   <div
                     key={contact.id}
-                    className="group relative bg-card rounded-lg p-4 cursor-pointer"
+                    className="group relative bg-gradient-to-br from-gray-800/50 via-gray-800/30 to-gray-800/50 hover:from-gray-700/50 hover:via-gray-700/30 hover:to-gray-700/50 rounded-lg p-4 cursor-pointer transition-all duration-300 border border-gray-700/50 hover:border-gray-600/50 backdrop-blur-sm shadow-lg hover:shadow-xl"
                     onClick={(e) => handleContactClick(contact, e)}
                   >
+                    {/* Gradient Overlay on Hover */}
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-primary-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {/* Selection Checkbox */}
                     <div className="absolute top-3 right-3 z-10 checkbox-container">
                       <input
                         type="checkbox"
                         checked={selectedContactIds.includes(contact.id)}
                         onChange={(e) => handleContactSelect(contact.id, e as unknown as React.MouseEvent)}
-                        className="rounded border-gray-600"
+                        className="rounded border-gray-600 bg-gray-700/50 focus:ring-primary focus:ring-offset-0 transition-colors"
                       />
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 relative z-0">
                       <div className="flex items-center gap-3">
-                        <Avatar contact={contact} size={48} />
+                        <div className="flex-shrink-0 relative">
+                          <Avatar contact={contact} size={48} />
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800" />
+                        </div>
                         <div>
-                          <h3 className="font-semibold">{contact.name}</h3>
+                          <h3 className="font-semibold text-gray-100 group-hover:text-primary transition-colors">
+                            {contact.name}
+                          </h3>
                           {contact.job_title && (
-                            <p className="text-sm text-muted-foreground">{contact.job_title}</p>
+                            <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                              {contact.job_title}
+                            </p>
                           )}
                         </div>
                       </div>
 
                       <div className="space-y-2 text-sm">
                         {contact.company && (
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-gray-300 group-hover:text-gray-200 transition-colors">
+                            <Building2 className="w-4 h-4 text-purple-400" />
                             {contact.company}
                           </div>
                         )}
                         {contact.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-gray-300 group-hover:text-gray-200 transition-colors">
+                            <Mail className="w-4 h-4 text-blue-400" />
                             {contact.email}
                           </div>
                         )}
                         {contact.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-gray-300 group-hover:text-gray-200 transition-colors">
+                            <Phone className="w-4 h-4 text-green-400" />
                             {contact.phone}
                           </div>
                         )}
                       </div>
 
                       {contact.tags && contact.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 pt-2">
                           {contact.tags.map((tagId) => {
                             const tag = tagDetails[tagId]
                             if (!tag) return null
@@ -423,6 +434,32 @@ export default function ContactsPage() {
                           })}
                         </div>
                       )}
+
+                      {/* Quick Actions */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-1 z-10">
+                        <div className="flex gap-1.5 p-1 rounded-lg bg-gray-800/90 backdrop-blur-sm border border-gray-700/50">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedContact(contact)
+                              setIsEditModalOpen(true)
+                            }}
+                            className="p-1.5 rounded-md hover:bg-gray-700/50 text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedContact(contact)
+                              setIsDeleteModalOpen(true)
+                            }}
+                            className="p-1.5 rounded-md hover:bg-gray-700/50 text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

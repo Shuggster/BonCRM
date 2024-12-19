@@ -1,17 +1,20 @@
 'use client'
 
-import { Settings } from "lucide-react"
-import { PageHeader } from "@/components/ui/page-header"
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Settings } from 'lucide-react'
 
 export default function GeneralSettingsPage() {
   return (
-    <div className="p-6">
-      <PageHeader 
-        title="General Settings" 
+    <div className="container py-6">
+      <PageHeader
+        heading="General Settings"
+        description="Manage your account settings and preferences."
         icon={Settings}
-        iconClass="icon-settings"
       />
-      {/* Content will go here */}
+
+      <div className="mt-8">
+        {/* General settings form will go here */}
+      </div>
     </div>
   )
 }
