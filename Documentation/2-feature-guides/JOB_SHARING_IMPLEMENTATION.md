@@ -1,189 +1,236 @@
 # Job Sharing Implementation Guide
 
 ## Overview
-This guide outlines the step-by-step process for implementing job sharing while maintaining our current authentication and security model.
+This guide outlines the implementation plan for job sharing functionality, integrated with our NextAuth.js authentication system and department-based access control.
 
-## Prerequisites
-- Current authentication system using NextAuth.js
-- Existing RLS policies (public access)
-- Proper key usage (anon key for client, service role for admin)
+## Current Architecture
+- NextAuth.js for authentication
+- Supabase for data storage
+- Role and department-based access control
+- Protected API routes
 
-## Implementation Steps
+## Database Schema
 
-### Phase 1: Database Setup
+### User Management (Existing)
 ```sql
--- Step 1: Create job sharing tables
-CREATE TABLE job_share_teams (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    name TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'operational')),
+  department TEXT NOT NULL CHECK (department IN ('management', 'sales', 'accounts', 'trade_shop')),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Job Sharing Tables
+```sql
+-- Job Share Pairs
+CREATE TABLE public.job_share_pairs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user1_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  user2_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  department TEXT NOT NULL CHECK (department IN ('management', 'sales', 'accounts', 'trade_shop')),
+  status TEXT NOT NULL CHECK (status IN ('pending', 'active', 'suspended', 'terminated')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES users(id),
+  approved_by UUID REFERENCES users(id),
+  approved_at TIMESTAMPTZ,
+  notes TEXT,
+  UNIQUE(user1_id, user2_id)
 );
 
-CREATE TABLE job_share_members (
-    team_id UUID REFERENCES job_share_teams(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    role TEXT NOT NULL CHECK (role IN ('admin', 'member')),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (team_id, user_id)
+-- Job Share Activity Log
+CREATE TABLE public.job_share_activity (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  share_pair_id UUID REFERENCES job_share_pairs(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  performed_by UUID REFERENCES users(id),
+  performed_at TIMESTAMPTZ DEFAULT NOW(),
+  details JSONB
 );
-
--- Step 2: Add team reference to existing tables
-ALTER TABLE tasks ADD COLUMN team_id UUID REFERENCES job_share_teams(id);
-ALTER TABLE contacts ADD COLUMN team_id UUID REFERENCES job_share_teams(id);
 ```
 
-### Phase 2: Basic RLS Setup
-```sql
--- Step 1: Enable RLS on new tables
-ALTER TABLE job_share_teams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE job_share_members ENABLE ROW LEVEL SECURITY;
+## API Implementation
 
--- Step 2: Create initial public policies (temporary)
-CREATE POLICY "Enable public access for teams" ON job_share_teams
-    FOR ALL USING (true);
-
-CREATE POLICY "Enable public access for members" ON job_share_members
-    FOR ALL USING (true);
-```
-
-### Phase 3: Testing Basic Setup
-1. Create test team
-2. Add test members
-3. Assign team to task/contact
-4. Verify basic operations work
-
-### Phase 4: Implement Proper RLS
-```sql
--- Step 1: Remove temporary public policies
-DROP POLICY "Enable public access for teams" ON job_share_teams;
-DROP POLICY "Enable public access for members" ON job_share_members;
-
--- Step 2: Add proper team access policies
-CREATE POLICY "Team access" ON job_share_teams
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM job_share_members
-            WHERE team_id = job_share_teams.id
-            AND user_id = auth.uid()
-        )
-    );
-
--- Step 3: Add member access policies
-CREATE POLICY "Member access" ON job_share_members
-    FOR ALL USING (
-        user_id = auth.uid()
-        OR 
-        EXISTS (
-            SELECT 1 FROM job_share_members
-            WHERE team_id = job_share_members.team_id
-            AND user_id = auth.uid()
-            AND role = 'admin'
-        )
-    );
-
--- Step 4: Update task and contact policies
-CREATE POLICY "Team-based access for tasks" ON tasks
-    FOR ALL USING (
-        team_id IS NULL 
-        OR 
-        EXISTS (
-            SELECT 1 FROM job_share_members
-            WHERE team_id = tasks.team_id
-            AND user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Team-based access for contacts" ON contacts
-    FOR ALL USING (
-        team_id IS NULL 
-        OR 
-        EXISTS (
-            SELECT 1 FROM job_share_members
-            WHERE team_id = contacts.team_id
-            AND user_id = auth.uid()
-        )
-    );
-```
-
-### Phase 5: API Implementation
-1. Create team management endpoints:
+### 1. Job Share Creation
 ```typescript
-// src/app/api/teams/route.ts
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
-
+// POST /api/job-shares
 export async function POST(req: Request) {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { name } = await req.json();
+  const session = await getServerSession(authOptions)
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { user1Id, user2Id, department } = await req.json()
     
-    const { data: team, error } = await supabase
-        .from('job_share_teams')
-        .insert({ name })
-        .select()
-        .single();
-        
-    if (error) return NextResponse.json({ error }, { status: 400 });
-    return NextResponse.json({ team });
+    // Validate users are in same department
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('id, role, department')
+      .in('id', [user1Id, user2Id])
+
+    if (userError || users.length !== 2) {
+      return NextResponse.json({ error: 'Invalid users' }, { status: 400 })
+    }
+
+    // Validate both users are operational and in same department
+    if (!users.every(u => u.role === 'operational' && u.department === department)) {
+      return NextResponse.json({ 
+        error: 'Users must be operational and in same department' 
+      }, { status: 400 })
+    }
+
+    // Create job share pair
+    const { data, error } = await supabase
+      .from('job_share_pairs')
+      .insert({
+        user1_id: user1Id,
+        user2_id: user2Id,
+        department,
+        status: 'pending',
+        created_by: session.user.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true, data })
+  } catch (error) {
+    console.error('Error creating job share:', error)
+    return NextResponse.json({ error: 'Failed to create job share' }, { status: 500 })
+  }
 }
 ```
 
-### Phase 6: Testing Steps
-1. Test Team Creation
-   - Create new team
-   - Verify RLS policies
-   - Check team visibility
+### 2. Job Share Management
+```typescript
+// PATCH /api/job-shares/[id]
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user || session.user.role !== 'manager') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-2. Test Member Management
-   - Add members to team
-   - Test different roles
-   - Verify access controls
+  try {
+    const { status, notes } = await req.json()
+    
+    const { data, error } = await supabase
+      .from('job_share_pairs')
+      .update({
+        status,
+        notes,
+        approved_by: status === 'active' ? session.user.id : null,
+        approved_at: status === 'active' ? new Date().toISOString() : null
+      })
+      .eq('id', params.id)
+      .select()
+      .single()
 
-3. Test Task/Contact Assignment
-   - Assign items to team
-   - Verify visibility rules
-   - Test non-team member access
+    if (error) throw error
 
-### Rollback Plan
-```sql
--- 1. Remove policies
-DROP POLICY IF EXISTS "Team access" ON job_share_teams;
-DROP POLICY IF EXISTS "Member access" ON job_share_members;
-DROP POLICY IF EXISTS "Team-based access for tasks" ON tasks;
-DROP POLICY IF EXISTS "Team-based access for contacts" ON contacts;
+    // Log the activity
+    await supabase.from('job_share_activity').insert({
+      share_pair_id: params.id,
+      action: `Status changed to ${status}`,
+      performed_by: session.user.id,
+      details: { notes }
+    })
 
--- 2. Remove columns
-ALTER TABLE tasks DROP COLUMN IF EXISTS team_id;
-ALTER TABLE contacts DROP COLUMN IF EXISTS team_id;
-
--- 3. Drop tables
-DROP TABLE IF EXISTS job_share_members;
-DROP TABLE IF EXISTS job_share_teams;
-
--- 4. Restore original policies
-CREATE POLICY "Enable public access" ON tasks FOR ALL USING (true);
-CREATE POLICY "Enable public access" ON contacts FOR ALL USING (true);
+    return NextResponse.json({ success: true, data })
+  } catch (error) {
+    console.error('Error updating job share:', error)
+    return NextResponse.json({ error: 'Failed to update job share' }, { status: 500 })
+  }
+}
 ```
 
-## Implementation Order
-1. Run Phase 1 SQL and verify tables
-2. Run Phase 2 SQL and test basic access
-3. Implement Phase 3 testing
-4. Only proceed to Phase 4 after confirmation
-5. Implement API endpoints one at a time
-6. Run full test suite before completion
+## Frontend Implementation
 
-## Security Considerations
-1. Never bypass RLS policies
-2. Use anon key for client operations
-3. Test all policies in isolation
-4. Maintain existing auth flow
-5. Document all policy changes
+### 1. Job Share Request Form
+```typescript
+interface JobShareRequestForm {
+  user1Id: string
+  user2Id: string
+  department: string
+  notes?: string
+}
 
-## Required Testing
-Before each phase:
-- [ ] Backup database
-- [ ] Test in isolation
-- [ ] Verify existing features
-- [ ] Check auth still works
-- [ ] Document changes
+async function createJobShare(data: JobShareRequestForm) {
+  const response = await fetch('/api/job-shares', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Failed to create job share')
+  }
+
+  return response.json()
+}
+```
+
+### 2. Manager Approval Interface
+```typescript
+async function approveJobShare(id: string, status: 'active' | 'suspended' | 'terminated', notes?: string) {
+  const response = await fetch(`/api/job-shares/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, notes })
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Failed to update job share')
+  }
+
+  return response.json()
+}
+```
+
+## Implementation Rules
+
+### 1. Job Share Creation
+- Only operational users can be in job shares
+- Users must be in the same department
+- Users can only be in one active job share
+- Manager approval required for activation
+
+### 2. Access Control
+- Managers can approve/reject job shares
+- Users can view their own job shares
+- Admin can view all job shares
+- Department-based visibility
+
+### 3. Status Management
+- pending: Initial state
+- active: Approved by manager
+- suspended: Temporarily disabled
+- terminated: Permanently ended
+
+## Future Enhancements
+
+### Phase 1: Core Features
+1. Job share request workflow
+2. Manager approval process
+3. Activity logging
+4. Basic reporting
+
+### Phase 2: Advanced Features
+1. Calendar integration
+2. Task assignment rules
+3. Performance metrics
+4. Automated notifications
+
+### Phase 3: Monitoring
+1. Usage analytics
+2. Audit trails
+3. Compliance reporting
+4. Performance impact tracking

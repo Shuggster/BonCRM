@@ -6,314 +6,302 @@ This document is the source of truth for system architecture and recovery proced
 ## 1. Authentication System
 
 ### Architecture Overview
-- **Primary Auth**: NextAuth.js with JWT strategy
-- **Database**: Supabase with Row Level Security (RLS)
+- **Primary Auth**: NextAuth.js with credentials provider
+- **Database**: Supabase for data storage
+- **Session Management**: JWT-based with 24-hour expiry
+- **Access Control**: Role and department-based
 - **Key Management**:
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: For client-side operations
   - `SUPABASE_SERVICE_ROLE_KEY`: For server-side operations ONLY
 
+### User Management
+1. **Roles**:
+   - admin: Full system access
+   - manager: Department-level access
+   - operational: Basic access
+
+2. **Departments**:
+   - management
+   - sales
+   - accounts
+   - trade_shop
+
+3. **Database Schema**:
+```sql
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'operational')),
+  department TEXT NOT NULL CHECK (department IN ('management', 'sales', 'accounts', 'trade_shop')),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
 ### Authentication Flow
-1. User accesses protected route
-2. NextAuth middleware checks session
-3. If no session → redirect to login
-4. On login → NextAuth verifies credentials
-5. On success → JWT token issued
-6. Protected routes accessible with valid session
+1. User submits login credentials
+2. Server verifies credentials against users table
+3. If valid, NextAuth creates session with user role and department
+4. Protected routes check session and role/department access
+5. Database operations use role/department for filtering
 
 ### Critical Rules
 1. NEVER use service role key on client side
-2. NEVER bypass RLS policies
-3. ALWAYS use server endpoints for write operations
+2. NEVER store plain text passwords
+3. ALWAYS hash passwords with bcrypt
 4. ALWAYS validate session before database operations
+5. ALWAYS check role/department access
+6. ALWAYS use server endpoints for write operations
 
 ## 2. Component Access Pattern
 
-### Tasks
+### Protected API Routes
 ```typescript
-// Client-side read operations
-const { data } = await supabase.from('tasks').select()
+// Base pattern for protected routes
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-// Write operations MUST use server endpoint
+  // Role-based access control
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  try {
+    const body = await req.json()
+    // Operation logic here
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+}
+```
+
+### Database Operations
+```typescript
+// Read operations with department filtering
+const { data } = await supabase
+  .from('tasks')
+  .select()
+  .eq('department', session.user.department)
+
+// Write operations via server endpoints
 await fetch('/api/tasks', {
   method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(taskData)
 })
 ```
 
-### Contacts
+## 3. Recovery Procedures
+
+### A. User Management Recovery
+If user management issues occur:
+
+1. Verify users table structure:
+```sql
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'users';
+```
+
+2. Check role and department constraints:
+```sql
+SELECT 
+  conname AS constraint_name,
+  consrc AS constraint_definition
+FROM pg_constraint
+WHERE conrelid = 'users'::regclass;
+```
+
+3. Reset user password if needed:
+```sql
+-- Generate new password hash
+UPDATE users 
+SET password_hash = '$2b$...' -- bcrypt hash
+WHERE email = 'user@email.com';
+```
+
+### B. Session Recovery
+If session issues occur:
+
+1. Clear all sessions:
+```sql
+DELETE FROM sessions;
+```
+
+2. Verify NextAuth configuration:
 ```typescript
-// Similar pattern to tasks
-const { data } = await supabase.from('contacts').select()
-
-// Write operations via server
-await fetch('/api/contacts', {
-  method: 'POST',
-  body: JSON.stringify(contactData)
-})
-```
-
-## 3. Database Recovery Procedures
-
-### A. Basic Recovery
-If you encounter permission errors or unexpected behavior:
-
-1. First, verify RLS policies:
-```sql
-SELECT tablename, policies 
-FROM pg_policies 
-WHERE schemaname = 'public';
-```
-
-2. Restore default RLS state:
-```sql
--- Disable RLS to match working state
-ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
-ALTER TABLE contacts DISABLE ROW LEVEL SECURITY;
-ALTER TABLE task_activities DISABLE ROW LEVEL SECURITY;
-
--- Grant necessary permissions
-GRANT ALL ON tasks TO authenticated;
-GRANT ALL ON tasks TO service_role;
-GRANT ALL ON tasks TO anon;
-```
-
-### B. Full Database Reset
-If you need to rebuild the database:
-
-1. Backup existing data:
-```sql
-CREATE TABLE IF NOT EXISTS tasks_backup AS SELECT * FROM tasks;
-CREATE TABLE IF NOT EXISTS contacts_backup AS SELECT * FROM contacts;
-```
-
-2. Drop and recreate tables:
-```sql
--- Tasks table
-CREATE TABLE public.tasks (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT,
-    status TEXT NOT NULL CHECK (status IN ('todo', 'in-progress', 'completed')),
-    priority TEXT NOT NULL CHECK (priority IN ('low', 'medium', 'high')),
-    due_date TIMESTAMP WITH TIME ZONE,
-    task_group_id UUID REFERENCES task_groups(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL
-);
-
--- Task activities table (no user dependency)
-CREATE TABLE public.task_activities (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
-    action_type TEXT NOT NULL,
-    previous_value TEXT,
-    new_value TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL
-);
-```
-
-3. Restore RLS settings:
-```sql
--- Disable RLS as per working configuration
-ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
-ALTER TABLE task_activities DISABLE ROW LEVEL SECURITY;
-
--- Grant permissions
-GRANT ALL ON tasks TO authenticated;
-GRANT ALL ON tasks TO service_role;
-GRANT ALL ON tasks TO anon;
+// pages/api/auth/[...nextauth].ts
+export const authOptions = {
+  providers: [
+    CredentialsProvider({
+      credentials: {
+        email: { type: "text" },
+        password: { type: "password" }
+      },
+      authorize: async (credentials) => {
+        // Verify credentials implementation
+      }
+    })
+  ],
+  callbacks: {
+    jwt: async ({ token, user }) => {
+      // Verify JWT callback implementation
+    },
+    session: async ({ session, token }) => {
+      // Verify session callback implementation
+    }
+  }
+}
 ```
 
 ## 4. Common Issues & Solutions
 
-### A. Permission Errors
-If you see "permission denied" errors:
-1. Check if operation is client or server-side
-2. For client-side: Ensure RLS is disabled or policies are correct
-3. For server-side: Verify service role key is being used
+### A. Authentication Issues
+1. **Invalid Credentials**:
+   - Verify email exists in users table
+   - Check password hash matches
+   - Ensure user is active
 
-### B. Invalid Time Value Errors
-When handling dates:
-1. Always use `new Date()` before formatting
-2. Use ISO strings for database storage
-3. Parse dates on retrieval:
-```typescript
-dueDate: row.due_date ? new Date(row.due_date) : undefined
-```
+2. **Session Expired**:
+   - Default session length is 24 hours
+   - Check NEXTAUTH_SECRET is consistent
+   - Verify JWT token contains required data
 
-### C. Foreign Key Violations
-If you encounter foreign key errors:
-1. Check table dependencies
-2. Verify cascading deletes are set up
-3. Remove or update foreign key constraints if needed
+3. **Access Denied**:
+   - Verify user role is correct
+   - Check department access
+   - Ensure route protection is working
+
+### B. Database Issues
+1. **Role/Department Constraints**:
+   - Verify valid role values
+   - Check department values
+   - Update constraints if needed
+
+2. **User Creation Failures**:
+   - Check email uniqueness
+   - Verify password hashing
+   - Ensure all required fields
 
 ## 5. Maintenance Guidelines
 
-### A. Before Making Changes
-1. Read this entire document
-2. Understand the authentication flow
-3. Know which key (anon vs service) to use
-4. Test changes in isolation
+### A. User Management
+1. Only admins can create users
+2. Passwords must be hashed with bcrypt
+3. Users must have valid role and department
+4. Keep audit trail of user changes
 
-### B. After Making Changes
-1. Verify RLS policies are correct
-2. Test both read and write operations
-3. Document any schema changes
-4. Update this guide if needed
+### B. Security Practices
+1. Use HTTPS in production
+2. Implement rate limiting
+3. Validate all user input
+4. Log security events
+5. Regular security audits
 
 ## 6. Environment Setup
 
 Required environment variables:
 ```env
+# Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_key
+
+# NextAuth Configuration
 NEXTAUTH_SECRET=your_secret
 NEXTAUTH_URL=http://localhost:3001
+
+# Security Settings
+BCRYPT_SALT_ROUNDS=12
 ```
 
 ## 7. Standard Patterns
 
 ### A. Error Handling
 ```typescript
-// Client-side error handling
-try {
-  const response = await fetch('/api/tasks', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  })
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
-  const result = await response.json()
-} catch (error) {
-  console.error('Failed to create task:', error)
-  toast.error('Failed to create task')
-}
-
-// Server-side error handling
+// API error handling
 export async function POST(req: Request) {
   try {
-    // Validate session
+    // Session validation
     const session = await getServerSession(authOptions)
-    if (!session) {
-      return new Response('Unauthorized', { status: 401 })
+    if (!session?.user) {
+      return NextResponse.json({ 
+        error: 'Unauthorized' 
+      }, { status: 401 })
     }
 
-    // Parse and validate body
+    // Role validation
+    if (!['admin', 'manager'].includes(session.user.role)) {
+      return NextResponse.json({ 
+        error: 'Insufficient permissions' 
+      }, { status: 403 })
+    }
+
+    // Input validation
     const body = await req.json()
-    if (!body.title) {
-      return new Response('Title is required', { status: 400 })
+    if (!body.required_field) {
+      return NextResponse.json({ 
+        error: 'Missing required field' 
+      }, { status: 400 })
     }
 
     // Database operation
     const { data, error } = await supabase
-      .from('tasks')
+      .from('table')
       .insert(body)
       .select()
       .single()
 
     if (error) throw error
-    return Response.json(data)
+    return NextResponse.json({ data })
   } catch (error) {
     console.error('API error:', error)
-    return new Response('Internal Server Error', { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error' 
+    }, { status: 500 })
   }
 }
 ```
 
-### B. API Response Format
-All API endpoints should follow this format:
+### B. User Management
 ```typescript
-// Success response
-{
-  data: T,  // Type depends on endpoint
-  error: null
-}
+// User creation
+async function createUser(userData: CreateUserInput) {
+  // Hash password
+  const hashedPassword = await bcrypt.hash(
+    userData.password, 
+    Number(process.env.BCRYPT_SALT_ROUNDS)
+  )
 
-// Error response
-{
-  data: null,
-  error: {
-    code: string,    // e.g., 'UNAUTHORIZED'
-    message: string, // User-friendly message
-    details?: any    // Optional technical details
-  }
+  // Create user
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      ...userData,
+      password_hash: hashedPassword,
+      is_active: true
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 }
 ```
-
-### C. State Management
-1. **Server State**: Use React Query for:
-   - Tasks
-   - Contacts
-   - Calendar events
-   ```typescript
-   const { data, isLoading } = useQuery({
-     queryKey: ['tasks'],
-     queryFn: () => taskService.getTasks()
-   })
-   ```
-
-2. **UI State**: Use React state for:
-   - Modal visibility
-   - Form values
-   - Filter/sort preferences
-
-### D. Calendar Implementation
-1. **Event Creation**:
-   ```typescript
-   // Always use ISO strings for dates
-   const event = {
-     start: new Date(startDate).toISOString(),
-     end: new Date(endDate).toISOString(),
-     title: string,
-     description?: string
-   }
-   ```
-
-2. **Date Handling**:
-   - Store dates in UTC
-   - Convert to local time for display
-   - Use date-fns for formatting
-
-3. **Recurring Events**:
-   - Store base event + recurrence rule
-   - Generate instances on-the-fly
-   - Handle exceptions separately
-
-## 8. Development Guidelines
-
-### A. Code Organization
-1. **API Routes**: `/app/api/[resource]/route.ts`
-2. **Components**: 
-   - UI components in `components/ui`
-   - Feature components with their routes
-3. **Services**: All database operations in `lib/supabase/services`
-
-### B. Naming Conventions
-1. **Files**:
-   - Components: PascalCase (e.g., `TaskList.tsx`)
-   - Utils: camelCase (e.g., `dateUtils.ts`)
-   - Routes: kebab-case (e.g., `task-groups`)
-
-2. **Functions**:
-   - React components: PascalCase
-   - Hooks: use* prefix
-   - Utils: camelCase
-
-### C. Testing
-1. **Manual Testing Checklist**:
-   - [ ] Create/Edit/Delete operations
-   - [ ] Date handling
-   - [ ] Error scenarios
-   - [ ] Loading states
-   - [ ] Mobile responsiveness
 
 ## IMPORTANT NOTES
-1. This system uses NextAuth as the primary authentication method
-2. Supabase is used primarily as a database
-3. All write operations should go through server endpoints
-4. RLS is intentionally disabled for simplicity
-5. The service role key must NEVER be exposed to the client
+1. NextAuth.js is the primary authentication system
+2. Supabase is used as a database only
+3. All write operations must use server endpoints
+4. Password hashing is mandatory
+5. Role and department access must be enforced
+6. Service role key must NEVER be exposed
 
 Remember: When in doubt, refer to this document first before making any changes.
