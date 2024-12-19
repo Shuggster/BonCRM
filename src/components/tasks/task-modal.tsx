@@ -22,8 +22,6 @@ import {
 } from "@/components/ui/dialog"
 import { TaskActivities } from './task-activities'
 import { taskActivitiesService } from '@/lib/supabase/services/task-activities'
-import { Switch } from "@/components/ui/switch"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface TaskModalProps {
   isOpen: boolean
@@ -41,10 +39,6 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
   const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate)
   const [taskGroupId, setTaskGroupId] = useState<string | undefined>(task?.taskGroupId)
-  const [isRecurring, setIsRecurring] = useState(false)
-  const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
-  const [recurringInterval, setRecurringInterval] = useState(1)
-  const [recurringEndDate, setRecurringEndDate] = useState<Date>()
 
   // Reset form when task changes or modal opens/closes
   useEffect(() => {
@@ -120,285 +114,162 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
   }
 
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={(open) => {
-        if (!open) onClose()
-      }}
-    >
-      <DialogContent className="max-w-6xl">
-        <DialogHeader>
-          <DialogTitle>
-            {task ? 'Edit Task' : 'Create Task'}
-          </DialogTitle>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-[95vw] md:max-w-[85vw] max-h-[90vh] overflow-y-auto bg-[#0F1629] text-white border-white/10">
+        <DialogHeader className="px-4 md:px-8 py-4 md:py-6 border-b border-white/10 sticky top-0 bg-[#0F1629] z-10">
+          <DialogTitle className="text-xl font-medium">{task ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
         
-        <div className="flex gap-6">
-          {/* Left side - Task form */}
-          <div className="flex-1">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Task title..."
-                  required
-                />
-              </div>
+        <form onSubmit={handleSubmit}>
+          <div className="px-4 md:px-8 py-4 md:py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.5fr,1fr] gap-4 md:gap-8">
+              {/* Left Column - Main Details */}
+              <div className="space-y-4 md:space-y-6">
+                {/* Title & Description */}
+                <div className="space-y-3">
+                  <Label htmlFor="title" className="text-sm font-medium">Title</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                    placeholder="Enter task title"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Task description..."
-                />
-              </div>
+                <div className="space-y-3">
+                  <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="h-24 md:h-32 bg-[#1C2333] border-white/10 focus:border-blue-500"
+                    placeholder="Enter task description"
+                  />
+                </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="todo"
-                        checked={status === 'todo'}
-                        onChange={(e) => setStatus(e.target.value as any)}
-                      />
-                      To Do
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="in-progress"
-                        checked={status === 'in-progress'}
-                        onChange={(e) => setStatus(e.target.value as any)}
-                      />
-                      In Progress
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="completed"
-                        checked={status === 'completed'}
-                        onChange={(e) => setStatus(e.target.value as any)}
-                      />
-                      Completed
-                    </label>
+                {/* Status and Priority */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Status</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['todo', 'in-progress', 'completed'].map((s) => (
+                        <Button
+                          key={s}
+                          type="button"
+                          onClick={() => setStatus(s as typeof status)}
+                          variant={status === s ? 'default' : 'outline'}
+                          className={cn(
+                            "flex-1 min-w-[80px] capitalize py-1.5 text-sm",
+                            status === s ? 'bg-blue-600 hover:bg-blue-700' : 'border-white/10 hover:bg-white/5'
+                          )}
+                        >
+                          {s}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Priority</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['low', 'medium', 'high'].map((p) => (
+                        <Button
+                          key={p}
+                          type="button"
+                          onClick={() => setPriority(p as typeof priority)}
+                          variant={priority === p ? 'default' : 'outline'}
+                          className={cn(
+                            "flex-1 min-w-[80px] capitalize py-1.5 text-sm",
+                            priority === p ? 'bg-blue-600 hover:bg-blue-700' : 'border-white/10 hover:bg-white/5'
+                          )}
+                        >
+                          {p}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Priority</Label>
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="priority"
-                        value="low"
-                        checked={priority === 'low'}
-                        onChange={(e) => setPriority(e.target.value as any)}
-                      />
-                      Low
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="priority"
-                        value="medium"
-                        checked={priority === 'medium'}
-                        onChange={(e) => setPriority(e.target.value as any)}
-                      />
-                      Medium
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="priority"
-                        value="high"
-                        checked={priority === 'high'}
-                        onChange={(e) => setPriority(e.target.value as any)}
-                      />
-                      High
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <div className="relative">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : "No due date"}
-                  </Button>
-                  <div className="absolute top-0 left-0 w-full">
-                    <DatePicker
-                      selected={dueDate}
-                      onChange={(date: Date | null) => setDueDate(date || undefined)}
-                      dateFormat="MMMM d, yyyy"
-                      isClearable={true}
-                      showTimeSelect={false}
-                      placeholderText="No due date"
-                      customInput={
-                        <input 
-                          className="w-full h-full opacity-0 cursor-pointer" 
-                        />
-                      }
-                      popperProps={{
-                        strategy: "fixed"
-                      }}
-                      popperClassName="z-50"
-                    />
-                  </div>
-                </div>
-                {dueDate && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setDueDate(undefined)}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Clear date
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Group</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "justify-start gap-2",
-                      !taskGroupId && "border-dashed"
-                    )}
-                    onClick={() => setTaskGroupId(undefined)}
-                  >
-                    <div 
-                      className="h-3 w-3 rounded-full bg-transparent border-2"
-                    />
-                    No Group
-                  </Button>
-                  {groups.map((group) => (
+                {/* Due Date and Group */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Due Date</Label>
                     <Button
-                      key={group.id}
                       type="button"
                       variant="outline"
                       className={cn(
-                        "justify-start gap-2",
-                        taskGroupId === group.id && "border-2"
+                        "w-full justify-start text-left font-normal border-white/10",
+                        !dueDate && "text-muted-foreground"
                       )}
-                      onClick={() => setTaskGroupId(group.id)}
+                      onClick={() => document.getElementById('date-picker')?.click()}
                     >
-                      <div 
-                        className="h-3 w-3 rounded-full" 
-                        style={{ backgroundColor: group.color }}
-                      />
-                      {group.name}
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(dueDate, "PPP") : "Pick a date"}
                     </Button>
-                  ))}
+                    <DatePicker
+                      id="date-picker"
+                      selected={dueDate}
+                      onChange={(date) => setDueDate(date)}
+                      className="hidden"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Group</Label>
+                    <select
+                      value={taskGroupId || ''}
+                      onChange={(e) => setTaskGroupId(e.target.value || undefined)}
+                      className="w-full h-10 px-3 bg-[#1C2333] border border-white/10 rounded-md focus:border-blue-500"
+                    >
+                      <option value="">No Group</option>
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={isRecurring}
-                    onCheckedChange={setIsRecurring}
-                  />
-                  <Label>Recurring Task</Label>
-                </div>
-
-                {isRecurring && (
-                  <div className="space-y-4 pl-6">
-                    <RadioGroup
-                      value={recurringFrequency}
-                      onValueChange={(v) => setRecurringFrequency(v as any)}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="daily" id="daily" />
-                        <Label htmlFor="daily">Daily</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="weekly" id="weekly" />
-                        <Label htmlFor="weekly">Weekly</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="monthly" id="monthly" />
-                        <Label htmlFor="monthly">Monthly</Label>
-                      </div>
-                    </RadioGroup>
-
-                    <div className="space-y-2">
-                      <Label>Repeat every</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={1}
-                          value={recurringInterval}
-                          onChange={(e) => setRecurringInterval(parseInt(e.target.value))}
-                          className="w-20"
-                        />
-                        <span>{recurringFrequency}</span>
-                      </div>
+              {/* Right Column - Comments & Activities */}
+              <div className="space-y-6 mt-6 lg:mt-0">
+                {task && (
+                  <>
+                    <div className="border-b border-white/10 pb-6">
+                      <h3 className="text-lg font-medium mb-4">Comments</h3>
+                      <TaskComments taskId={task.id} session={session} />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>End Date (Optional)</Label>
-                      <DatePicker
-                        selected={recurringEndDate}
-                        onChange={setRecurringEndDate}
-                        placeholderText="Select end date"
-                        isClearable
-                      />
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Activity</h3>
+                      <TaskActivities taskId={task.id} />
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {task ? 'Update Task' : 'Create Task'}
-                </Button>
-              </div>
-            </form>
+            </div>
           </div>
 
-          {/* Right side - Comments & Activities */}
-          {task && (
-            <div className="w-[400px] max-h-[700px] overflow-y-auto space-y-8 border-l border-border pl-6">
-              <TaskComments 
-                taskId={task.id}
-                session={session}
-              />
-              <TaskActivities 
-                taskId={task.id}
-                session={session}
-              />
-            </div>
-          )}
-        </div>
+          {/* Action Buttons - Fixed at bottom */}
+          <div className="sticky bottom-0 bg-[#0F1629] px-4 md:px-8 py-4 border-t border-white/10 flex gap-3 sm:gap-4 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="px-4 sm:px-6 py-1.5 sm:py-2 border-white/10 hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="px-4 sm:px-6 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700"
+            >
+              {task ? 'Update Task' : 'Create Task'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

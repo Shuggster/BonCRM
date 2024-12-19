@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { TaskAssignment } from './TaskAssignment';
 import { taskService } from '@/lib/services/taskService';
 import { Task } from '@/lib/types';
+import { useState } from 'react'
 
 interface TaskCardProps {
   task: Task;

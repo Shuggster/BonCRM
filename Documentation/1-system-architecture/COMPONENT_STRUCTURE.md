@@ -216,3 +216,48 @@ export function useAuth() {
    - Write unit tests for components
    - Include integration tests
    - Test error states and loading states
+
+## Modal Components and Styling
+
+### Task Edit Modal Structure
+When modifying modal styling, understand the component hierarchy:
+
+```
+TaskCard.tsx 
+  -> TaskEditModal.tsx 
+    -> uses Dialog from dialog.tsx
+```
+
+### Key Learning Points
+1. Modal styling inheritance:
+   - Base styles come from dialog.tsx (UI component library)
+   - TaskEditModal extends these with custom styling
+   - Changes should be made in TaskEditModal.tsx, not in task-modal.tsx
+
+2. Common Pitfalls:
+   - Don't modify task-modal.tsx for TaskEditModal changes
+   - Check component hierarchy before making style changes
+   - Follow the import chain to find the correct component
+
+3. Debugging Modal Styles:
+   - Start by checking where the modal is rendered (TaskCard.tsx)
+   - Follow the component tree down
+   - Look for Dialog component usage
+   - Check for style overrides in the immediate component
+
+### Example Structure
+```tsx
+// TaskEditModal.tsx
+<Dialog>
+  <DialogContent className="max-w-[90vw] bg-[#0F1629] text-white border-white/10">
+    <DialogHeader className="px-8 py-6 border-b border-white/10">
+      <DialogTitle>...</DialogTitle>
+    </DialogHeader>
+    <div className="grid grid-cols-[2fr,1.5fr,1fr] gap-8">
+      {/* Content */}
+    </div>
+  </DialogContent>
+</Dialog>
+```
+
+This structure ensures consistent modal styling and makes future modifications easier to implement.

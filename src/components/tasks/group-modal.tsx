@@ -1,68 +1,68 @@
+// TEST COMMENT - MODAL 3
 "use client"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { TaskGroup } from "@/lib/supabase/services/task-groups"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 interface GroupModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (group: Partial<TaskGroup>) => Promise<void>
+  onSave: (group: Partial<TaskGroup>) => void
   group?: TaskGroup
 }
 
-const colorOptions = [
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Yellow', value: '#eab308' },
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Purple', value: '#a855f7' },
-  { name: 'Pink', value: '#ec4899' },
+const predefinedColors = [
+  '#3B82F6', // Blue
+  '#EC4899', // Pink
+  '#F97316', // Orange
+  '#22C55E', // Green
+  '#6366F1', // Indigo
+  '#A855F7', // Purple
+  '#F43F5E', // Red
+  '#14B8A6', // Teal
 ]
 
 export function GroupModal({ isOpen, onClose, onSave, group }: GroupModalProps) {
   const [name, setName] = useState(group?.name || '')
-  const [color, setColor] = useState(group?.color || colorOptions[0].value)
+  const [description, setDescription] = useState(group?.description || '')
+  const [color, setColor] = useState(group?.color || predefinedColors[0])
 
+  // Reset form when group changes or modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setName(group?.name || '')
-      setColor(group?.color || colorOptions[0].value)
+      setDescription(group?.description || '')
+      setColor(group?.color || predefinedColors[0])
     }
   }, [isOpen, group])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    await onSave({
+    onSave({
       name,
+      description,
       color
     })
   }
 
+  if (!isOpen) return null
+
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={(open) => {
-        if (!open) onClose()
-      }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {group ? 'Edit Group' : 'Create Group'}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md bg-background p-6 rounded-lg shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">{group ? 'Edit Group' : 'Create Group'}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            ✕
+          </button>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -75,17 +75,29 @@ export function GroupModal({ isOpen, onClose, onSave, group }: GroupModalProps) 
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Group description..."
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label>Color</Label>
-            <div className="grid grid-cols-7 gap-2">
-              {colorOptions.map(option => (
+            <div className="flex flex-wrap gap-2">
+              {predefinedColors.map((c) => (
                 <button
-                  key={option.value}
+                  key={c}
                   type="button"
-                  className={`h-8 w-8 rounded-full transition-transform hover:scale-110 ${
-                    color === option.value ? 'ring-2 ring-offset-2 ring-primary' : ''
-                  }`}
-                  style={{ backgroundColor: option.value }}
-                  onClick={() => setColor(option.value)}
+                  onClick={() => setColor(c)}
+                  className={cn(
+                    "w-8 h-8 rounded-full transition-all",
+                    "hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    color === c && "ring-2 ring-ring ring-offset-2 scale-110"
+                  )}
+                  style={{ backgroundColor: c }}
                 />
               ))}
             </div>
@@ -100,7 +112,7 @@ export function GroupModal({ isOpen, onClose, onSave, group }: GroupModalProps) 
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 } 
