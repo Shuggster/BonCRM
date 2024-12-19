@@ -5,7 +5,9 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { 
   Dialog,
   DialogContent,
@@ -19,20 +21,23 @@ import { Users } from "lucide-react"
 export function UserManagement() {
   const { data: session } = useSession()
   const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
-  const [role, setRole] = useState("user")
+  const [role, setRole] = useState("operational")
+  const [department, setDepartment] = useState("accounts")
   const [error, setError] = useState("")
 
-  const { users, isLoading } = useUsers()
+  const { users, isLoading: usersLoading, mutate: refreshUsers } = useUsers()
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setIsLoading(true)
 
     try {
-      console.log('Attempting to create user:', { email, name, role })
+      console.log('Attempting to create user:', { email, name, role, department })
       
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -44,132 +49,178 @@ export function UserManagement() {
           password,
           name,
           role,
+          department,
         }),
       })
 
       const data = await response.json()
-      console.log('Create user response:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create user')
       }
 
-      // Success - clear form and close dialog
-      setEmail("")
-      setPassword("")
-      setName("")
-      setRole("user")
-      setIsOpen(false)
-    } catch (error) {
-      console.error('Create user error:', error)
-      setError(error.message || 'An error occurred')
+      console.log('Create user response:', data)
+
+      if (data.success) {
+        setIsOpen(false)
+        setEmail("")
+        setPassword("")
+        setName("")
+        setRole("operational")
+        setDepartment("accounts")
+        
+        // Show success message
+        toast.success('User created successfully', {
+          description: 'The new user will appear in the list shortly.'
+        })
+
+        // Refresh the users list after a short delay
+        setTimeout(() => {
+          refreshUsers()
+        }, 2000)
+      } else {
+        setError(data.error || 'Failed to create user')
+      }
+    } catch (err) {
+      console.error('Error creating user:', err)
+      setError(err.message || 'Error creating user')
+      
+      toast.error('Failed to create user', {
+        description: err.message || 'Please try again'
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">User Management</h1>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button>Add New User</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <select
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              {error && (
-                <p className="text-sm text-red-500">{error}</p>
+    <div className="space-y-6">
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button>
+            <Users className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password">Temporary Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={setRole} disabled={isLoading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="operational">Operational</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="department">Department</Label>
+              <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="management">Management</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="accounts">Accounts</SelectItem>
+                  <SelectItem value="trade_shop">Trade Shop</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {error && (
+              <div className="text-red-500 text-sm">{error}</div>
+            )}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create User'
               )}
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  onClick={() => console.log('Create button clicked')}
-                >
-                  Create User
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <div className="space-y-6">
-        <div className="rounded-md border">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="p-4 text-left">Name</th>
-                <th className="p-4 text-left">Email</th>
-                <th className="p-4 text-left">Role</th>
-                <th className="p-4 text-left">Actions</th>
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <div className="rounded-md border">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th className="p-4 text-left">Name</th>
+              <th className="p-4 text-left">Email</th>
+              <th className="p-4 text-left">Role</th>
+              <th className="p-4 text-left">Department</th>
+              <th className="p-4 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {usersLoading ? (
+              <tr>
+                <td colSpan={5} className="p-4 text-center">
+                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {users?.map((user) => (
-                <tr key={user.id} className="border-b">
-                  <td className="p-4">{user.name}</td>
-                  <td className="p-4">{user.email}</td>
-                  <td className="p-4">{user.role}</td>
-                  <td className="p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {/* Add edit handler */}}
-                    >
-                      Edit
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ) : users?.map((user) => (
+              <tr key={user.id} className="border-b">
+                <td className="p-4">{user.name}</td>
+                <td className="p-4">{user.email}</td>
+                <td className="p-4">{user.role}</td>
+                <td className="p-4">{user.department}</td>
+                <td className="p-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {/* TODO: Implement edit/delete */}}
+                  >
+                    Edit
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
-} 
+}

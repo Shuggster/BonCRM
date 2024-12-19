@@ -48,11 +48,25 @@ interface Contact {
     id: string
     name: string
   } | null
-  name?: string
+  name: string
 }
 
 type SortField = keyof Contact
 type SortDirection = 'asc' | 'desc'
+
+// Add interface for BulkDeleteModal props
+interface BulkDeleteModalProps {
+  isOpen: boolean
+  onClose: () => void
+  selectedContactIds: string[]
+  onComplete: (retryCount?: number) => Promise<void>
+}
+
+// Add interface for the minimal contact type needed
+interface ScheduleActivityContact {
+  id: string
+  name: string
+}
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -115,7 +129,7 @@ export default function ContactsPage() {
         name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
         tags: contact.tags || [],
         industries: contact.industries || null
-      }))
+      })) as Contact[]
 
       setContacts(transformedData)
     } catch (error: any) {
@@ -202,10 +216,10 @@ export default function ContactsPage() {
   const filteredContacts = contacts.filter(contact => {
     const searchLower = searchQuery.toLowerCase()
     const matchesSearch = !searchQuery || 
-      contact.name.toLowerCase().includes(searchLower) ||
-      contact.email?.toLowerCase().includes(searchLower) ||
-      contact.phone?.toLowerCase().includes(searchLower) ||
-      contact.company?.toLowerCase().includes(searchLower) ||
+      (contact.name || '').toLowerCase().includes(searchLower) ||
+      (contact.email?.toLowerCase() || '').includes(searchLower) ||
+      (contact.phone?.toLowerCase() || '').includes(searchLower) ||
+      (contact.company?.toLowerCase() || '').includes(searchLower) ||
       (contact.job_title?.toLowerCase() || '').includes(searchLower)
 
     const matchesTags = selectedTagIds.length === 0 || (
@@ -255,6 +269,15 @@ export default function ContactsPage() {
     setIsBulkTagModalOpen(true)
   }
 
+  // Add a transform function before passing to ScheduleActivityModal
+  const transformContactForSchedule = (contact: Contact | null): ScheduleActivityContact | null => {
+    if (!contact) return null
+    return {
+      id: contact.id,
+      name: contact.name
+    }
+  }
+
   return (
     <div className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto max-w-[1600px] p-8">
@@ -263,7 +286,7 @@ export default function ContactsPage() {
           description="Manage your contacts and relationships"
           icon={<div className="icon-contacts"><Users className="h-6 w-6 text-blue-500" /></div>}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-w-[1600px] w-full justify-end">
             <Button onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
@@ -378,7 +401,10 @@ export default function ContactsPage() {
                     <div className="space-y-4 relative z-0">
                       <div className="flex items-center gap-3">
                         <div className="flex-shrink-0 relative">
-                          <Avatar contact={contact} size={48} />
+                          <Avatar 
+                            contact={contact} 
+                            size="lg"
+                          />
                           <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800" />
                         </div>
                         <div>
@@ -550,7 +576,7 @@ export default function ContactsPage() {
       />
 
       <ScheduleActivityModal
-        contact={selectedContact}
+        contact={transformContactForSchedule(selectedContact)}
         isOpen={isScheduleActivityModalOpen}
         onClose={() => setIsScheduleActivityModalOpen(false)}
         onActivityScheduled={fetchContacts}

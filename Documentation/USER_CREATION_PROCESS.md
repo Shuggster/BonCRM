@@ -25,7 +25,7 @@ Creating a user requires inserting records into the `public.users` table and han
    - Users are authenticated via NextAuth.js
    - Passwords are hashed using bcrypt
    - Session is maintained via JWT strategy
-   - Session maxAge: 30 days
+   - Session maxAge: 24 hours
 
 2. **Password Management**
    - Passwords are stored as hashes in `users.password_hash`
@@ -45,7 +45,8 @@ Creating a user requires inserting records into the `public.users` table and han
 2. Replace the following placeholders:
    - `NEW_USER_EMAIL`: User's email address
    - `USER_FULL_NAME`: User's full name
-   - `USER_ROLE`: Either 'admin' or 'user'
+   - `USER_ROLE`: Either 'admin', 'manager', or 'operational'
+   - `USER_DEPARTMENT`: Either 'management', 'sales', 'accounts', or 'trade_shop'
    - `TEMP_PASSWORD`: Temporary password for the user
 
 Example:
@@ -65,8 +66,12 @@ CREATE TABLE public.users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  name TEXT,
-  role TEXT DEFAULT 'user'
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'operational')),
+  department TEXT NOT NULL CHECK (department IN ('management', 'sales', 'accounts', 'trade_shop')),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
@@ -113,16 +118,28 @@ if (!mounted) {
 
 2. **User Roles**
    - `admin`: Full system access
-   - `user`: Standard user access
+   - `manager`: Department-level access and management
+   - `operational`: Basic system access
 
 3. **Email Confirmation**
    - Users are created with emails pre-confirmed
    - No email verification step needed
 
 4. **Database Tables**
-   - `public.users`: Profile information
-   - `auth.users`: Authentication data
-   - `auth.identities`: Provider linkage
+   - `public.users`: Profile information with the following structure:
+     ```sql
+     CREATE TABLE public.users (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       email TEXT UNIQUE NOT NULL,
+       password_hash TEXT NOT NULL,
+       name TEXT NOT NULL,
+       role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'operational')),
+       department TEXT NOT NULL CHECK (department IN ('management', 'sales', 'accounts', 'trade_shop')),
+       is_active BOOLEAN DEFAULT true,
+       created_at TIMESTAMPTZ DEFAULT NOW(),
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+     );
+     ```
 
 ## Common Issues and Solutions
 

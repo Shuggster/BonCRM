@@ -32,3 +32,5 @@
 - NextAuth handles authentication
 - Supabase is used primarily as a database
 - RLS is intentionally disabled for simplicity
+
+## Project Structure

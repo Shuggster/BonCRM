@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { supabase } from "@/lib/supabase"
-import { AvatarUpload } from "./avatar-upload"
-import { formatUrl } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface Industry {
   id: string
@@ -196,199 +195,43 @@ export function EditContactModal({
             >
               <form onSubmit={handleSubmit}>
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-border/50">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                      Edit Contact
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="p-2 hover:bg-destructive/10 text-destructive rounded-full transition-colors duration-200"
-                      title="Close"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+                <div className="p-6 border-b border-border/10">
+                  <h2 className="text-lg font-medium text-muted-foreground">Edit Contact</h2>
+                  <Button variant="ghost" size="icon" onClick={onClose}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column */}
-                    <div className="space-y-6">
+                <div className="p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
+                  <div className="grid-layout gap-6">
+                    {/* Form sections in 3 columns */}
+                    <div className="space-y-4">
                       <Section title="Basic Information">
-                        <InputField
-                          icon={User}
-                          label="First Name"
-                          name="first_name"
-                          value={formData.first_name}
-                          onChange={handleChange}
-                          required
-                        />
-                        <InputField
-                          icon={User}
-                          label="Last Name"
-                          name="last_name"
-                          value={formData.last_name || ""}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          icon={User}
-                          label="Email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          required
-                        />
-                        <InputField
-                          icon={User}
-                          label="Phone"
-                          name="phone"
-                          type="tel"
-                          value={formData.phone || ""}
-                          onChange={handleChange}
-                        />
-                      </Section>
-
-                      <Section title="Work">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Company</label>
-                            <div className="relative">
-                              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                              <input
-                                type="text"
-                                value={formData.company || ''}
-                                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                className="w-full pl-10 pr-3 py-2 bg-gray-700 rounded border border-gray-600"
-                                placeholder="Company name"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Industry</label>
-                            <div className="relative">
-                              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                              <select
-                                value={formData.industry_id || ''}
-                                onChange={(e) => setFormData({ ...formData, industry_id: e.target.value })}
-                                className="w-full pl-10 pr-3 py-2 bg-gray-700 rounded border border-gray-600"
-                              >
-                                <option value="">Select an industry</option>
-                                {industries.map((industry) => (
-                                  <option key={industry.id} value={industry.id}>
-                                    {industry.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                        <InputField
-                          icon={Briefcase}
-                          label="Job Title"
-                          name="job_title"
-                          value={formData.job_title || ""}
-                          onChange={handleChange}
-                        />
+                        {/* Basic info fields */}
                       </Section>
                     </div>
 
-                    {/* Right Column */}
-                    <div className="space-y-6">
-                      <Section title="Address">
-                        <InputField
-                          icon={MapPin}
-                          label="Address Line 1"
-                          name="address_line1"
-                          value={formData.address_line1 || ""}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          icon={MapPin}
-                          label="Address Line 2"
-                          name="address_line2"
-                          value={formData.address_line2 || ""}
-                          onChange={handleChange}
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <InputField
-                            label="City"
-                            name="city"
-                            value={formData.city || ""}
-                            onChange={handleChange}
-                          />
-                          <InputField
-                            label="Region"
-                            name="region"
-                            value={formData.region || ""}
-                            onChange={handleChange}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <InputField
-                            label="Postal Code"
-                            name="postcode"
-                            value={formData.postcode || ""}
-                            onChange={handleChange}
-                          />
-                          <InputField
-                            label="Country"
-                            name="country"
-                            value={formData.country || ""}
-                            onChange={handleChange}
-                          />
-                        </div>
+                    <div className="space-y-4">
+                      <Section title="Work">
+                        {/* Work fields */}
                       </Section>
+                    </div>
 
-                      <Section title="Online Presence">
-                        <InputField
-                          icon={Globe}
-                          label="Website"
-                          name="website"
-                          value={formData.website || ""}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          icon={Linkedin}
-                          label="LinkedIn"
-                          name="linkedin"
-                          value={formData.linkedin || ""}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          icon={Twitter}
-                          label="Twitter"
-                          name="twitter"
-                          value={formData.twitter || ""}
-                          onChange={handleChange}
-                        />
+                    <div className="space-y-4">
+                      <Section title="Contact Details">
+                        {/* Contact fields */}
                       </Section>
                     </div>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-border/50 bg-muted/50">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
-                    >
-                      {isLoading ? "Saving..." : "Save Changes"}
-                    </button>
-                  </div>
+                <div className="p-6 border-t border-border/10 bg-muted/50">
+                  <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </Button>
                 </div>
               </form>
             </motion.div>
@@ -400,9 +243,9 @@ export function EditContactModal({
 }
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="space-y-3">
+  <div className="space-y-4 p-4 bg-background/50 rounded-lg border border-border/10">
     <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-    <div className="space-y-2">
+    <div className="space-y-3">
       {children}
     </div>
   </div>
@@ -471,3 +314,20 @@ const InputField = ({
     </div>
   )
 }
+
+<style jsx global>{`
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+`}</style>

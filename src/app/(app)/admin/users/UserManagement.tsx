@@ -2,38 +2,62 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Label } from "@/components/ui/label"
+import bcrypt from 'bcryptjs'
 
 // Define role types based on your structure
-type Role = 'admin' | 'senior_management' | 'department_manager' | 'operational'
+type Role = 'admin' | 'manager' | 'operational'
 
-interface User {
-  id: string
-  email: string
-  role: Role
-  created_at: string
-  name: string
-}
+// Update department type and configuration
+type Department = 'management' | 'sales' | 'accounts' | 'trade_shop'
 
-const DEPARTMENTS = ['Sales', 'Accounts', 'Trade Shop', 'Sales/Admin'] as const
+const DEPARTMENT_CONFIG = {
+  management: {
+    label: 'Management',
+    description: 'Senior management and system administration'
+  },
+  sales: {
+    label: 'Sales',
+    description: 'Sales and customer management'
+  },
+  accounts: {
+    label: 'Accounts',
+    description: 'Financial and accounting operations'
+  },
+  trade_shop: {
+    label: 'Trade Shop',
+    description: 'Trade shop operations and management'
+  }
+} as const
 
-const ROLE_LEVELS = {
+// Replace existing DEPARTMENTS constant with:
+const DEPARTMENTS = Object.keys(DEPARTMENT_CONFIG) as Department[]
+
+const ROLE_CONFIG = {
   admin: {
     label: 'System Administrator',
     description: 'Full system access and configuration capabilities'
   },
-  senior_management: {
-    label: 'Senior Management',
-    description: 'Complete overview and access to all features'
-  },
-  department_manager: {
+  manager: {
     label: 'Department Manager',
-    description: 'Department-specific full access and team management'
+    description: 'Department-specific management and oversight'
   },
   operational: {
     label: 'Operational Staff',
     description: 'Role-specific access and basic features'
   }
 } as const
+
+// Add after the Role and Department types
+interface User {
+  id: string
+  email: string
+  name: string
+  role: Role
+  department?: Department
+  created_at: string
+  is_active?: boolean
+}
 
 export default function UserManagement() {
   const [loading, setLoading] = useState(false)
@@ -53,11 +77,16 @@ export default function UserManagement() {
       setLoading(true)
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, role, created_at, name')
+        .select('id, email, role, created_at, name, department, is_active')
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Supabase error:', error)
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
         throw error
       }
 
@@ -69,8 +98,13 @@ export default function UserManagement() {
         setUsers([])
       }
     } catch (error: any) {
-      console.error('Error fetching users:', error.message || error)
-      alert('Failed to fetch users: ' + (error.message || 'Unknown error'))
+      console.error('Error fetching users:', {
+        message: error.message,
+        details: error?.details,
+        stack: error?.stack
+      })
+      // Don't alert in development
+      // alert('Failed to fetch users: ' + (error.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }
@@ -81,42 +115,24 @@ export default function UserManagement() {
     try {
       setLoading(true)
 
-      // Create new user in Auth with role in metadata
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            role,
-            name
-          }
-        }
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          role,
+          department
+        }),
       })
 
-      if (authError) {
-        console.error('Auth Error:', authError)
-        throw authError
-      }
+      const data = await response.json()
 
-      if (!authData.user?.id) {
-        throw new Error('Failed to create user in Auth')
-      }
-
-      // Add user to users table
-      const { error: dbError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: authData.user.id,
-            email,
-            role,
-            name
-          },
-        ])
-
-      if (dbError) {
-        console.error('Database Error:', dbError)
-        throw dbError
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create user')
       }
 
       // Clear form
@@ -128,6 +144,7 @@ export default function UserManagement() {
 
       // Refresh user list
       fetchUsers()
+
     } catch (error: any) {
       console.error('Error creating user:', error.message || error)
       alert(error.message || 'Failed to create user')
@@ -148,9 +165,12 @@ export default function UserManagement() {
                 <div>
                   <h3 className="font-medium">{user.name}</h3>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user.department ? DEPARTMENT_CONFIG[user.department]?.label : 'No Department'}
+                  </p>
                 </div>
                 <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
-                  {ROLE_LEVELS[user.role]?.label || user.role}
+                  {ROLE_CONFIG[user.role]?.label || user.role}
                 </span>
               </div>
             </div>
@@ -192,35 +212,44 @@ export default function UserManagement() {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 text-foreground">Role</label>
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
             <select
+              id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full p-2 rounded border bg-background text-foreground"
-              required
+              className="w-full rounded-md border border-input bg-background px-3 py-2"
             >
-              {Object.entries(ROLE_LEVELS).map(([value, { label }]) => (
+              {Object.entries(ROLE_CONFIG).map(([value, { label }]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
             </select>
+            <p className="text-sm text-muted-foreground">
+              {ROLE_CONFIG[role].description}
+            </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 text-foreground">Department</label>
+          <div className="space-y-2">
+            <Label htmlFor="department">Department</Label>
             <select
+              id="department"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full p-2 rounded border bg-background text-foreground"
+              className="w-full rounded-md border border-input bg-background px-3 py-2"
             >
               <option value="">Select Department</option>
               {DEPARTMENTS.map((dept) => (
                 <option key={dept} value={dept}>
-                  {dept}
+                  {DEPARTMENT_CONFIG[dept].label}
                 </option>
               ))}
             </select>
+            {department && (
+              <p className="text-sm text-muted-foreground">
+                {DEPARTMENT_CONFIG[department]?.description}
+              </p>
+            )}
           </div>
           <button
             type="submit"

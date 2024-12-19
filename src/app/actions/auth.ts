@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/options'
+import { authOptions } from '../(auth)/lib/auth-options'
 import { revalidatePath } from 'next/cache'
 import { hashPassword } from '@/lib/auth/bcrypt'
 

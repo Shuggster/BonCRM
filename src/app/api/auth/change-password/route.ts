@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/options'
+import { authOptions } from '../../../(auth)/lib/auth-options'
 import { hashPassword } from '@/lib/auth/bcrypt'
-
 // Initialize Supabase Admin client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

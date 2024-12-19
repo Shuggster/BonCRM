@@ -67,8 +67,8 @@ NEXTAUTH_URL=http://localhost:3001
 
 ## Key Files
 1. **DISASTER-RECOVERY.md**: Primary reference for system architecture and recovery
-2. **COMPONENT_STRUCTURE.md**: UI component organization
-3. **STYLING_GUIDE.md**: UI consistency guidelines
+2. **1-system-architecture/COMPONENT_STRUCTURE.md**: UI component organization
+3. **1-system-architecture/STYLING_GUIDE.md**: UI consistency guidelines
 
 ## Before Making Changes
 1. Read DISASTER-RECOVERY.md completely

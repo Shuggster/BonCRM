@@ -1,10 +1,13 @@
-import { NextAuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { AuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { createClient } from '@supabase/supabase-js'
 
-export const authOptions: NextAuthOptions = {
-  debug: true,
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -20,50 +23,50 @@ export const authOptions: NextAuthOptions = {
 
         try {
           console.log('Attempting login for:', credentials.email)
-          
-          // Use server component client as per docs
-          const supabase = createServerComponentClient({ cookies })
 
-          // First verify credentials
-          const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
+          // Try to sign in with Supabase Auth
+          const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
             email: credentials.email,
             password: credentials.password
           })
 
-          if (authError) {
-            console.error('Auth error:', authError)
+          if (signInError) {
+            console.error('Sign in error:', {
+              message: signInError.message,
+              details: signInError
+            })
             return null
           }
 
           if (!user) {
-            console.log('No user found')
+            console.log('No user found after sign in')
             return null
           }
 
-          // Get user profile
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('role, name')
-            .eq('id', user.id)
-            .single()
+          console.log('User authenticated:', user.id)
 
-          if (profileError) {
-            console.error('Profile error:', profileError)
+          // Get user metadata
+          const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(user.id)
+
+          if (authError || !authUser) {
+            console.error('Error getting user metadata:', authError)
             return null
           }
 
-          console.log('Login successful:', { user, profile })
-
-          // Return the combined user info
           return {
             id: user.id,
             email: user.email,
-            name: profile.name,
-            role: profile.role
+            name: authUser.user.user_metadata.name,
+            role: authUser.user.user_metadata.role,
+            department: authUser.user.user_metadata.department
           }
 
         } catch (error) {
-          console.error('Server error:', error)
+          console.error('Authorization error:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          })
           return null
         }
       }
@@ -73,19 +76,21 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
+        token.department = user.department
         token.name = user.name
       }
       return token
     },
     async session({ session, token }) {
       if (session?.user) {
-        session.user.id = token.sub as string
         session.user.role = token.role as string
+        session.user.department = token.department as string
         session.user.name = token.name as string
       }
       return session
     }
   },
+  debug: process.env.NODE_ENV === 'development',
   pages: {
     signIn: '/login',
     error: '/login'

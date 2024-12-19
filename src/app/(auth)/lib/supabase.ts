@@ -24,6 +24,13 @@ export const supabase = createClient<Database>(
         },
         db: {
             schema: 'public'
+        },
+        global: {
+            headers: {
+                'x-client-info': 'nextauth-credentials'
+            }
         }
     }
 );
+
+console.log('Supabase client initialized with service role key');
