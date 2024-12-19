@@ -6,20 +6,44 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
-  
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ 
-      error: 'Unauthorized - Admin access required' 
-    }, { status: 401 })
-  }
-
   try {
-    const { email, password, name, role, department } = await req.json()
+    console.log('Starting user creation process...')
+    
+    const session = await getServerSession(authOptions)
+    console.log('Session:', session)
+    
+    if (!session?.user || session.user.role !== 'admin') {
+      console.error('Unauthorized attempt:', {
+        hasSession: !!session,
+        userRole: session?.user?.role
+      })
+      return NextResponse.json({ 
+        error: 'Unauthorized - Admin access required' 
+      }, { status: 401 })
+    }
+
+    const body = await req.json()
+    console.log('Request body:', body)
+    
+    const { email, password, name, role, department } = body
     
     if (!email || !password || !name || !role || !department) {
+      console.error('Missing fields:', {
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasName: !!name,
+        hasRole: !!role,
+        hasDepartment: !!department
+      })
       return NextResponse.json({ 
-        error: 'Missing required fields' 
+        error: 'Missing required fields',
+        details: {
+          email: !email ? 'Missing email' : undefined,
+          password: !password ? 'Missing password' : undefined,
+          name: !name ? 'Missing name' : undefined,
+          role: !role ? 'Missing role' : undefined,
+          department: !department ? 'Missing department' : undefined
+        }
       }, { status: 400 })
     }
 
@@ -28,16 +52,25 @@ export async function POST(req: Request) {
     const validDepartments = ['management', 'sales', 'accounts', 'trade_shop']
     
     if (!validRoles.includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+      console.error('Invalid role:', role)
+      return NextResponse.json({ 
+        error: 'Invalid role',
+        validRoles 
+      }, { status: 400 })
     }
     
     if (!validDepartments.includes(department)) {
-      return NextResponse.json({ error: 'Invalid department' }, { status: 400 })
+      console.error('Invalid department:', department)
+      return NextResponse.json({ 
+        error: 'Invalid department',
+        validDepartments 
+      }, { status: 400 })
     }
 
-    // Hash the password using bcrypt
+    console.log('Hashing password...')
     const hashedPassword = await hashPassword(password)
 
+    console.log('Creating Supabase client...')
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ 
       cookies: () => cookieStore
@@ -46,7 +79,7 @@ export async function POST(req: Request) {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
     })
 
-    // Create user directly in users table
+    console.log('Inserting user into database...')
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
@@ -56,7 +89,6 @@ export async function POST(req: Request) {
         department: department,
         password_hash: hashedPassword,
         is_active: true,
-        requires_password_change: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -64,13 +96,21 @@ export async function POST(req: Request) {
       .single()
 
     if (userError) {
-      console.error('User creation error:', userError)
+      console.error('User creation error:', {
+        error: userError,
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint,
+        code: userError.code
+      })
       return NextResponse.json({ 
         error: 'Failed to create user',
-        details: userError.message 
+        details: userError.message,
+        code: userError.code
       }, { status: 500 })
     }
 
+    console.log('User created successfully:', userData)
     return NextResponse.json({ 
       success: true,
       user: {
@@ -84,7 +124,11 @@ export async function POST(req: Request) {
     })
 
   } catch (error) {
-    console.error('Error creating user:', error)
+    console.error('Unexpected error during user creation:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
