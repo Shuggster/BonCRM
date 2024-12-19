@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import StickyNotes from '@/components/ui/sticky-note'
 import { supabase } from "@/lib/supabase"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { useSession } from "next-auth/react"
 
 interface Contact {
   id: string
@@ -35,6 +36,11 @@ interface Event {
   title: string
   date: string
   event_type: string
+}
+
+interface WelcomeMessageProps {
+  name: string;
+  role: string;
 }
 
 const defaultMetrics = [
@@ -70,6 +76,33 @@ const defaultMetrics = [
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28']
 
+function WelcomeMessage({ name, role }: WelcomeMessageProps) {
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const firstName = name.split(' ')[0]
+
+  return (
+    <motion.div 
+      className="bg-primary/5 rounded-xl p-6 mb-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-2xl font-semibold mb-2">
+        {getGreeting()}, {firstName}
+      </h2>
+      <p className="text-muted-foreground">
+        Here's What's Happening Today
+      </p>
+    </motion.div>
+  )
+}
+
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)
   const [progress, setProgress] = useState(75)
@@ -80,6 +113,7 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [taskStats, setTaskStats] = useState<{ name: string; value: number }[]>([])
   const [contactGrowth, setContactGrowth] = useState<{ date: string; count: number }[]>([])
+  const { data: session } = useSession()
 
   useEffect(() => {
     setMounted(true)
@@ -168,6 +202,22 @@ export default function DashboardPage() {
     }
   }
 
+  async function fetchUserTasks() {
+    const { data: userTeams } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', session.user.id);
+
+    const teamIds = userTeams.map(t => t.team_id);
+
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select('*')
+      .or(`assigned_to->id.eq.${session.user.id},assigned_to->type.eq.team,assigned_to->id.in.(${teamIds})`);
+
+    return tasks;
+  }
+
   if (!mounted) return null
 
   return (
@@ -178,6 +228,14 @@ export default function DashboardPage() {
           description="Overview of your CRM activities."
           icon={<div className="icon-dashboard"><LayoutDashboard className="h-6 w-6" /></div>}
         />
+
+        {/* Add Welcome Message here */}
+        {session?.user && (
+          <WelcomeMessage 
+            name={session.user.name || 'User'} 
+            role={session.user.role || 'user'} 
+          />
+        )}
 
         {/* Metrics Cards - 12 column grid */}
         <motion.div 

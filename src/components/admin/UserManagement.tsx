@@ -16,7 +16,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useUsers } from "@/hooks/useUsers"
-import { Users } from "lucide-react"
+import { Users, UserPlus, Building2 } from "lucide-react"
+
+interface UserTeam {
+  id: string;
+  name: string;
+  role: 'leader' | 'member';
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string;
+  teams?: UserTeam[];
+}
 
 export function UserManagement() {
   const { data: session } = useSession()
@@ -191,6 +206,7 @@ export function UserManagement() {
               <th className="p-4 text-left">Email</th>
               <th className="p-4 text-left">Role</th>
               <th className="p-4 text-left">Department</th>
+              <th className="p-4 text-left">Teams</th>
               <th className="p-4 text-left">Actions</th>
             </tr>
           </thead>
@@ -206,7 +222,28 @@ export function UserManagement() {
                 <td className="p-4">{user.name}</td>
                 <td className="p-4">{user.email}</td>
                 <td className="p-4">{user.role}</td>
-                <td className="p-4">{user.department}</td>
+                <td className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    {user.department}
+                  </div>
+                </td>
+                <td className="p-4">
+                  {user.teams?.length ? (
+                    <div className="flex flex-wrap gap-1">
+                      {user.teams.map(team => (
+                        <span 
+                          key={team.id}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary"
+                        >
+                          {team.name} ({team.role})
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">No teams</span>
+                  )}
+                </td>
                 <td className="p-4">
                   <Button
                     variant="ghost"

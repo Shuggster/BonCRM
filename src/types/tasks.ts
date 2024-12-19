@@ -5,7 +5,10 @@ export interface Task {
   status: 'todo' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
   dueDate?: Date
-  assignedTo?: string
+  assignedTo?: {
+    type: 'user' | 'team'
+    id: string
+  }
   relatedEvent?: string
   taskGroupId?: string
   userId: string
@@ -18,4 +21,8 @@ export interface Task {
     endDate?: Date
   }
   parentTaskId?: string  // For recurring task instances
+  watchers: {
+    users: string[]
+    teams: string[]
+  }
 } 

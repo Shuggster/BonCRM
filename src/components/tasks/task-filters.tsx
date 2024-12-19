@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Search } from "lucide-react"
 import { TaskGroup } from "@/lib/supabase/services/task-groups"
+import { TeamSelect } from "@/components/ui/team-select"
 
 interface TaskFiltersProps {
   search: string
@@ -17,6 +18,11 @@ interface TaskFiltersProps {
   group: string
   onGroupChange: (value: string) => void
   groups: TaskGroup[]
+  assignedTo: {
+    users: string[];
+    teams: string[];
+  };
+  onChange: (filters: TaskFiltersProps) => void
 }
 
 export function TaskFilters({
@@ -28,7 +34,9 @@ export function TaskFilters({
   onPriorityChange,
   group,
   onGroupChange,
-  groups
+  groups,
+  assignedTo,
+  onChange
 }: TaskFiltersProps) {
   return (
     <div className="space-y-6">
@@ -125,6 +133,20 @@ export function TaskFilters({
             </div>
           ))}
         </RadioGroup>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium mb-2">Assigned To</h3>
+        <TeamSelect 
+          multiple 
+          includeTeams 
+          onChange={selection => {
+            onChange({
+              ...filters,
+              assignedTo: selection
+            });
+          }} 
+        />
       </div>
     </div>
   )
