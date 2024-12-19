@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Users, CheckSquare, Target, BarChart3, MessageSquare, Clock, CircleDot, LayoutDashboard } from 'lucide-react'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Clock, CircleDot, LayoutDashboard, Calendar } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Progress } from '@/components/ui/progress'
 import StickyNotes from '@/components/ui/sticky-note'
 import { supabase } from "@/lib/supabase"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface Contact {
   id: string
@@ -19,6 +20,21 @@ interface Activity {
   id: string
   message: string
   created_at: string
+}
+
+interface Task {
+  id: string
+  title: string
+  status: 'todo' | 'in-progress' | 'completed'
+  priority: 'low' | 'medium' | 'high'
+  due_date: string
+}
+
+interface Event {
+  id: string
+  title: string
+  date: string
+  event_type: string
 }
 
 const defaultMetrics = [
@@ -52,12 +68,18 @@ const defaultMetrics = [
   }
 ]
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28']
+
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)
-  const [progress, setProgress] = useState(75) // 37,500 / 50,000 * 100
+  const [progress, setProgress] = useState(75)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [recentActivity, setRecentActivity] = useState<Activity[]>([])
   const [metrics, setMetrics] = useState(defaultMetrics)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [events, setEvents] = useState<Event[]>([])
+  const [taskStats, setTaskStats] = useState<{ name: string; value: number }[]>([])
+  const [contactGrowth, setContactGrowth] = useState<{ date: string; count: number }[]>([])
 
   useEffect(() => {
     setMounted(true)
@@ -68,75 +90,98 @@ export default function DashboardPage() {
     try {
       console.log('Fetching dashboard data...')
       
-      // Fetch contacts without user_id filter
+      // Fetch contacts
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select('id, first_name, last_name, created_at')
+        .select('*')
         .order('created_at', { ascending: false })
-        .limit(10)
 
-      if (contactsError) {
-        console.error('Error fetching contacts:', contactsError.message, contactsError.details)
-        throw contactsError
-      }
+      if (contactsError) throw contactsError
 
-      console.log('Fetched contacts:', contactsData)
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('due_date', { ascending: true })
 
-      // Calculate contact metrics
-      const totalContacts = contactsData?.length || 0
-      const previousTotal = totalContacts - (contactsData?.filter(c => 
-        new Date(c.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      ).length || 0)
-      const contactChange = previousTotal ? ((totalContacts - previousTotal) / previousTotal * 100).toFixed(1) : '0'
+      if (tasksError) throw tasksError
 
-      // Update metrics with real contact data
-      setMetrics(prev => prev.map(metric => 
-        metric.name === "Total Contacts" 
-          ? { ...metric, value: totalContacts.toString(), change: `${contactChange}%` }
-          : metric
-      ))
+      // Fetch events
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('*')
+        .gte('date', new Date().toISOString())
+        .order('date', { ascending: true })
+        .limit(5)
 
-      // Create recent activity from new contacts
-      const activities = contactsData?.map(contact => ({
-        id: contact.id,
-        message: `New contact added: ${contact.first_name} ${contact.last_name || ''}`.trim(),
-        created_at: contact.created_at
-      })) || []
+      if (eventsError) throw eventsError
 
+      // Process tasks stats
+      const taskStatusCount = tasksData?.reduce((acc: any, task: Task) => {
+        acc[task.status] = (acc[task.status] || 0) + 1
+        return acc
+      }, {})
+
+      const taskStatsData = Object.entries(taskStatusCount || {}).map(([name, value]) => ({
+        name,
+        value: value as number
+      }))
+
+      // Process contact growth
+      const contactsByDate = contactsData?.reduce((acc: any, contact: Contact) => {
+        const date = new Date(contact.created_at).toLocaleDateString()
+        acc[date] = (acc[date] || 0) + 1
+        return acc
+      }, {})
+
+      const contactGrowthData = Object.entries(contactsByDate || {})
+        .slice(-7)
+        .map(([date, count]) => ({
+          date,
+          count: count as number
+        }))
+
+      // Update all states
       setContacts(contactsData || [])
-      setRecentActivity(activities)
+      setTasks(tasksData || [])
+      setEvents(eventsData || [])
+      setTaskStats(taskStatsData || [])
+      setContactGrowth(contactGrowthData || [])
+
+      // Update metrics
+      const totalContacts = contactsData?.length || 0
+      const completedTasks = tasksData?.filter((t: Task) => t.status === 'completed').length || 0
+      const totalTasks = tasksData?.length || 0
+
+      setMetrics(prev => prev.map(metric => {
+        if (metric.name === "Total Contacts") {
+          return { ...metric, value: totalContacts.toString() }
+        }
+        if (metric.name === "Tasks Completed") {
+          return { ...metric, value: `${completedTasks}/${totalTasks}` }
+        }
+        return metric
+      }))
+
     } catch (err: any) {
-      console.error('Error fetching dashboard data:', err.message || err, err.details || '')
+      console.error('Error fetching dashboard data:', err.message)
     }
   }
 
   if (!mounted) return null
 
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-    
-    if (seconds < 60) return 'just now'
-    const minutes = Math.floor(seconds / 60)
-    if (minutes < 60) return `${minutes}m ago`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}h ago`
-    const days = Math.floor(hours / 24)
-    return `${days}d ago`
-  }
-
   return (
     <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="p-8">
+      <div className="mx-auto max-w-[1600px] p-8">
         <PageHeader
           title="Dashboard"
           description="Overview of your CRM activities."
           icon={<div className="icon-dashboard"><LayoutDashboard className="h-6 w-6" /></div>}
         />
 
+        {/* Metrics Cards - 12 column grid */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 mt-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -144,7 +189,7 @@ export default function DashboardPage() {
           {metrics.map((metric, index) => (
             <motion.div
               key={metric.name}
-              className={`dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className}`}
+              className={`lg:col-span-3 dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -164,81 +209,163 @@ export default function DashboardPage() {
                 <h3 className="text-sm font-medium text-muted-foreground">
                   {metric.name}
                 </h3>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                  className="text-2xl font-bold text-primary"
-                >
+                <div className="text-2xl font-bold text-primary">
                   {metric.value}
-                </motion.div>
+                </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-          {/* Sales Target Section */}
+        {/* Tasks and Calendar Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
+          {/* Tasks Overview */}
           <motion.div
-            className="dashboard-card rounded-xl p-6 bg-emerald-950/30"
+            className="lg:col-span-6 dashboard-card rounded-xl p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-2 mb-6">
-              <CircleDot className="h-6 w-6 text-emerald-400" />
-              <h2 className="text-xl font-semibold">Sales Target</h2>
+              <CheckSquare className="h-6 w-6 text-primary" />
+              <h2 className="text-xl font-semibold">Tasks Overview</h2>
             </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-baseline">
-                <span className="text-sm text-muted-foreground">Monthly Goal</span>
-                <span className="text-3xl font-bold">£50,000</span>
-              </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={taskStats}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {taskStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4">
+              <h3 className="font-medium mb-2">Upcoming Tasks</h3>
               <div className="space-y-2">
-                <Progress value={progress} className="h-2" />
-                <div className="flex justify-between text-sm">
-                  <span>Current: £37,500</span>
-                  <span className="text-muted-foreground">Remaining: £12,500</span>
-                </div>
+                {tasks.slice(0, 3).map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-2 rounded-lg bg-background/50">
+                    <span>{task.title}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      task.priority === 'high' ? 'bg-red-500/20 text-red-500' :
+                      task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                      'bg-green-500/20 text-green-500'
+                    }`}>
+                      {task.priority}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </motion.div>
 
-          {/* Recent Activity Section */}
+          {/* Calendar Preview */}
           <motion.div
-            className="dashboard-card rounded-xl p-6 bg-indigo-950/30"
+            className="lg:col-span-6 dashboard-card rounded-xl p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             <div className="flex items-center gap-2 mb-6">
-              <Clock className="h-6 w-6 text-indigo-400" />
-              <h2 className="text-xl font-semibold">Recent Activity</h2>
+              <Calendar className="h-6 w-6 text-primary" />
+              <h2 className="text-xl font-semibold">Upcoming Events</h2>
             </div>
             <div className="space-y-4">
-              {recentActivity.slice(0, 5).map((activity, index) => (
-                <motion.div
-                  key={activity.id}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 + (index * 0.1) }}
-                >
-                  <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{formatTimeAgo(activity.created_at)}</p>
+              {events.map(event => (
+                <div key={event.id} className="flex items-center gap-4 p-3 rounded-lg bg-background/50">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-primary" />
                   </div>
-                </motion.div>
+                  <div className="flex-grow">
+                    <h4 className="font-medium">{event.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <span className="px-2 py-1 rounded-full text-xs bg-primary/20 text-primary">
+                    {event.event_type}
+                  </span>
+                </div>
               ))}
             </div>
           </motion.div>
         </div>
 
-        <div className="mt-8">
-          <StickyNotes />
+        {/* Contact Growth and Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
+          {/* Contact Growth Chart */}
+          <motion.div
+            className="lg:col-span-8 dashboard-card rounded-xl p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Users className="h-6 w-6 text-primary" />
+              <h2 className="text-xl font-semibold">Contact Growth</h2>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={contactGrowth}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="count" stroke="#8884d8" fill="#8884d8" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion.div
+            className="lg:col-span-4 dashboard-card rounded-xl p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <MessageSquare className="h-6 w-6 text-primary" />
+              <h2 className="text-xl font-semibold">Quick Actions</h2>
+            </div>
+            <div className="space-y-4">
+              {recentActivity.slice(0, 4).map(activity => (
+                <div key={activity.id} className="p-3 rounded-lg bg-background/50">
+                  <p className="text-sm">{activity.message}</p>
+                  <span className="text-xs text-muted-foreground">
+                    {formatTimeAgo(activity.created_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </main>
   )
+}
+
+function formatTimeAgo(dateString: string) {
+  const date = new Date(dateString)
+  const now = new Date()
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
 }

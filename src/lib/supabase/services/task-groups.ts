@@ -6,9 +6,9 @@ export interface TaskGroup {
   name: string
   color: string
   description?: string
-  user_id: string
-  created_at: string
-  updated_at: string
+  userId: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export const taskGroupService = {
@@ -17,17 +17,22 @@ export const taskGroupService = {
       .from('task_groups')
       .select('*')
       .eq('user_id', session.user.id)
-      .order('name')
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching task groups:', error)
-      throw error
-    }
+    if (error) throw error
 
-    return data as TaskGroup[]
+    return data?.map(row => ({
+      id: row.id,
+      name: row.name,
+      color: row.color,
+      description: row.description,
+      userId: row.user_id,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
+    })) as TaskGroup[]
   },
 
-  async createGroup(group: Omit<TaskGroup, 'id' | 'created_at' | 'updated_at'>, session: Session) {
+  async createGroup(group: { name: string, color: string, description?: string }, session: Session) {
     const { data, error } = await supabase
       .from('task_groups')
       .insert({
@@ -39,58 +44,16 @@ export const taskGroupService = {
       .select()
       .single()
 
-    if (error) {
-      console.error('Error creating task group:', error)
-      throw error
-    }
+    if (error) throw error
 
-    return data as TaskGroup
-  },
-
-  async updateGroup(group: Partial<TaskGroup> & { id: string }, session: Session) {
-    const { data, error } = await supabase
-      .from('task_groups')
-      .update({
-        name: group.name,
-        color: group.color,
-        description: group.description
-      })
-      .eq('id', group.id)
-      .eq('user_id', session.user.id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating task group:', error)
-      throw error
-    }
-
-    return data as TaskGroup
-  },
-
-  async deleteGroup(id: string, session: Session) {
-    // First, remove group from all tasks
-    const { error: updateError } = await supabase
-      .from('tasks')
-      .update({ task_group_id: null })
-      .eq('task_group_id', id)
-      .eq('user_id', session.user.id)
-
-    if (updateError) {
-      console.error('Error removing group from tasks:', updateError)
-      throw updateError
-    }
-
-    // Then delete the group
-    const { error } = await supabase
-      .from('task_groups')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', session.user.id)
-
-    if (error) {
-      console.error('Error deleting task group:', error)
-      throw error
-    }
+    return {
+      id: data.id,
+      name: data.name,
+      color: data.color,
+      description: data.description,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
+    } as TaskGroup
   }
 } 
