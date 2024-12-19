@@ -59,7 +59,7 @@ export function TaskList({ tasks, onTaskClick, onTaskDelete, onTaskDuplicate, on
           >
             <div className="flex items-start gap-4">
               <StatusIcon className="h-5 w-5 mt-1 text-muted-foreground" />
-              
+　　 　 　 　
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div 
@@ -161,7 +161,7 @@ export function TaskList({ tasks, onTaskClick, onTaskDelete, onTaskDuplicate, on
                   {task.dueDate && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {format(task.dueDate, 'MMM d')}
+                      {format(new Date(task.dueDate), 'MMM d')}
                     </div>
                   )}
                   

@@ -1,66 +1,34 @@
 # Lovable CRM Documentation
 
-## Documentation Structure
+## Core Documentation
+1. **[PRE_SESSION.md](./PRE_SESSION.md)**
+   - First-time setup guide
+   - Project overview
+   - Critical guidelines
 
-### 1. System Architecture
-- Technical specifications
-- System design
-- Database schema
-- Authentication system
+2. **[DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md)**
+   - System architecture
+   - Authentication flow
+   - Recovery procedures
+   - Troubleshooting guide
 
-### 2. Implementation Guides
-- Setup guides
-- Development workflows
-- Deployment procedures
-- Testing protocols
+3. **[COMPONENT_STRUCTURE.md](./1-system-architecture/COMPONENT_STRUCTURE.md)**
+   - UI component organization
+   - Component hierarchy
+   - Reusable components
 
-### 3. User Management
-- Role definitions
-- Access control
-- User guides
-- Training materials
+4. **[STYLING_GUIDE.md](./1-system-architecture/STYLING_GUIDE.md)**
+   - UI design principles
+   - Theme configuration
+   - Component styling
 
-### 4. Company Information
-- Company overview
-- Team structure
-- Department organization
-- Workflows
+## Before Making Changes
+1. Read PRE_SESSION.md for project overview
+2. Study DISASTER-RECOVERY.md for system architecture
+3. Follow component and styling guides for UI changes
 
-### 5. Features & Roadmap
-- Current features
-- Planned features
-- Project timeline
-- Migration guides
-
-### 6. API Documentation
-- API specifications
-- Integration guides
-- Authentication
-- Endpoints
-
-### 7. Maintenance
-- Backup procedures
-- Update protocols
-- Security measures
-- Monitoring
-
-## Navigation
-
-Each section has its own directory with relevant documentation. Use the following structure to navigate:
-
-```
-Documentation/
-├── 1-system-architecture/
-├── 2-implementation-guides/
-├── 3-user-management/
-├── 4-company-info/
-├── 5-features-roadmap/
-├── 6-api-docs/
-└── 7-maintenance/
-```
-
-## Current Focus Areas
-1. User Management System Implementation
-2. Role-Based Access Control
-3. Navigation Restructuring
-4. API Integration
+## Important Notes
+- All write operations MUST use server endpoints
+- NextAuth handles authentication
+- Supabase is used primarily as a database
+- RLS is intentionally disabled for simplicity

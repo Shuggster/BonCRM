@@ -6,6 +6,9 @@ export default withAuth(
     return NextResponse.next()
   },
   {
+    pages: {
+      signIn: '/login',
+    },
     callbacks: {
       authorized: ({ req, token }) => {
         // Allow public paths
@@ -21,13 +24,10 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - login (auth pages)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!login|_next/static|_next/image|favicon.ico).*)',
+    '/settings/:path*',
+    '/contacts/:path*',
+    '/tasks/:path*',
+    '/calendar/:path*',
   ],
 }

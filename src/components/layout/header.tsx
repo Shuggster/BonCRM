@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Settings, User2, LogOut, Bell } from 'lucide-react'
+import { Settings, User2, LogOut, Bell, Shield } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import {
   DropdownMenu,
@@ -15,6 +15,10 @@ import { Button } from "@/components/ui/button"
 
 export function Header() {
   const { data: session } = useSession()
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/' })
+  }
 
   return (
     <header className="border-b bg-card/50">
@@ -31,72 +35,54 @@ export function Header() {
             </span>
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="icon-settings"
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Settings</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link href="/settings/general" className="flex items-center gap-2">
-                  General Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/settings/notifications" className="flex items-center gap-2">
-                  Notification Preferences
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/settings/appearance" className="flex items-center gap-2">
-                  Appearance
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {session?.user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="icon-settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Link href="/settings/general" className="flex items-center gap-2 w-full">
+                    <Settings className="h-4 w-4" />
+                    General Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href="/settings/security" className="flex items-center gap-2 w-full">
+                    <Shield className="h-4 w-4" />
+                    Security & Password
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {session?.user && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {session.user.email}
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="icon-user"
               >
                 <User2 className="h-5 w-5" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                {session?.user?.email || 'My Account'}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link href="/settings/profile" className="flex items-center gap-2">
-                  Profile Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/settings/security" className="flex items-center gap-2">
-                  Security & Password
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-red-600 cursor-pointer"
-                onClick={() => signOut({ callbackUrl: '/login' })}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          )}
         </div>
       </div>
     </header>

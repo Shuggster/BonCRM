@@ -1,9 +1,9 @@
 import { supabase } from '../client'
 import { Task } from '@/types/tasks'
-import { Session } from '@supabase/supabase-js'
+import { Session } from 'next-auth'
 
 export const taskService = {
-  async getTasks(session: Session) {
+  async getTasks() {
     const { data, error } = await supabase
       .from('tasks')
       .select(`
@@ -14,7 +14,6 @@ export const taskService = {
           color
         )
       `)
-      .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -41,98 +40,60 @@ export const taskService = {
       throw new Error('No session found')
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          title: task.title,
-          description: task.description,
-          status: task.status,
-          priority: task.priority,
-          due_date: task.dueDate?.toISOString(),
-          task_group_id: task.taskGroupId,
-          user_id: session.user.id
-        })
-        .select(`
-          *,
-          task_groups (
-            id,
-            name,
-            color
-          )
-        `)
-        .single()
+    const response = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(task),
+    })
 
-      if (error) {
-        console.error('[Tasks Service] Create error:', {
-          error,
-          code: error.code,
-          message: error.message,
-          details: error.details
-        })
-        throw error
-      }
-
-      return {
-        ...data,
-        dueDate: data.due_date ? new Date(data.due_date) : undefined,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-        taskGroupId: data.task_group_id
-      } as Task
-    } catch (err) {
-      console.error('[Tasks Service] Unexpected error:', err)
-      throw err
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('[Tasks Service] Create error:', error)
+      throw new Error(error.error || 'Failed to create task')
     }
+
+    return await response.json() as Task
   },
 
   async updateTask(task: Task, session: Session) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .update({
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        due_date: task.dueDate?.toISOString(),
-        task_group_id: task.taskGroupId
-      })
-      .eq('id', task.id)
-      .eq('user_id', session.user.id)
-      .select(`
-        *,
-        task_groups (
-          id,
-          name,
-          color
-        )
-      `)
-      .single()
+    console.log('[Tasks Service] Updating task:', {
+      task,
+      sessionUserId: session?.user?.id
+    })
 
-    if (error) {
-      console.error('Error updating task:', error)
-      throw error
+    if (!session?.user?.id) {
+      throw new Error('No session found')
     }
 
-    return {
-      ...data,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      taskGroupId: data.task_group_id
-    } as Task
+    const response = await fetch(`/api/tasks?id=${task.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(task),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('[Tasks Service] Update error:', error)
+      throw new Error(error.error || 'Failed to update task')
+    }
+
+    return await response.json() as Task
   },
 
   async deleteTask(id: string, session: Session) {
+    if (!session?.user?.id) {
+      throw new Error('No session found')
+    }
+
     const { error } = await supabase
       .from('tasks')
       .delete()
       .eq('id', id)
-      .eq('user_id', session.user.id)
 
-    if (error) {
-      console.error('Error deleting task:', error)
-      throw error
-    }
+    if (error) throw error
   }
 }

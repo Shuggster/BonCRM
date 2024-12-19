@@ -34,8 +34,7 @@ export const taskActivitiesService = {
         task_id: activity.taskId,
         action_type: activity.actionType,
         previous_value: activity.previousValue,
-        new_value: activity.newValue,
-        user_id: session.user.id
+        new_value: activity.newValue
       })
 
     if (error) throw error
