@@ -1,0 +1,386 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Test styles */
+.test-style {
+  color: red !important;
+  font-size: 24px !important;
+}
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(12px);
+}
+
+.nav-item {
+  position: relative;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0;
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.nav-item svg {
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.nav-item:hover svg {
+  transform: scale(1.2);
+  filter: brightness(1.2) drop-shadow(0 0 5px currentColor);
+}
+
+.nav-link {
+  @apply flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-secondary/50 transition-all duration-200;
+}
+
+.nav-link:hover {
+  @apply text-primary;
+}
+
+.nav-link:hover .nav-icon {
+  @apply text-primary;
+}
+
+.nav-link.active {
+  @apply bg-secondary text-primary;
+}
+
+/* Icon Colors */
+.icon-dashboard { 
+  color: hsl(280, 100%, 76%); 
+}
+
+.icon-contacts { 
+  color: hsl(330, 100%, 76%); 
+}
+
+.icon-tasks { 
+  color: hsl(25, 95%, 64%); 
+}
+
+.icon-leads { 
+  color: hsl(217, 91%, 60%); 
+}
+
+.icon-calendar { 
+  color: hsl(142, 76%, 56%); 
+}
+
+.icon-messages { 
+  color: hsl(12, 76%, 61%); 
+}
+
+.icon-analytics { 
+  color: hsl(199, 89%, 48%); 
+}
+
+/* Page Headers */
+.icon-dashboard { 
+  color: hsl(280, 100%, 76%);
+  background-color: hsl(280, 100%, 76%, 0.1);
+}
+
+.icon-contacts { 
+  color: hsl(330, 100%, 76%);
+  background-color: hsl(330, 100%, 76%, 0.1);
+}
+
+.icon-tasks { 
+  color: hsl(25, 95%, 64%);
+  background-color: hsl(25, 95%, 64%, 0.1);
+}
+
+.icon-leads { 
+  color: hsl(217, 91%, 60%);
+  background-color: hsl(217, 91%, 60%, 0.1);
+}
+
+.icon-calendar { 
+  color: hsl(142, 76%, 56%);
+  background-color: hsl(142, 76%, 56%, 0.1);
+}
+
+.icon-messages { 
+  color: hsl(12, 76%, 61%);
+  background-color: hsl(12, 76%, 61%, 0.1);
+}
+
+.icon-analytics { 
+  color: hsl(199, 89%, 48%);
+  background-color: hsl(199, 89%, 48%, 0.1);
+}
+
+/* Active Menu Item */
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 3px;
+  background: currentColor;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Progress Bar Styles */
+.progress-bar-wrapper {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 4px;
+  transition: width 1s ease-in-out;
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: shine 2s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Sales Target Progress */
+.progress-indicator {
+  @apply bg-emerald-400;
+}
+
+/* Activity Indicators */
+.activity-dot {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Dashboard Card Animations */
+.dashboard-card {
+  transition: all 0.3s ease;
+  backdrop-filter: blur(16px);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Card Type Specific Gradients */
+.card-tasks {
+  background: linear-gradient(145deg, rgba(251, 146, 60, 0.1), rgba(251, 146, 60, 0.05));
+}
+
+.card-leads {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+}
+
+.card-contacts {
+  background: linear-gradient(145deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05));
+}
+
+.card-sales {
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+}
+
+.card-activity {
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+}
+
+/* Counter Animation */
+@keyframes countUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-counter {
+  animation: countUp 0.5s ease-out forwards;
+}
+
+/* Activity Dot Animation */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.activity-dot {
+  animation: pulse 2s infinite;
+}
+
+/* Card Hover Effects */
+.dashboard-card {
+  transform: translateY(0);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-card:hover::before {
+  transform: translateX(100%);
+}
+
+/* Sticky Notes */
+.sticky-note-button {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  color: #806600;
+}
+
+.sticky-note {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+  transform-origin: center center;
+  touch-action: none;
+  user-select: none;
+}
+
+.sticky-note::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 20px 20px;
+  border-color: transparent transparent rgba(0,0,0,0.1) transparent;
+  pointer-events: none;
+}
+
+.sticky-note textarea {
+  font-family: var(--font-indie-flower);
+  background: repeating-linear-gradient(
+    transparent,
+    transparent 24px,
+    rgba(255, 213, 79, 0.2) 25px
+  );
+  line-height: 25px;
+}
+
+.font-indie-flower {
+  font-family: var(--font-indie-flower);
+}
