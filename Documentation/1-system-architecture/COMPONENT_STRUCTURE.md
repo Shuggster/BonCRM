@@ -20,7 +20,14 @@ src/
 │   │   ├── dashboard/
 │   │   ├── contacts/
 │   │   ├── calendar/
-│   │   └── layout.tsx
+│   │   └── tools/
+│   │       ├── page.tsx
+│   │       └── web-scraper/
+│   │           ├── page.tsx
+│   │           └── components/
+│   │               ├── scraper-form.tsx
+│   │               ├── results-table.tsx
+│   │               └── export-options.tsx
 │   └── (app)/
 │       ├── admin/
 │       └── layout.tsx
@@ -32,12 +39,20 @@ src/
 │   │   ├── Button.tsx
 │   │   ├── Card.tsx
 │   │   └── Input.tsx
-│   └── shared/
-│       ├── LoadingSpinner.tsx
-│       └── ErrorBoundary.tsx
+│   ├── shared/
+│   │   ├── LoadingSpinner.tsx
+│   │   └── ErrorBoundary.tsx
+│   └── tools/
+│       └── web-scraper/
+│           ├── scraper-controls.tsx
+│           └── data-preview.tsx
 └── lib/
     ├── supabase.ts
-    └── utils.ts
+    ├── utils.ts
+    └── tools/
+        └── web-scraper/
+            ├── types.ts
+            └── utils.ts
 ```
 
 ## Core Components
@@ -97,6 +112,22 @@ export default function DashboardPage() {
 // app/(main)/contacts/page.tsx
 export default function ContactsPage() {
     // Contacts list and management
+}
+```
+
+### Tools
+```typescript
+// app/(main)/tools/page.tsx
+export default function ToolsPage() {
+    // Tools landing page layout
+}
+```
+
+### Web Scraper
+```typescript
+// app/(main)/tools/web-scraper/page.tsx
+export default function WebScraperPage() {
+    // Web scraper interface layout
 }
 ```
 

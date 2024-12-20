@@ -97,21 +97,20 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
             {selectedTags.length > 0 ? `${selectedTags.length} Tags` : 'Filter by Tags'}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="flex items-center justify-between">
-            <span>Filter by Tags</span>
+        <DropdownMenuContent align="start" className="w-64 bg-[#0F1629] border border-white/10">
+          <DropdownMenuLabel className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+            <span className="text-sm font-medium">Filter by Tags</span>
             {selectedTags.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onTagSelect([])}
-                className="h-auto py-0 px-1 text-xs hover:bg-transparent hover:text-blue-500"
+                className="h-auto py-0.5 px-2 text-xs hover:bg-white/5 text-blue-400 hover:text-blue-300"
               >
                 Clear
               </Button>
             )}
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
           
           {selectedTags.length > 0 && (
             <>
@@ -120,12 +119,14 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
                   e.preventDefault()
                   onFilterModeChange?.()
                 }}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between px-3 py-2 hover:bg-white/5"
               >
-                <span>Filter Mode:</span>
-                <span className="text-sm font-medium">{filterMode}</span>
+                <span className="text-sm text-gray-400">Filter Mode:</span>
+                <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+                  {filterMode}
+                </span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-white/10" />
             </>
           )}
 
@@ -137,14 +138,14 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
                   e.preventDefault()
                   handleTagClick(tag.id)
                 }}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-2 h-2 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full ring-2 ring-white/10"
                     style={{ backgroundColor: tag.color }}
                   />
-                  <span>{tag.name}</span>
+                  <span className="text-sm text-gray-200">{tag.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">{tag.count}</span>
@@ -156,14 +157,20 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
             ))}
           </div>
 
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => onOpenTagStats()}>
-            <BarChart2 className="mr-2 h-4 w-4" />
-            <span>Tag Statistics</span>
+          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuItem 
+            onSelect={() => onOpenTagStats()}
+            className="px-3 py-2 hover:bg-white/5"
+          >
+            <BarChart2 className="mr-2 h-4 w-4 text-blue-400" />
+            <span className="text-sm">Tag Statistics</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onManageTags()}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Manage Tags</span>
+          <DropdownMenuItem 
+            onSelect={() => onManageTags()}
+            className="px-3 py-2 hover:bg-white/5"
+          >
+            <Settings className="mr-2 h-4 w-4 text-blue-400" />
+            <span className="text-sm">Manage Tags</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

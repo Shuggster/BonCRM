@@ -1,44 +1,31 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, X } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { supabase } from "@/lib/supabase"
+import { X, User, Mail, Phone, Building2, Briefcase, Globe, MapPin, Tags } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-interface Industry {
-  id: string
-  name: string
-  description: string | null
-}
-
-interface Contact {
-  id: string
-  first_name: string
-  last_name: string | null
-  name: string
-  email: string
-  phone: string | null
-  company: string | null
-  job_title: string | null
-  address_line1: string | null
-  address_line2: string | null
-  city: string | null
-  region: string | null
-  postcode: string | null
-  country: string | null
-  website: string | null
-  linkedin: string | null
-  twitter: string | null
-  avatar_url: string | null
-  industry_id: string | null
-}
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
+import { Contact, contactsService } from "@/lib/supabase/services/contacts"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog"
+import { TeamSelect } from "@/components/ui/team-select"
+import { supabase } from '@/lib/supabase'
+import { Session } from '@supabase/supabase-js'
+import { cn } from "@/lib/utils"
+import { ContactTags } from "@/components/contacts/contact-tags"
 
 interface EditContactModalProps {
   contact: Contact | null
   isOpen: boolean
   onClose: () => void
   onContactUpdated: () => void
+  session: Session | null
 }
 
 export function EditContactModal({
@@ -46,42 +33,36 @@ export function EditContactModal({
   isOpen,
   onClose,
   onContactUpdated,
+  session
 }: EditContactModalProps) {
-  const initialFormData: Contact = {
-    id: '',
-    first_name: '',
-    last_name: '',
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    job_title: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    region: '',
-    postcode: '',
-    country: '',
-    website: '',
-    linkedin: '',
-    twitter: '',
-    avatar_url: '',
-    industry_id: ''
-  }
-
+  const [formData, setFormData] = useState<Contact | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [industries, setIndustries] = useState<Industry[]>([])
-  const [formData, setFormData] = useState<Contact>(initialFormData)
+  const [userDepartment, setUserDepartment] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
+  // Fetch current user's department
   useEffect(() => {
-    if (!isOpen) {
-      setFormData(initialFormData)
+    async function fetchUserDetails() {
+      if (!session?.user?.id) return
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('department, role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!error && data) {
+        setUserDepartment(data.department)
+        setIsAdmin(data.role === 'admin')
+      }
     }
-  }, [isOpen])
+    fetchUserDetails()
+  }, [session?.user?.id])
 
   useEffect(() => {
     if (contact && isOpen) {
       setFormData({
+        ...contact,
         id: contact.id || '',
         first_name: contact.first_name || '',
         last_name: contact.last_name || '',
@@ -99,235 +80,326 @@ export function EditContactModal({
         website: contact.website || '',
         linkedin: contact.linkedin || '',
         twitter: contact.twitter || '',
-        avatar_url: contact.avatar_url || '',
-        industry_id: contact.industry_id || ''
+        assigned_to: contact.assigned_to || null,
+        assigned_to_type: contact.assigned_to_type || null,
+        department: contact.department || null,
+        updated_at: new Date().toISOString()
       })
     }
   }, [contact, isOpen])
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchIndustries()
-    }
-  }, [isOpen])
-
-  const fetchIndustries = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('industries')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
-      setIndustries(data || [])
-    } catch (error) {
-      console.error('Error fetching industries:', error)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData) return
+
     setIsLoading(true)
 
     try {
-      const { error } = await supabase
-        .from('contacts')
-        .update({
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name?.trim() || null,
-          email: formData.email.trim(),
-          phone: formData.phone?.trim() || null,
-          company: formData.company?.trim() || null,
-          job_title: formData.job_title?.trim() || null,
-          address_line1: formData.address_line1?.trim() || null,
-          address_line2: formData.address_line2?.trim() || null,
-          city: formData.city?.trim() || null,
-          region: formData.region?.trim() || null,
-          postcode: formData.postcode?.trim() || null,
-          country: formData.country?.trim() || null,
-          website: formData.website?.trim() || null,
-          linkedin: formData.linkedin?.trim() || null,
-          twitter: formData.twitter?.trim() || null,
-          industry_id: formData.industry_id || null
-        })
-        .eq('id', contact?.id)
-        .select()
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-
+      await contactsService.updateContact({
+        ...formData,
+        updated_at: new Date().toISOString()
+      })
       onContactUpdated()
       onClose()
+      toast.success('Contact updated successfully')
     } catch (error: any) {
       console.error('Error updating contact:', error.message || error)
+      toast.error('Failed to update contact')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+  const handleChange = (name: string, value: string) => {
+    if (!formData) return
+    setFormData(prev => prev ? ({ ...prev, [name]: value }) : null)
   }
 
-  if (!contact) return null
+  const handleAssignment = (selection: { type: 'user' | 'team', id: string, department?: string }) => {
+    if (!formData) return
+    setFormData(prev => prev ? ({
+      ...prev,
+      assigned_to: selection.id,
+      assigned_to_type: selection.type,
+      department: selection.department || null
+    }) : null)
+  }
+
+  const handleWebsiteChange = (value: string) => {
+    // Allow URLs with www., http://, or https:// prefixes
+    if (value && !value.match(/^(https?:\/\/|www\.)/)) {
+      value = 'www.' + value
+    }
+    // If it starts with www., ensure it's treated as a valid URL
+    if (value && value.startsWith('www.')) {
+      value = 'http://' + value
+    }
+    handleChange('website', value.replace(/^http:\/\/www\./, 'www.'))
+  }
+
+  if (!formData) return null
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
-          />
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 40 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 40 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="w-full max-w-2xl bg-gradient-to-br from-background via-background to-background/80 rounded-lg shadow-xl border border-border/50 backdrop-blur-sm"
-            >
-              <form onSubmit={handleSubmit}>
-                {/* Header */}
-                <div className="p-6 border-b border-border/10">
-                  <h2 className="text-lg font-medium text-muted-foreground">Edit Contact</h2>
-                  <Button variant="ghost" size="icon" onClick={onClose}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
-                  <div className="grid-layout gap-6">
-                    {/* Form sections in 3 columns */}
-                    <div className="space-y-4">
-                      <Section title="Basic Information">
-                        {/* Basic info fields */}
-                      </Section>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-[90vw] md:max-w-[85vw] max-h-[90vh] overflow-y-auto bg-[#0F1629] text-white border-white/10">
+        <DialogHeader className="px-8 py-6 border-b border-white/10 sticky top-0 bg-[#0F1629] z-10">
+          <DialogTitle className="text-xl font-medium">
+            {contact ? 'Edit Contact' : 'New Contact'}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left Column - Main Details */}
+              <div className="lg:col-span-7 space-y-8">
+                {/* Basic Information */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] border border-[rgba(59,130,246,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-500" />
+                    Basic Information
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>First Name</Label>
+                        <Input
+                          value={formData.first_name}
+                          onChange={(e) => handleChange('first_name', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Last Name</Label>
+                        <Input
+                          value={formData.last_name || ''}
+                          onChange={(e) => handleChange('last_name', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <Section title="Work">
-                        {/* Work fields */}
-                      </Section>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-indigo-500" />
+                        Email
+                      </Label>
+                      <Input
+                        type="email"
+                        value={formData.email || ''}
+                        onChange={(e) => handleChange('email', e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      />
                     </div>
 
-                    <div className="space-y-4">
-                      <Section title="Contact Details">
-                        {/* Contact fields */}
-                      </Section>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-green-500" />
+                        Phone
+                      </Label>
+                      <Input
+                        type="tel"
+                        value={formData.phone || ''}
+                        onChange={(e) => handleChange('phone', e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-border/10 bg-muted/50">
-                  <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Save Changes"}
-                  </Button>
+                {/* Work Information */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-purple-500" />
+                    Work
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-purple-500" />
+                        Company
+                      </Label>
+                      <Input
+                        value={formData.company || ''}
+                        onChange={(e) => handleChange('company', e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-orange-500" />
+                        Job Title
+                      </Label>
+                      <Input
+                        value={formData.job_title || ''}
+                        onChange={(e) => handleChange('job_title', e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-cyan-500" />
+                        Website
+                      </Label>
+                      <Input
+                        type="text"
+                        value={formData.website || ''}
+                        onChange={(e) => handleWebsiteChange(e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        placeholder="www.example.com"
+                        pattern="https?:\/\/.*|www\..*"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </form>
-            </motion.div>
+
+                {/* Assignment */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] border border-[rgba(59,130,246,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6">Assignment</h3>
+                  <div className="space-y-2">
+                    <Label>Assigned To</Label>
+                    <TeamSelect
+                      onSelect={handleAssignment}
+                      defaultValue={formData.assigned_to ? {
+                        type: formData.assigned_to_type as 'user' | 'team',
+                        id: formData.assigned_to
+                      } : undefined}
+                      includeTeams={true}
+                      currentDepartment={userDepartment || undefined}
+                      allowCrossDepartment={isAdmin}
+                    />
+                    {!isAdmin && userDepartment && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        You can only assign to members of the {userDepartment} department
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
+                    <Tags className="w-5 h-5 text-indigo-500" />
+                    Tags
+                  </h3>
+                  <div className="space-y-4">
+                    <ContactTags 
+                      contactId={formData.id} 
+                      onTagsChange={(tags) => {
+                        if (!formData) return
+                        setFormData({ ...formData, tags })
+                      }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Additional Info */}
+              <div className="lg:col-span-5 space-y-8">
+                {/* Address */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-rose-500" />
+                    Address
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Address Line 1</Label>
+                      <Input
+                        value={formData.address_line1 || ''}
+                        onChange={(e) => handleChange('address_line1', e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Address Line 2</Label>
+                      <Input
+                        value={formData.address_line2 || ''}
+                        onChange={(e) => handleChange('address_line2', e.target.value)}
+                        className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>City</Label>
+                        <Input
+                          value={formData.city || ''}
+                          onChange={(e) => handleChange('city', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Region</Label>
+                        <Input
+                          value={formData.region || ''}
+                          onChange={(e) => handleChange('region', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Postal Code</Label>
+                        <Input
+                          value={formData.postcode || ''}
+                          onChange={(e) => handleChange('postcode', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Country</Label>
+                        <Input
+                          value={formData.country || ''}
+                          onChange={(e) => handleChange('country', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] border border-[rgba(59,130,246,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6">Notes</h3>
+                  <div className="space-y-2">
+                    <Textarea
+                      value={formData.notes || ''}
+                      onChange={(e) => handleChange('notes', e.target.value)}
+                      className="h-24 md:h-32 bg-[#1C2333] border-white/10 focus:border-blue-500"
+                      placeholder="Add any notes about this contact..."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </>
-      )}
-    </AnimatePresence>
+
+          {/* Action Buttons */}
+          <div className="sticky bottom-0 bg-[#0F1629] px-8 py-6 border-t border-white/10 flex gap-3 sm:gap-4 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="px-4 sm:px-6 py-1.5 sm:py-2 border-white/10 hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 sm:px-6 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700"
+            >
+              {isLoading ? "Saving..." : (contact ? "Update Contact" : "Create Contact")}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
-
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="space-y-4 p-4 bg-background/50 rounded-lg border border-border/10">
-    <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-    <div className="space-y-3">
-      {children}
-    </div>
-  </div>
-)
-
-const InputField = ({ 
-  icon: Icon, 
-  label, 
-  name, 
-  type = "text",
-  value,
-  onChange,
-  required = false
-}: {
-  icon?: any
-  label: string
-  name: string
-  type?: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  required?: boolean
-}) => {
-  // Color mapping for icons
-  const getIconColor = (icon: any) => {
-    switch (icon) {
-      case User:
-        return "text-blue-400"
-      case Building2:
-        return "text-amber-400"
-      case Briefcase:
-        return "text-orange-400"
-      case MapPin:
-        return "text-red-400"
-      case Globe:
-        return "text-cyan-400"
-      case Linkedin:
-        return "text-blue-500"
-      case Twitter:
-        return "text-sky-400"
-      default:
-        return "text-muted-foreground"
-    }
-  }
-
-  return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="text-sm font-medium text-muted-foreground">
-        {label}
-      </label>
-      <div className="relative">
-        {Icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2">
-            <Icon className={`w-4 h-4 ${getIconColor(Icon)}`} />
-          </div>
-        )}
-        <input
-          type={type}
-          id={name}
-          name={name}
-          value={value}
-          onChange={onChange}
-          required={required}
-          className={`w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${Icon ? 'pl-9' : ''}`}
-        />
-      </div>
-    </div>
-  )
-}
-
-<style jsx global>{`
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-  }
-`}</style>
