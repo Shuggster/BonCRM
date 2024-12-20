@@ -15,6 +15,9 @@ export interface CalendarEvent {
   category?: string
   isRecurrence?: boolean
   recurrence?: RecurrenceRule
+  assigned_to?: string
+  assigned_to_type?: 'user' | 'team'
+  department?: string
 }
 
 export interface EventWithLayout extends CalendarEvent {

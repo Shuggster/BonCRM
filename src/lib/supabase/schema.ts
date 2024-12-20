@@ -12,4 +12,7 @@ export type CalendarEventRow = {
   } | null
   created_at: string
   user_id: string
+  assigned_to: string | null
+  assigned_to_type: 'user' | 'team' | null
+  department: string | null
 } 

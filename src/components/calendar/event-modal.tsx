@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { EVENT_CATEGORIES } from "@/lib/constants/categories"
-import { CalendarEvent } from "@/types/calendar"
+import { Label } from "@/components/ui/label"
+import { TeamSelect } from "@/components/ui/team-select"
+import { CalendarEvent, RecurrenceRule } from "@/types/calendar"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { addMinutes } from 'date-fns'
@@ -15,24 +14,38 @@ interface EventModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (event: Partial<CalendarEvent>) => void
-  event?: CalendarEvent
-  initialData?: { start: Date; end: Date }
+  event?: CalendarEvent | null
+  initialData?: {
+    title: string
+    description: string
+    category: string
+    start: Date
+    end: Date
+    recurrence?: RecurrenceRule
+    assigned_to?: string
+    assigned_to_type?: 'user' | 'team'
+    department?: string
+  }
 }
 
 export function EventModal({ isOpen, onClose, onSave, event, initialData }: EventModalProps) {
-  const [title, setTitle] = useState(event?.title || '')
-  const [description, setDescription] = useState(event?.description || '')
-  const [category, setCategory] = useState(event?.category || 'default')
-  const [date, setDate] = useState<Date | null>(event?.start || initialData?.start || null)
-  const [endDate, setEndDate] = useState<Date | null>(event?.end || initialData?.end || null)
+  const [title, setTitle] = useState(initialData?.title || '')
+  const [description, setDescription] = useState(initialData?.description || '')
+  const [category, setCategory] = useState(initialData?.category || 'default')
+  const [startDate, setStartDate] = useState<Date>(initialData?.start || new Date())
+  const [endDate, setEndDate] = useState<Date>(initialData?.end || new Date())
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | undefined>(initialData?.recurrence)
+  const [assignedTo, setAssignedTo] = useState(initialData?.assigned_to)
+  const [assignedToType, setAssignedToType] = useState(initialData?.assigned_to_type)
+  const [department, setDepartment] = useState(initialData?.department)
   const [error, setError] = useState<string | null>(null)
 
   // Set default end time to 1 hour after start time when start time changes
   useEffect(() => {
-    if (date && !endDate) {
-      setEndDate(addMinutes(date, 60))
+    if (startDate && !endDate) {
+      setEndDate(addMinutes(startDate, 60))
     }
-  }, [date])
+  }, [startDate])
 
   // Reset form when event changes
   useEffect(() => {
@@ -40,145 +53,159 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData }: Even
       setTitle(event.title)
       setDescription(event.description || '')
       setCategory(event.category || 'default')
-      setDate(new Date(event.start))
+      setStartDate(new Date(event.start))
       setEndDate(new Date(event.end))
+      setRecurrence(event.recurrence)
+      setAssignedTo(event.assigned_to)
+      setAssignedToType(event.assigned_to_type)
+      setDepartment(event.department)
     } else if (initialData) {
       setTitle('')
       setDescription('')
       setCategory('default')
-      setDate(initialData.start)
+      setStartDate(initialData.start)
       setEndDate(initialData.end)
+      setRecurrence(initialData.recurrence)
+      setAssignedTo(initialData.assigned_to)
+      setAssignedToType(initialData.assigned_to_type)
+      setDepartment(initialData.department)
     }
     setError(null)
   }, [event, initialData])
+
+  const handleAssignment = (selection: { type: 'user' | 'team', id: string, department?: string }) => {
+    setAssignedTo(selection.id)
+    setAssignedToType(selection.type)
+    setDepartment(selection.department)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    if (!date || !endDate) {
+    if (!startDate || !endDate) {
       setError('Please select both start and end times')
       return
     }
 
-    if (endDate <= date) {
+    if (endDate <= startDate) {
       setError('End time must be after start time')
       return
     }
 
-    const eventData: Partial<CalendarEvent> = {
-      title: title || 'Untitled Event',
+    onSave({
+      title,
       description,
       category,
-      start: date,
-      end: endDate
-    }
-
-    await onSave(eventData)
-    onClose()
+      start: startDate,
+      end: endDate,
+      recurrence,
+      assigned_to: assignedTo,
+      assigned_to_type: assignedToType,
+      department
+    })
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-[#0F1629]/95 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/90">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>{event ? 'Edit Event' : 'Add Event'}</DialogTitle>
+          <DialogTitle>{event ? 'Edit Event' : 'Create Event'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="text-sm text-red-500 bg-red-500/10 p-2 rounded-md">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium">Title</label>
-            <Input
-              id="title"
+          <div>
+            <Label>Title</Label>
+            <input
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Event title"
-              className="bg-white/5"
               required
+              className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">Description</label>
-            <Input
-              id="description"
+          <div>
+            <Label>Description</Label>
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Event description"
-              className="bg-white/5"
+              className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="category" className="text-sm font-medium">Category</label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-white/5">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(EVENT_CATEGORIES).map(([key, category]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${category.bgClass}`} />
-                      <span>{category.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div>
+            <Label>Category</Label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
+            >
+              <option value="default">Default</option>
+              <option value="meeting">Meeting</option>
+              <option value="task">Task</option>
+              <option value="reminder">Reminder</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Start Time</label>
+            <div>
+              <Label>Start Time</Label>
               <DatePicker
-                selected={date}
-                onChange={(date) => {
-                  setDate(date)
-                  setError(null)
+                selected={startDate}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setStartDate(date)
+                    setError(null)
+                  }
                 }}
                 showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
                 dateFormat="MMMM d, yyyy h:mm aa"
-                className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
                 required
-                placeholderText="Select start date and time"
-                minDate={new Date()}
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">End Time</label>
+            <div>
+              <Label>End Time</Label>
               <DatePicker
                 selected={endDate}
-                onChange={(date) => {
-                  setEndDate(date)
-                  setError(null)
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setEndDate(date)
+                    setError(null)
+                  }
                 }}
                 showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
                 dateFormat="MMMM d, yyyy h:mm aa"
-                className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
                 required
-                placeholderText="Select end date and time"
-                minDate={date || new Date()}
+                minDate={startDate}
               />
             </div>
           </div>
 
+          <div>
+            <Label>Assign To</Label>
+            <TeamSelect
+              onSelect={handleAssignment}
+              defaultValue={assignedTo ? { 
+                type: assignedToType as 'user' | 'team', 
+                id: assignedTo 
+              } : undefined}
+              includeTeams={true}
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
+
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onClose}>
+            <Button type="button" onClick={onClose} variant="outline">
               Cancel
             </Button>
             <Button type="submit">
-              {event ? 'Update' : 'Create'} Event
+              {event ? 'Update Event' : 'Create Event'}
             </Button>
           </div>
         </form>

@@ -21,7 +21,10 @@ export const calendarService = {
       start: new Date(row.start_time),
       end: new Date(row.end_time),
       category: row.category,
-      recurrence: row.recurrence
+      recurrence: row.recurrence,
+      assigned_to: row.assigned_to,
+      assigned_to_type: row.assigned_to_type,
+      department: row.department
     })) || []
   },
 
@@ -34,7 +37,10 @@ export const calendarService = {
         start_time: event.start.toISOString(),
         end_time: event.end.toISOString(),
         category: event.category,
-        recurrence: event.recurrence
+        recurrence: event.recurrence,
+        assigned_to: event.assigned_to,
+        assigned_to_type: event.assigned_to_type,
+        department: event.department
       })
       .select()
       .single()

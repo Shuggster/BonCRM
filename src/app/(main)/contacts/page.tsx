@@ -49,6 +49,9 @@ interface Contact {
     name: string
   } | null
   name: string
+  assigned_to?: string
+  assigned_to_type?: 'user' | 'team'
+  department?: string
 }
 
 type SortField = keyof Contact

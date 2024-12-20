@@ -7,6 +7,7 @@ export interface Task {
   dueDate?: Date
   assigned_to?: string
   assigned_to_type?: 'user' | 'team'
+  department?: string
   relatedEvent?: string
   taskGroupId?: string
   userId: string

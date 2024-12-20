@@ -23,6 +23,7 @@ import {
 import { TaskActivities } from './task-activities'
 import { taskActivitiesService } from '@/lib/supabase/services/task-activities'
 import { TeamSelect } from "@/components/ui/team-select"
+import { supabase } from '@/lib/supabase'
 
 interface TaskModalProps {
   isOpen: boolean
@@ -42,6 +43,30 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
   const [taskGroupId, setTaskGroupId] = useState<string | undefined>(task?.taskGroupId)
   const [assignedTo, setAssignedTo] = useState(task?.assigned_to)
   const [assignedToType, setAssignedToType] = useState(task?.assigned_to_type)
+  const [assignedToDepartment, setAssignedToDepartment] = useState(task?.department)
+
+  // Get current user's department from session
+  const [userDepartment, setUserDepartment] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Fetch current user's department
+  useEffect(() => {
+    async function fetchUserDetails() {
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('department, role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!error && data) {
+          setUserDepartment(data.department)
+          setIsAdmin(data.role === 'admin')
+        }
+      }
+    }
+    fetchUserDetails()
+  }, [session?.user?.id])
 
   // Reset form when task changes or modal opens/closes
   useEffect(() => {
@@ -54,14 +79,16 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
       setTaskGroupId(task?.taskGroupId)
       setAssignedTo(task?.assigned_to)
       setAssignedToType(task?.assigned_to_type)
+      setAssignedToDepartment(task?.department)
     }
   }, [isOpen, task])
 
-  const handleAssignment = (selection: { type: 'user' | 'team', id: string }) => {
+  const handleAssignment = (selection: { type: 'user' | 'team', id: string, department?: string }) => {
     console.log('Assignment selection received:', selection);
     setAssignedTo(selection.id)
     setAssignedToType(selection.type)
-    console.log('State after setting:', { assignedTo, assignedToType });
+    setAssignedToDepartment(selection.department)
+    console.log('State after setting:', { assignedTo, assignedToType, assignedToDepartment });
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,6 +98,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
     console.log('Task data being sent:', {
       assigned_to: assignedTo,
       assigned_to_type: assignedToType,
+      department: assignedToDepartment,
       // ... other fields
     })
 
@@ -117,6 +145,16 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
           }, session)
         }
 
+        // Department change
+        if (assignedToDepartment !== task.department) {
+          await taskActivitiesService.logActivity({
+            taskId: task.id,
+            actionType: 'department_change',
+            previousValue: task.department,
+            newValue: assignedToDepartment
+          }, session)
+        }
+
         // Assigned to change
         if (assignedTo !== task.assigned_to) {
           await taskActivitiesService.logActivity({
@@ -137,7 +175,8 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
         dueDate,
         taskGroupId,
         assigned_to: assignedTo,
-        assigned_to_type: assignedToType
+        assigned_to_type: assignedToType,
+        department: assignedToDepartment
       })
     } catch (error) {
       console.error('Failed to save task:', error)
@@ -194,7 +233,14 @@ export function TaskModal({ isOpen, onClose, onSave, task, groups, session }: Ta
                       id: assignedTo 
                     } : undefined}
                     includeTeams={true}
+                    currentDepartment={userDepartment || undefined}
+                    allowCrossDepartment={isAdmin}
                   />
+                  {!isAdmin && userDepartment && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      You can only assign to members of the {userDepartment} department
+                    </p>
+                  )}
                 </div>
 
                 {/* Status and Priority */}
