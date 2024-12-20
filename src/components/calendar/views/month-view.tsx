@@ -90,6 +90,29 @@ const DroppableDay = ({ dateStr, children }: { dateStr: string; children: React.
   )
 }
 
+function EventCell({ event }: { event: CalendarEvent }) {
+  const categoryStyles = {
+    default: 'bg-blue-500/20 border-blue-500/30',
+    meeting: 'bg-purple-500/20 border-purple-500/30',
+    task: 'bg-green-500/20 border-green-500/30',
+    reminder: 'bg-yellow-500/20 border-yellow-500/30'
+  }
+
+  const style = categoryStyles[event.category as keyof typeof categoryStyles] || categoryStyles.default
+
+  return (
+    <div className={`px-2 py-1 text-sm rounded border truncate ${style}`}>
+      <div className="font-medium truncate">{event.title}</div>
+      {event.assignee_name && (
+        <div className="text-xs text-gray-400 truncate flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+          {event.assignee_name}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function MonthView({ events = [], onEventClick, onEventDrop, currentDate }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)

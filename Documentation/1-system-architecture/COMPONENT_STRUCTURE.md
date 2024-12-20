@@ -261,3 +261,154 @@ TaskCard.tsx
 ```
 
 This structure ensures consistent modal styling and makes future modifications easier to implement.
+
+## Assignment System Implementation
+
+### User Assignment Pattern
+The system implements a consistent user assignment pattern across different modules (tasks, calendar events, contacts). Here's the detailed implementation structure:
+
+### 1. Database Schema Requirements
+```sql
+-- Required columns for any assignable table
+ALTER TABLE your_table
+ADD COLUMN assigned_to UUID REFERENCES users(id),
+ADD COLUMN assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
+ADD COLUMN department TEXT;
+
+-- Add foreign key constraint
+ALTER TABLE your_table
+ADD CONSTRAINT fk_your_table_assigned_to
+FOREIGN KEY (assigned_to) REFERENCES users(id)
+ON DELETE SET NULL;
+```
+
+### 2. TeamSelect Component Integration
+```typescript
+// Component usage
+<TeamSelect
+  onSelect={handleAssignment}
+  defaultValue={assignedTo ? { 
+    type: assignedToType as 'user' | 'team', 
+    id: assignedTo 
+  } : undefined}
+  includeTeams={true}
+  currentDepartment={userDepartment}
+  allowCrossDepartment={isAdmin}
+/>
+
+// State management in parent component
+const [assignedTo, setAssignedTo] = useState<string | null>(null);
+const [assignedToType, setAssignedToType] = useState<'user' | 'team' | null>(null);
+const [department, setDepartment] = useState<string | null>(null);
+
+// Assignment handler
+const handleAssignment = (selection: { 
+  type: 'user' | 'team', 
+  id: string, 
+  department?: string 
+}) => {
+  setAssignedTo(selection.id);
+  setAssignedToType(selection.type);
+  setDepartment(selection.department || null);
+};
+```
+
+### 3. UUID Handling in TeamSelect
+Important considerations for handling UUIDs:
+- UUIDs may be truncated in the UI but must be full when saving
+- Use `includes()` for matching truncated IDs
+- Always save the full UUID from the database
+
+```typescript
+// Correct UUID handling in TeamSelect
+const handleSelection = (value: string) => {
+  const [type, id] = value.split('-');
+  
+  // Find full UUID by matching truncated version
+  const selectedUser = users.find(u => u.id.includes(id));
+  const selectedTeam = teams.find(t => t.id.includes(id));
+  
+  // Always use full UUID from database
+  const fullId = selectedUser?.id || selectedTeam?.id || id;
+  
+  onSelect({
+    type: type as 'user' | 'team',
+    id: fullId,
+    department: type === 'user' ? selectedUser?.department : selectedTeam?.department
+  });
+};
+```
+
+### 4. Service Layer Implementation
+```typescript
+// Service method for saving assignments
+async updateItem(item: YourType) {
+  const assignmentFields = item.assigned_to && item.assigned_to_type ? {
+    assigned_to: item.assigned_to,
+    assigned_to_type: item.assigned_to_type,
+    department: item.department
+  } : {
+    assigned_to: null,
+    assigned_to_type: null,
+    department: null
+  };
+
+  const { data, error } = await supabase
+    .from('your_table')
+    .update({
+      ...otherFields,
+      ...assignmentFields
+    })
+    .eq('id', item.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+```
+
+### 5. Type Definitions
+```typescript
+interface AssignableItem {
+  assigned_to?: string | null;
+  assigned_to_type?: 'user' | 'team' | null;
+  department?: string | null;
+}
+
+interface YourType extends AssignableItem {
+  // Other type fields
+}
+```
+
+### Key Implementation Points
+1. **Database Setup**
+   - Always add all three assignment columns (assigned_to, assigned_to_type, department)
+   - Include proper foreign key constraints
+   - Use UUID for assigned_to field
+
+2. **Component Integration**
+   - Use TeamSelect component consistently
+   - Handle both user and team assignments
+   - Implement department-based filtering
+   - Support cross-department assignments for admins
+
+3. **UUID Handling**
+   - Always store full UUIDs in the database
+   - Handle truncated UUIDs in the UI
+   - Use includes() for matching IDs
+   - Verify full UUID before saving
+
+4. **State Management**
+   - Maintain consistent state structure
+   - Handle null values appropriately
+   - Update all three fields together
+   - Preserve assignments during edits
+
+5. **Error Handling**
+   - Validate assignments before saving
+   - Handle missing or invalid UUIDs
+   - Provide clear error messages
+   - Log assignment operations
+
+This pattern ensures consistent user assignment functionality across all modules while handling common edge cases and maintaining data integrity.

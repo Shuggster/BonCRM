@@ -70,7 +70,10 @@ export function CalendarClient({ session }: { session: any }) {
           start: eventData.start!,
           end: eventData.end!,
           category: eventData.category || 'default',
-          recurrence: eventData.recurrence
+          recurrence: eventData.recurrence,
+          assigned_to: eventData.assigned_to,
+          assigned_to_type: eventData.assigned_to_type,
+          department: eventData.department
         }, session)
       }
 
@@ -200,13 +203,17 @@ export function CalendarClient({ session }: { session: any }) {
         }}
         onSave={handleSaveEvent}
         event={selectedEvent}
+        session={session}
         initialData={{
           title: selectedEvent?.title || '',
           description: selectedEvent?.description || '',
           category: selectedEvent?.category || 'default',
           start: selectedEvent?.start || new Date(),
           end: selectedEvent?.end || new Date(),
-          recurrence: selectedEvent?.recurrence
+          recurrence: selectedEvent?.recurrence,
+          assigned_to: selectedEvent?.assigned_to,
+          assigned_to_type: selectedEvent?.assigned_to_type,
+          department: selectedEvent?.department
         }}
       />
     </div>

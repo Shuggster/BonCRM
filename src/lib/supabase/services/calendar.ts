@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
 import { CalendarEvent } from '@/types/calendar'
-import { CalendarEventRow } from '../schema'
 
 export const calendarService = {
   async getEvents() {
@@ -14,7 +13,7 @@ export const calendarService = {
       throw error
     }
 
-    return data?.map((row: CalendarEventRow): CalendarEvent => ({
+    return data?.map(row => ({
       id: row.id,
       title: row.title,
       description: row.description || '',
@@ -29,6 +28,12 @@ export const calendarService = {
   },
 
   async createEvent(event: Omit<CalendarEvent, 'id'>) {
+    const assignmentFields = event.assigned_to && event.assigned_to_type ? {
+      assigned_to: event.assigned_to,
+      assigned_to_type: event.assigned_to_type,
+      department: event.department
+    } : {}
+
     const { data, error } = await supabase
       .from('calendar_events')
       .insert({
@@ -38,9 +43,7 @@ export const calendarService = {
         end_time: event.end.toISOString(),
         category: event.category,
         recurrence: event.recurrence,
-        assigned_to: event.assigned_to,
-        assigned_to_type: event.assigned_to_type,
-        department: event.department
+        ...assignmentFields
       })
       .select()
       .single()
@@ -50,10 +53,28 @@ export const calendarService = {
       throw error
     }
 
-    return data
+    return {
+      ...data,
+      start: new Date(data.start_time),
+      end: new Date(data.end_time)
+    }
   },
 
   async updateEvent(event: CalendarEvent) {
+    console.log('Updating event with data:', event);
+    
+    const assignmentFields = event.assigned_to && event.assigned_to_type ? {
+      assigned_to: event.assigned_to,
+      assigned_to_type: event.assigned_to_type,
+      department: event.department
+    } : {
+      assigned_to: null,
+      assigned_to_type: null,
+      department: null
+    }
+
+    console.log('Assignment fields:', assignmentFields);
+
     const { data, error } = await supabase
       .from('calendar_events')
       .update({
@@ -62,7 +83,8 @@ export const calendarService = {
         start_time: event.start.toISOString(),
         end_time: event.end.toISOString(),
         category: event.category,
-        recurrence: event.recurrence
+        recurrence: event.recurrence,
+        ...assignmentFields
       })
       .eq('id', event.id)
       .select()
@@ -73,7 +95,11 @@ export const calendarService = {
       throw error
     }
 
-    return data
+    return {
+      ...data,
+      start: new Date(data.start_time),
+      end: new Date(data.end_time)
+    }
   },
 
   async deleteEvent(id: string) {

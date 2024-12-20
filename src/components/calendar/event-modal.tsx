@@ -9,12 +9,15 @@ import { CalendarEvent, RecurrenceRule } from "@/types/calendar"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { addMinutes } from 'date-fns'
+import { Session } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 
 interface EventModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (event: Partial<CalendarEvent>) => void
   event?: CalendarEvent | null
+  session: Session
   initialData?: {
     title: string
     description: string
@@ -28,17 +31,40 @@ interface EventModalProps {
   }
 }
 
-export function EventModal({ isOpen, onClose, onSave, event, initialData }: EventModalProps) {
+export function EventModal({ isOpen, onClose, onSave, event, initialData, session }: EventModalProps) {
   const [title, setTitle] = useState(initialData?.title || '')
   const [description, setDescription] = useState(initialData?.description || '')
   const [category, setCategory] = useState(initialData?.category || 'default')
   const [startDate, setStartDate] = useState<Date>(initialData?.start || new Date())
   const [endDate, setEndDate] = useState<Date>(initialData?.end || new Date())
   const [recurrence, setRecurrence] = useState<RecurrenceRule | undefined>(initialData?.recurrence)
-  const [assignedTo, setAssignedTo] = useState(initialData?.assigned_to)
-  const [assignedToType, setAssignedToType] = useState(initialData?.assigned_to_type)
-  const [department, setDepartment] = useState(initialData?.department)
+  const [assignedTo, setAssignedTo] = useState<string | null | undefined>(initialData?.assigned_to)
+  const [assignedToType, setAssignedToType] = useState<'user' | 'team' | null | undefined>(initialData?.assigned_to_type)
+  const [department, setDepartment] = useState<string | null | undefined>(initialData?.department)
   const [error, setError] = useState<string | null>(null)
+
+  // Get current user's department from session
+  const [userDepartment, setUserDepartment] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Fetch current user's department
+  useEffect(() => {
+    async function fetchUserDetails() {
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('department, role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!error && data) {
+          setUserDepartment(data.department)
+          setIsAdmin(data.role === 'admin')
+        }
+      }
+    }
+    fetchUserDetails()
+  }, [session?.user?.id])
 
   // Set default end time to 1 hour after start time when start time changes
   useEffect(() => {
@@ -74,9 +100,20 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData }: Even
   }, [event, initialData])
 
   const handleAssignment = (selection: { type: 'user' | 'team', id: string, department?: string }) => {
+    // If selection is empty or invalid, clear all assignment fields
+    if (!selection || !selection.id) {
+      console.log('Clearing assignment fields');
+      setAssignedTo(null)
+      setAssignedToType(null)
+      setDepartment(null)
+      return
+    }
+
+    console.log('Assignment selection received:', selection);
     setAssignedTo(selection.id)
     setAssignedToType(selection.type)
-    setDepartment(selection.department)
+    setDepartment(selection.department || null)
+    console.log('State after setting:', { assignedTo, assignedToType, department });
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +130,8 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData }: Even
       return
     }
 
-    onSave({
+    // Log the data we're about to send
+    console.log('Event data being sent:', {
       title,
       description,
       category,
@@ -104,11 +142,23 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData }: Even
       assigned_to_type: assignedToType,
       department
     })
+
+    onSave({
+      title,
+      description,
+      category,
+      start: startDate,
+      end: endDate,
+      recurrence,
+      assigned_to: assignedTo || null,
+      assigned_to_type: assignedToType || null,
+      department: department || null
+    })
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] md:max-w-[85vw] max-h-[90vh] overflow-y-auto bg-[#0F1629] text-white border-white/10">
         <DialogHeader>
           <DialogTitle>{event ? 'Edit Event' : 'Create Event'}</DialogTitle>
         </DialogHeader>
@@ -193,7 +243,14 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData }: Even
                 id: assignedTo 
               } : undefined}
               includeTeams={true}
+              currentDepartment={userDepartment || undefined}
+              allowCrossDepartment={isAdmin}
             />
+            {!isAdmin && userDepartment && (
+              <p className="text-xs text-gray-400 mt-1">
+                You can only assign to members of the {userDepartment} department
+              </p>
+            )}
           </div>
 
           {error && (
