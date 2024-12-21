@@ -14,7 +14,7 @@ import { MiniCalendar } from "@/components/calendar/mini-calendar"
 import { calendarService } from '@/lib/supabase/services/calendar'
 import { Session } from '@supabase/supabase-js'
 
-export function CalendarClient({ session }: { session: any }) {
+export function CalendarClient({ session }: { session: Session }) {
   // Debug log the session
   console.log('Client session:', session)
 
@@ -45,92 +45,125 @@ export function CalendarClient({ session }: { session: any }) {
     loadEvents()
   }, [session])
 
+  // Filter events based on selected categories and search query
+  const filteredEvents = events.filter(event => {
+    // If no categories are selected, show all events
+    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(event.category || 'default');
+    
+    // Filter by search query if one exists
+    const searchMatch = !searchQuery || 
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (event.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+    return categoryMatch && searchMatch;
+  });
+
   const handleEventClick = (event: CalendarEvent) => {
-    const originalEvent = event.isRecurrence 
-      ? events.find(e => e.id === event.id.split('-')[0])
-      : events.find(e => e.id === event.id)
+    setSelectedEvent(event);
+    setShowEventModal(true);
+  };
 
-    setSelectedEvent(originalEvent || event)
-    setShowEventModal(true)
-  }
-
-  const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
+  const handleEventDrop = async (event: CalendarEvent, newStart: Date) => {
     try {
+      setError(null);
+      const duration = event.end.getTime() - event.start.getTime();
+      const newEnd = new Date(newStart.getTime() + duration);
+      
+      const updatedEvent = await calendarService.updateEvent(
+        session,
+        event.id,
+        { ...event, start: newStart, end: newEnd }
+      );
+      
+      setEvents(events.map(e => e.id === event.id ? updatedEvent : e));
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update event');
+    }
+  };
+
+  const handleEventCreate = async (eventData: Partial<CalendarEvent>) => {
+    try {
+      setError(null);
+      const newEvent = await calendarService.createEvent(session, {
+        title: eventData.title || 'New Event',
+        description: eventData.description || '',
+        start: eventData.start!,
+        end: eventData.end!,
+        category: eventData.category || 'default',
+        recurrence: eventData.recurrence,
+        assigned_to: eventData.assigned_to,
+        assigned_to_type: eventData.assigned_to_type,
+        department: eventData.department
+      });
+      setEvents([...events, newEvent]);
+      setShowEventModal(false);
+    } catch (error) {
+      console.error('Failed to create event:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create event');
+    }
+  };
+
+  const handleEventResize = async (event: CalendarEvent, newEnd: Date) => {
+    try {
+      setError(null);
+      const updatedEvent = await calendarService.updateEvent(
+        session,
+        event.id,
+        { ...event, end: newEnd }
+      );
+      setEvents(events.map(e => e.id === event.id ? updatedEvent : e));
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update event');
+    }
+  };
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    setCurrentDate(date);
+  };
+
+  const handleEventSave = async (eventData: Partial<CalendarEvent>) => {
+    try {
+      setError(null);
       if (selectedEvent) {
-        await calendarService.updateEvent({
-          ...selectedEvent,
-          ...eventData,
-          start: eventData.start!,
-          end: eventData.end!
-        }, session)
+        const updatedEvent = await calendarService.updateEvent(
+          session,
+          selectedEvent.id,
+          { ...selectedEvent, ...eventData }
+        );
+        setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
       } else {
-        await calendarService.createEvent({
+        const newEvent = await calendarService.createEvent(session, {
           title: eventData.title || 'New Event',
           description: eventData.description || '',
           start: eventData.start!,
           end: eventData.end!,
           category: eventData.category || 'default',
-          recurrence: eventData.recurrence
-        }, session)
+          recurrence: eventData.recurrence,
+          assigned_to: eventData.assigned_to,
+          assigned_to_type: eventData.assigned_to_type,
+          department: eventData.department
+        });
+        setEvents([...events, newEvent]);
       }
-
-      const updatedEvents = await calendarService.getEvents(session)
-      setEvents(updatedEvents)
-      setShowEventModal(false)
-      setSelectedEvent(null)
+      setShowEventModal(false);
+      setSelectedEvent(null);
     } catch (error) {
-      console.error('Failed to save event:', error)
+      console.error('Failed to save event:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save event');
     }
-  }
-
-  const handleViewChange = (start: Date, end: Date) => {
-    setViewStart(start)
-    setViewEnd(end)
-  }
-
-  const handleEventDrop = (event: CalendarEvent, newStart: Date) => {
-    const duration = event.end.getTime() - event.start.getTime()
-    const newEnd = new Date(newStart.getTime() + duration)
-
-    const updatedEvent = {
-      ...event,
-      start: newStart,
-      end: newEnd
-    }
-
-    setEvents(events.map(e => 
-      e.id === event.id ? updatedEvent : e
-    ))
-  }
-
-  const handleEventCreate = (eventData: Partial<CalendarEvent>) => {
-    const newEvent: CalendarEvent = {
-      id: String(Date.now()),
-      title: eventData.title || 'New Event',
-      description: eventData.description || '',
-      start: eventData.start!,
-      end: eventData.end!,
-      category: eventData.category || 'default'
-    }
-
-    setEvents([...events, newEvent])
-  }
-
-  const handleEventResize = (event: CalendarEvent, newStart: Date, newEnd: Date) => {
-    setEvents(events.map(e => 
-      e.id === event.id 
-        ? { ...e, start: newStart, end: newEnd }
-        : e
-    ))
-  }
-
-  const handleDateChange = (date: Date) => {
-    setSelectedDate(date)
-    setCurrentDate(date)
-  }
+  };
 
   return (
-    <div className="h-full bg-[#030711]">
+    <>
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 mb-4">
+          <p className="text-sm text-red-500">{error}</p>
+        </div>
+      )}
+
       <div className="container mx-auto max-w-7xl p-8 space-y-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex-1">
@@ -174,41 +207,32 @@ export function CalendarClient({ session }: { session: any }) {
 
           {/* Calendar */}
           <div className="col-span-12 md:col-span-9">
-            <div className="bg-gradient-to-br from-[#0F1629]/50 via-[#0F1629]/30 to-[#030711]/50 
-                          backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/50 
-                          rounded-lg border border-white/[0.08] shadow-xl overflow-hidden">
-              <CalendarView 
-                events={events} 
+            <div className="bg-[#0F1629]/50 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/50 
+                          rounded-lg border border-white/[0.08] shadow-xl">
+              <CalendarView
+                events={filteredEvents}
                 onEventClick={handleEventClick}
                 onEventDrop={handleEventDrop}
                 onEventCreate={handleEventCreate}
                 onEventResize={handleEventResize}
-                onViewChange={handleViewChange}
-                selectedDate={selectedDate}
                 onDateChange={handleDateChange}
+                selectedDate={selectedDate}
               />
             </div>
           </div>
         </div>
-      </div>
 
-      <EventModal
-        isOpen={showEventModal}
-        onClose={() => {
-          setShowEventModal(false)
-          setSelectedEvent(null)
-        }}
-        onSave={handleSaveEvent}
-        event={selectedEvent}
-        initialData={{
-          title: selectedEvent?.title || '',
-          description: selectedEvent?.description || '',
-          category: selectedEvent?.category || 'default',
-          start: selectedEvent?.start || new Date(),
-          end: selectedEvent?.end || new Date(),
-          recurrence: selectedEvent?.recurrence
-        }}
-      />
-    </div>
-  )
+        <EventModal
+          isOpen={showEventModal}
+          onClose={() => {
+            setShowEventModal(false);
+            setSelectedEvent(null);
+          }}
+          onSave={handleEventSave}
+          event={selectedEvent}
+          session={session}
+        />
+      </div>
+    </>
+  );
 } 

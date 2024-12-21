@@ -82,3 +82,40 @@ ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE task_groups DISABLE ROW LEVEL SECURITY;
 ALTER TABLE task_activities DISABLE ROW LEVEL SECURITY;
 ALTER TABLE task_comments DISABLE ROW LEVEL SECURITY;
+
+-- Add assignment fields to calendar_events
+ALTER TABLE calendar_events
+ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES users(id),
+ADD COLUMN IF NOT EXISTS assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
+ADD COLUMN IF NOT EXISTS department TEXT;
+
+-- Add assignment fields to contacts
+ALTER TABLE contacts
+ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES users(id),
+ADD COLUMN IF NOT EXISTS assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
+ADD COLUMN IF NOT EXISTS department TEXT;
+
+-- Add assignment fields to scheduled_activities
+ALTER TABLE scheduled_activities
+ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES users(id),
+ADD COLUMN IF NOT EXISTS assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
+ADD COLUMN IF NOT EXISTS department TEXT;
+
+-- Update types
+CREATE TYPE assignable_type AS ENUM ('user', 'team');
+
+-- Add foreign key constraints
+ALTER TABLE calendar_events
+ADD CONSTRAINT fk_calendar_events_assigned_to
+FOREIGN KEY (assigned_to) REFERENCES users(id)
+ON DELETE SET NULL;
+
+ALTER TABLE contacts
+ADD CONSTRAINT fk_contacts_assigned_to
+FOREIGN KEY (assigned_to) REFERENCES users(id)
+ON DELETE SET NULL;
+
+ALTER TABLE scheduled_activities
+ADD CONSTRAINT fk_scheduled_activities_assigned_to
+FOREIGN KEY (assigned_to) REFERENCES users(id)
+ON DELETE SET NULL;

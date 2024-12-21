@@ -5,29 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, Mail, Phone, ExternalLink, Edit, X, Calendar, Clock, CheckCircle2, XCircle, Users, ArrowRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { ContactNotes } from "./contact-notes"
-
-interface Contact {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  company: string | null
-  job_title: string | null
-  address_line1: string | null
-  address_line2: string | null
-  city: string | null
-  region: string | null
-  postcode: string | null
-  country: string | null
-  website: string | null
-  linkedin: string | null
-  twitter: string | null
-  tags: (string | {
-    id: string
-    name: string
-    color: string
-  })[]
-}
+import type { Contact } from "@/lib/supabase/services/contacts"
+import { ContactTag } from "./contact-tag"
 
 interface ScheduledActivity {
   id: string
@@ -53,12 +32,33 @@ export function ContactDetailsModal({
   onEdit,
 }: ContactDetailsModalProps) {
   const [activities, setActivities] = useState<ScheduledActivity[]>([])
+  const [assignedUserDetails, setAssignedUserDetails] = useState<{ name: string, email: string } | null>(null)
 
   useEffect(() => {
     if (contact && isOpen) {
       fetchActivities()
     }
   }, [contact, isOpen])
+
+  useEffect(() => {
+    async function fetchAssignedUser() {
+      if (contact?.assigned_to && contact?.assigned_to_type === 'user') {
+        const { data, error } = await supabase
+          .from('users')
+          .select('name, email')
+          .eq('id', contact.assigned_to)
+          .single()
+
+        if (!error && data) {
+          setAssignedUserDetails(data)
+        }
+      } else {
+        setAssignedUserDetails(null)
+      }
+    }
+
+    fetchAssignedUser()
+  }, [contact?.assigned_to, contact?.assigned_to_type])
 
   const fetchActivities = async () => {
     if (!contact) return
@@ -204,6 +204,31 @@ export function ContactDetailsModal({
                       </Section>
                     )}
 
+                    {/* Assignment Info */}
+                    {(contact.assigned_to || contact.department) && (
+                      <Section title="Assignment">
+                        {assignedUserDetails && (
+                          <InfoItem 
+                            icon={User} 
+                            label="Assigned To" 
+                            value={
+                              <div className="flex flex-col">
+                                <span>{assignedUserDetails.name}</span>
+                                <span className="text-sm text-muted-foreground">{assignedUserDetails.email}</span>
+                              </div>
+                            }
+                          />
+                        )}
+                        {contact.department && (
+                          <InfoItem 
+                            icon={Users} 
+                            label="Department" 
+                            value={contact.department.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
+                          />
+                        )}
+                      </Section>
+                    )}
+
                     {/* Notes Section */}
                     <Section title="Notes">
                       <ContactNotes contactId={contact.id} />
@@ -255,25 +280,9 @@ export function ContactDetailsModal({
                 {contact.tags && contact.tags.length > 0 && (
                   <Section title="Tags" className="col-span-full">
                     <div className="flex flex-wrap gap-2">
-                      {contact.tags.map((tag, index) => {
-                        // Handle both string and object tag types
-                        const tagObj = typeof tag === 'string' 
-                          ? { id: tag, name: tag, color: '#3B82F6' }  // Default color if tag is string
-                          : tag;
-                        
-                        return (
-                          <span
-                            key={tagObj.id}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm"
-                            style={{ 
-                              backgroundColor: `${tagObj.color}20`,
-                              color: tagObj.color 
-                            }}
-                          >
-                            {tagObj.name}
-                          </span>
-                        );
-                      })}
+                      {contact.tags.map((tagId) => (
+                        <ContactTag key={tagId} tagId={tagId} />
+                      ))}
                     </div>
                   </Section>
                 )}

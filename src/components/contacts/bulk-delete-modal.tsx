@@ -4,23 +4,23 @@ import { useState } from "react"
 import { X } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
-interface BulkDeleteModalProps {
-  contactIds: string[]
+export interface BulkDeleteModalProps {
   isOpen: boolean
   onClose: () => void
-  onContactsDeleted: () => void
+  selectedContactIds: string[]
+  onComplete: (retryCount?: number) => Promise<void>
 }
 
-export function BulkDeleteModal({ 
-  contactIds, 
-  isOpen, 
-  onClose, 
-  onContactsDeleted 
+export function BulkDeleteModal({
+  isOpen,
+  onClose,
+  selectedContactIds,
+  onComplete
 }: BulkDeleteModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!isOpen || contactIds.length === 0) return null
+  if (!isOpen || selectedContactIds.length === 0) return null
 
   const handleDelete = async () => {
     setLoading(true)
@@ -30,11 +30,11 @@ export function BulkDeleteModal({
       const { error } = await supabase
         .from('contacts')
         .delete()
-        .in('id', contactIds)
+        .in('id', selectedContactIds)
 
       if (error) throw error
 
-      onContactsDeleted()
+      onComplete()
       onClose()
     } catch (err: any) {
       setError(err.message)
@@ -62,7 +62,7 @@ export function BulkDeleteModal({
         )}
 
         <p className="text-gray-300 mb-6">
-          Are you sure you want to delete {contactIds.length} contacts? This action cannot be undone.
+          Are you sure you want to delete {selectedContactIds.length} contacts? This action cannot be undone.
         </p>
 
         <div className="flex gap-4">

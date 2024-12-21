@@ -1,17 +1,17 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from 'react'
+import { CalendarEvent } from "@/types/calendar"
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, set } from 'date-fns'
 import { Button } from "@/components/ui/button"
 import { Clock, Grid, List } from "lucide-react"
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, set } from "date-fns"
-import { cn } from "@/lib/utils"
-import { CalendarEvent } from "@/types/calendar"
-import { EVENT_CATEGORIES } from "@/lib/constants/categories"
+import { cn } from '@/lib/utils'
+import { EVENT_CATEGORIES, EventCategory } from "@/lib/constants/categories"
 import { layoutEvents } from "@/lib/utils/events"
 
 interface WeekViewProps {
   events: CalendarEvent[]
-  onEventClick?: (event: CalendarEvent) => void
+  onEventClick: (event: CalendarEvent) => void
   onEventDrop?: (event: CalendarEvent, newStart: Date) => void
   currentDate: Date
 }
@@ -21,9 +21,14 @@ const BUSINESS_HOURS = {
   end: 20,  // 8 PM
 }
 
-export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }: WeekViewProps) {
+export function WeekView({ 
+  events = [], 
+  onEventClick, 
+  onEventDrop,
+  currentDate 
+}: WeekViewProps) {
   const [showFullDay, setShowFullDay] = useState(false)
-  const [viewType, setViewType] = useState<'timeline' | 'grid'>('timeline')
+  const [viewType, setViewType] = useState<'grid' | 'timeline'>('grid')
 
   const startHour = showFullDay ? 0 : BUSINESS_HOURS.start
   const endHour = showFullDay ? 24 : BUSINESS_HOURS.end
@@ -32,6 +37,10 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
   const weekStart = startOfWeek(currentDate)
   const weekEnd = endOfWeek(currentDate)
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
+
+  const getEventCategoryClass = (category: EventCategory | string | undefined) => {
+    return EVENT_CATEGORIES[category as EventCategory]?.borderClass || EVENT_CATEGORIES.default.borderClass
+  }
 
   const TimelineView = () => (
     <div className="grid grid-cols-8 gap-px bg-white/5 rounded-lg overflow-hidden h-[calc(80px*(var(--total-hours)))]" 
@@ -110,7 +119,7 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
                         "h-full rounded-md p-2 cursor-pointer",
                         "bg-white/5 hover:bg-white/10 transition-colors",
                         "border-l-2",
-                        EVENT_CATEGORIES[event.category || 'default']?.borderClass
+                        getEventCategoryClass(event.category)
                       )}
                       onClick={() => onEventClick?.(event)}
                     >
@@ -149,7 +158,7 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
                     "p-2 rounded-md cursor-pointer",
                     "bg-white/5 hover:bg-white/10 transition-colors",
                     "border-l-2",
-                    EVENT_CATEGORIES[event.category || 'default']?.borderClass
+                    getEventCategoryClass(event.category)
                   )}
                   onClick={() => onEventClick?.(event)}
                 >
@@ -167,9 +176,9 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between bg-[#1C2333]/50 backdrop-blur-xl rounded-lg border border-white/[0.08] p-4">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
         </h2>
         
@@ -178,7 +187,12 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
             variant="ghost"
             size="sm"
             onClick={() => setShowFullDay(!showFullDay)}
-            className="gap-2"
+            className={cn(
+              "gap-2 px-3 py-2 h-8",
+              "text-gray-400 hover:text-gray-300",
+              "hover:bg-white/5",
+              "transition-all duration-200"
+            )}
           >
             <Clock className="h-4 w-4" />
             {showFullDay ? '24 Hours' : 'Business Hours'}
@@ -187,7 +201,12 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
             variant="ghost"
             size="sm"
             onClick={() => setViewType(viewType === 'timeline' ? 'grid' : 'timeline')}
-            className="gap-2"
+            className={cn(
+              "gap-2 px-3 py-2 h-8",
+              "text-gray-400 hover:text-gray-300",
+              "hover:bg-white/5",
+              "transition-all duration-200"
+            )}
           >
             {viewType === 'timeline' ? (
               <><Grid className="h-4 w-4" /> Grid</>
@@ -198,7 +217,7 @@ export function WeekView({ events = [], onEventClick, onEventDrop, currentDate }
         </div>
       </div>
 
-      <div className="bg-white/5 rounded-lg p-4">
+      <div className="bg-[#0F1629]/30 backdrop-blur-xl rounded-lg border border-white/[0.08] shadow-xl p-4">
         {viewType === 'timeline' ? <TimelineView /> : <GridView />}
       </div>
     </div>

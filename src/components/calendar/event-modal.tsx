@@ -3,183 +3,311 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { EVENT_CATEGORIES } from "@/lib/constants/categories"
-import { CalendarEvent } from "@/types/calendar"
+import { Label } from "@/components/ui/label"
+import { TeamSelect } from "@/components/ui/team-select"
+import { CalendarEvent, RecurrenceRule } from "@/types/calendar"
+import { EVENT_CATEGORIES, EventCategory } from "@/lib/constants/categories"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { addMinutes } from 'date-fns'
+import { Session } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 interface EventModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (event: Partial<CalendarEvent>) => void
-  event?: CalendarEvent
-  initialData?: { start: Date; end: Date }
+  event?: CalendarEvent | null
+  session: Session
+  initialData?: {
+    title: string
+    description: string
+    category: string
+    start: Date
+    end: Date
+    recurrence?: RecurrenceRule
+    assigned_to?: string
+    assigned_to_type?: 'user' | 'team'
+    department?: string
+  }
 }
 
-export function EventModal({ isOpen, onClose, onSave, event, initialData }: EventModalProps) {
-  const [title, setTitle] = useState(event?.title || '')
-  const [description, setDescription] = useState(event?.description || '')
-  const [category, setCategory] = useState(event?.category || 'default')
-  const [date, setDate] = useState<Date | null>(event?.start || initialData?.start || null)
-  const [endDate, setEndDate] = useState<Date | null>(event?.end || initialData?.end || null)
+export function EventModal({ isOpen, onClose, onSave, event, initialData, session }: EventModalProps) {
+  const [title, setTitle] = useState(initialData?.title || '')
+  const [description, setDescription] = useState(initialData?.description || '')
+  const [category, setCategory] = useState<EventCategory>(initialData?.category as EventCategory || 'default')
+  const [startDate, setStartDate] = useState<Date>(initialData?.start || new Date())
+  const [endDate, setEndDate] = useState<Date>(initialData?.end || new Date())
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | undefined>(initialData?.recurrence)
+  const [assignedTo, setAssignedTo] = useState<string | null | undefined>(initialData?.assigned_to)
+  const [assignedToType, setAssignedToType] = useState<'user' | 'team' | null | undefined>(initialData?.assigned_to_type)
+  const [department, setDepartment] = useState<string | null | undefined>(initialData?.department)
   const [error, setError] = useState<string | null>(null)
+
+  // Get current user's department from session
+  const [userDepartment, setUserDepartment] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Fetch current user's department
+  useEffect(() => {
+    async function fetchUserDetails() {
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('department, role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!error && data) {
+          setUserDepartment(data.department)
+          setIsAdmin(data.role === 'admin')
+        }
+      }
+    }
+    fetchUserDetails()
+  }, [session?.user?.id])
 
   // Set default end time to 1 hour after start time when start time changes
   useEffect(() => {
-    if (date && !endDate) {
-      setEndDate(addMinutes(date, 60))
+    if (startDate && !endDate) {
+      setEndDate(addMinutes(startDate, 60))
     }
-  }, [date])
+  }, [startDate])
 
   // Reset form when event changes
   useEffect(() => {
     if (event) {
       setTitle(event.title)
       setDescription(event.description || '')
-      setCategory(event.category || 'default')
-      setDate(new Date(event.start))
+      setCategory(event.category as EventCategory || 'default')
+      setStartDate(new Date(event.start))
       setEndDate(new Date(event.end))
+      setRecurrence(event.recurrence)
+      setAssignedTo(event.assigned_to)
+      setAssignedToType(event.assigned_to_type)
+      setDepartment(event.department)
     } else if (initialData) {
-      setTitle('')
-      setDescription('')
-      setCategory('default')
-      setDate(initialData.start)
+      setTitle(initialData.title)
+      setDescription(initialData.description)
+      setCategory(initialData.category as EventCategory || 'default')
+      setStartDate(initialData.start)
       setEndDate(initialData.end)
+      setRecurrence(initialData.recurrence)
+      setAssignedTo(initialData.assigned_to)
+      setAssignedToType(initialData.assigned_to_type)
+      setDepartment(initialData.department)
     }
     setError(null)
   }, [event, initialData])
+
+  const handleAssignment = (selection: { type: 'user' | 'team', id: string, department?: string }) => {
+    if (!selection || !selection.id) {
+      setAssignedTo(null)
+      setAssignedToType(null)
+      setDepartment(null)
+      return
+    }
+
+    setAssignedTo(selection.id)
+    setAssignedToType(selection.type)
+    setDepartment(selection.department || null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    if (!date || !endDate) {
+    if (!startDate || !endDate) {
       setError('Please select both start and end times')
       return
     }
 
-    if (endDate <= date) {
+    if (endDate <= startDate) {
       setError('End time must be after start time')
       return
     }
 
-    const eventData: Partial<CalendarEvent> = {
-      title: title || 'Untitled Event',
+    onSave({
+      title,
       description,
       category,
-      start: date,
-      end: endDate
-    }
-
-    await onSave(eventData)
-    onClose()
+      start: startDate,
+      end: endDate,
+      recurrence,
+      assigned_to: assignedTo || null,
+      assigned_to_type: assignedToType || null,
+      department: department || null
+    })
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-[#0F1629]/95 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/90">
-        <DialogHeader>
-          <DialogTitle>{event ? 'Edit Event' : 'Add Event'}</DialogTitle>
+      <DialogContent className="max-w-[95vw] md:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#0F1629]/95 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/90 border-white/[0.08] shadow-xl">
+        <DialogHeader className="px-6 pt-6">
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            {event ? 'Edit Event' : 'Create Event'}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="text-sm text-red-500 bg-red-500/10 p-2 rounded-md">
-              {error}
+
+        <form onSubmit={handleSubmit} className="px-6 pb-6">
+          <div className="space-y-6">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+                <p className="text-sm text-red-500">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Title</Label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className={cn(
+                    "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                    "bg-[#1C2333] border-white/[0.08]",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                    "placeholder:text-gray-400"
+                  )}
+                  placeholder="Event title"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Description</Label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className={cn(
+                    "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                    "bg-[#1C2333] border-white/[0.08]",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                    "placeholder:text-gray-400",
+                    "resize-none"
+                  )}
+                  placeholder="Event description"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Category</Label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as EventCategory)}
+                  className={cn(
+                    "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                    "bg-[#1C2333] border-white/[0.08]",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  )}
+                >
+                  {Object.entries(EVENT_CATEGORIES).map(([key, { label }]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-200">Start Time</Label>
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setStartDate(date)
+                        setError(null)
+                      }
+                    }}
+                    showTimeSelect
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    className={cn(
+                      "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                      "bg-[#1C2333] border-white/[0.08]",
+                      "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                      "placeholder:text-gray-400"
+                    )}
+                    required
+                    placeholderText="Select start time"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-200">End Time</Label>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setEndDate(date)
+                        setError(null)
+                      }
+                    }}
+                    showTimeSelect
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    className={cn(
+                      "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                      "bg-[#1C2333] border-white/[0.08]",
+                      "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                      "placeholder:text-gray-400"
+                    )}
+                    required
+                    placeholderText="Select end time"
+                    minDate={startDate}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Assign To</Label>
+                <div className="mt-1.5">
+                  <TeamSelect
+                    onSelect={handleAssignment}
+                    defaultValue={assignedTo ? { 
+                      type: assignedToType as 'user' | 'team', 
+                      id: assignedTo 
+                    } : undefined}
+                    includeTeams={true}
+                    currentDepartment={userDepartment || undefined}
+                    allowCrossDepartment={isAdmin}
+                  />
+                </div>
+                {!isAdmin && userDepartment && (
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    You can only assign to members of the {userDepartment} department
+                  </p>
+                )}
+              </div>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium">Title</label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Event title"
-              className="bg-white/5"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">Description</label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Event description"
-              className="bg-white/5"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="category" className="text-sm font-medium">Category</label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-white/5">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(EVENT_CATEGORIES).map(([key, category]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${category.bgClass}`} />
-                      <span>{category.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Start Time</label>
-              <DatePicker
-                selected={date}
-                onChange={(date) => {
-                  setDate(date)
-                  setError(null)
-                }}
-                showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
-                dateFormat="MMMM d, yyyy h:mm aa"
-                className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                required
-                placeholderText="Select start date and time"
-                minDate={new Date()}
-              />
+            <div className="flex justify-end gap-2 pt-6 mt-6 border-t border-white/[0.08]">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                className={cn(
+                  "px-4 py-2 h-9",
+                  "text-gray-400 hover:text-gray-300",
+                  "hover:bg-white/5",
+                  "transition-all duration-200"
+                )}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className={cn(
+                  "px-4 py-2 h-9",
+                  "bg-blue-600 hover:bg-blue-700 text-white",
+                  "transition-all duration-200"
+                )}
+              >
+                {event ? 'Update' : 'Create'} Event
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">End Time</label>
-              <DatePicker
-                selected={endDate}
-                onChange={(date) => {
-                  setEndDate(date)
-                  setError(null)
-                }}
-                showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
-                dateFormat="MMMM d, yyyy h:mm aa"
-                className="w-full rounded-md border border-white/10 bg-[#0F1629] px-3 py-2 text-sm text-white ring-offset-background placeholder:text-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                required
-                placeholderText="Select end date and time"
-                minDate={date || new Date()}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {event ? 'Update' : 'Create'} Event
-            </Button>
           </div>
         </form>
       </DialogContent>

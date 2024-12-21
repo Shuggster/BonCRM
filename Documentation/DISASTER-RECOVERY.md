@@ -366,3 +366,159 @@ async function createUser(userData: CreateUserInput) {
 6. Service role key must NEVER be exposed
 
 Remember: When in doubt, refer to this document first before making any changes.
+
+# Disaster Recovery Plan
+
+## Database Issues
+
+### Tag Management Issues
+1. **Problem**: Tag references in contacts table not matching tag table structure
+   - Symptoms: 
+     - Invalid UUID errors when fetching tags
+     - "Error fetching tag: invalid input syntax for type uuid"
+     - Tags showing as IDs instead of names
+   - Cause: 
+     - Multiple tag tables (contact_tags and tags)
+     - Mixed storage of tag names and UUIDs
+     - Legacy data using string names instead of UUIDs
+   
+   **Solution**:
+   ```sql
+   -- Create function to validate UUIDs
+   CREATE OR REPLACE FUNCTION is_uuid(str text)
+   RETURNS boolean AS $$
+   BEGIN
+     RETURN str ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+   EXCEPTION
+     WHEN OTHERS THEN
+       RETURN false;
+   END;
+   $$ LANGUAGE plpgsql;
+
+   -- Clean up invalid tag references
+   UPDATE contacts 
+   SET tags = ARRAY(
+     SELECT DISTINCT unnest(tags) tag_id
+     FROM contacts, unnest(tags) tag_id
+     WHERE is_uuid(tag_id::text) AND EXISTS (
+       SELECT 1 FROM tags WHERE id = tag_id::uuid
+     )
+   )
+   WHERE tags IS NOT NULL;
+   ```
+
+2. **Problem**: Multiple tag storage locations
+   - Symptoms:
+     - Inconsistent tag data
+     - 404 errors when accessing contact_tags table
+   - Cause:
+     - Legacy tag table still in use
+     - References to old table in code
+   
+   **Solution**:
+   - Drop old tag tables: `DROP TABLE IF EXISTS contact_tags CASCADE;`
+   - Use single source of truth: `tags` table
+   - Update all tag queries to use proper table
+
+### Assignment Field Issues
+1. **Problem**: Missing assignment fields in database
+   - Symptoms:
+     - "Could not find the 'assigned_to' column"
+     - Foreign key constraint violations
+   
+   **Solution**:
+   ```sql
+   ALTER TABLE contacts 
+   ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES public.users(id),
+   ADD COLUMN IF NOT EXISTS assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
+   ADD COLUMN IF NOT EXISTS department TEXT;
+   ```
+
+## Component Recovery
+
+### Tag Component Issues
+1. **Problem**: Tag display showing UUIDs instead of names
+   - Symptoms:
+     - Raw UUIDs displayed in UI
+     - Missing tag colors and formatting
+   
+   **Solution**:
+   - Update components to fetch complete tag details
+   - Use proper error handling for missing tags
+   - Implement fallback display for invalid tags
+
+2. **Problem**: Tag query errors (406 Not Acceptable)
+   - Symptoms:
+     - 406 errors when fetching tags
+     - PGRST116 errors (multiple rows returned)
+   
+   **Solution**:
+   - Use `.maybeSingle()` instead of `.single()`
+   - Implement proper error handling
+   - Add type checking for tag IDs
+
+## Data Migration
+
+### Contact Data Migration
+1. **Problem**: Legacy data formats
+   - Symptoms:
+     - Mixed data types in tags field
+     - Invalid references to old tables
+   
+   **Solution**:
+   - Create migration scripts to clean data
+   - Validate data before migration
+   - Keep backup of old data
+   ```sql
+   -- Backup old data
+   CREATE TABLE contacts_backup AS SELECT * FROM contacts;
+   
+   -- Clean up data
+   UPDATE contacts SET tags = '{}' WHERE tags IS NULL;
+   UPDATE contacts SET tags = ARRAY[]::uuid[] WHERE tags = '{}';
+   ```
+
+## Prevention Strategies
+
+1. **Schema Validation**
+   - Implement strict type checking
+   - Use enums for constrained values
+   - Add foreign key constraints
+
+2. **Component Testing**
+   - Test with invalid data
+   - Verify error handling
+   - Check component state management
+
+3. **Database Maintenance**
+   - Regular schema validation
+   - Clean up unused tables
+   - Monitor foreign key integrity
+
+4. **Code Organization**
+   - Single source of truth for data
+   - Consistent naming conventions
+   - Clear separation of concerns
+
+## Recovery Steps
+
+1. **Database Issues**
+   - Check schema consistency
+   - Validate foreign key relationships
+   - Clean up invalid references
+
+2. **Component Issues**
+   - Verify data fetching
+   - Check error handling
+   - Test edge cases
+
+3. **Data Migration**
+   - Backup before changes
+   - Validate data integrity
+   - Test migration scripts
+
+Remember to always:
+1. Backup data before major changes
+2. Test migrations on staging
+3. Document all schema changes
+4. Keep track of deprecated tables/columns

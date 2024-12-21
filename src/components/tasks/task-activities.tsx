@@ -125,6 +125,14 @@ function formatActivityMessage(activity: TaskActivity): string {
       return activity.newValue
         ? `Moved to group "${activity.newValue}"`
         : `Removed from group`
+    case 'department_change':
+      return activity.newValue
+        ? `Department changed to "${activity.newValue}"`
+        : `Department removed`
+    case 'assigned_to_change':
+      return activity.newValue
+        ? `Assigned to user "${activity.newValue}"`
+        : `Unassigned`
     default:
       return `Unknown activity`
   }

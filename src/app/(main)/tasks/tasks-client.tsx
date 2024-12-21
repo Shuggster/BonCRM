@@ -1,49 +1,48 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { Plus, ListTodo, ArrowUpDown, FolderPlus } from "lucide-react"
-import { TaskList } from "@/components/tasks/task-list"
-import { AdvancedFilters, TaskFilters } from "@/components/tasks/advanced-filters"
+import { useState, useEffect, useMemo } from 'react'
+import { Session } from '@supabase/supabase-js'
+import { Task, TaskFilters, TaskFilterPreset } from '@/types/tasks'
+import { TaskGroup } from '@/lib/supabase/services/task-groups'
+import { taskService } from '@/lib/supabase/services/tasks'
+import { taskGroupService } from '@/lib/supabase/services/task-groups'
+import { taskFilterPresetService } from '@/lib/supabase/services/task-filter-presets'
+import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { ListTodo, Plus, FolderPlus, ArrowUpDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
+import { TaskList } from '@/components/tasks/task-list'
 import { TaskModal } from '@/components/tasks/task-modal'
 import { GroupModal } from '@/components/tasks/group-modal'
-import { taskService } from '@/lib/supabase/services/tasks'
-import { taskGroupService, TaskGroup } from '@/lib/supabase/services/task-groups'
-import { taskFilterPresetService, TaskFilterPreset } from '@/lib/supabase/services/task-filter-presets'
-import { Task } from "@/types/tasks"
-import { Session } from '@supabase/supabase-js'
-import { toast } from "sonner"
+import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { supabase } from '@/lib/supabase'
+} from '@/components/ui/dropdown-menu'
 
-type SortOption = {
-  label: string;
-  value: string;
-  compareFn: (a: Task, b: Task) => number;
+interface TasksClientProps {
+  session: Session
 }
 
-const sortOptions: SortOption[] = [
+const sortOptions = [
   {
-    label: "Created (Newest)",
-    value: "created-desc",
-    compareFn: (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    label: 'Created (Newest)',
+    value: 'created-desc',
+    compareFn: (a: Task, b: Task) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   },
   {
-    label: "Created (Oldest)",
-    value: "created-asc",
-    compareFn: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    label: 'Created (Oldest)',
+    value: 'created-asc',
+    compareFn: (a: Task, b: Task) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   },
   {
-    label: "Due Date (Earliest)",
-    value: "due-asc",
-    compareFn: (a, b) => {
+    label: 'Due Date (Earliest)',
+    value: 'due-asc',
+    compareFn: (a: Task, b: Task) => {
       if (!a.dueDate && !b.dueDate) return 0;
       if (!a.dueDate) return 1;
       if (!b.dueDate) return -1;
@@ -51,9 +50,9 @@ const sortOptions: SortOption[] = [
     }
   },
   {
-    label: "Due Date (Latest)",
-    value: "due-desc",
-    compareFn: (a, b) => {
+    label: 'Due Date (Latest)',
+    value: 'due-desc',
+    compareFn: (a: Task, b: Task) => {
       if (!a.dueDate && !b.dueDate) return 0;
       if (!a.dueDate) return 1;
       if (!b.dueDate) return -1;
@@ -61,43 +60,44 @@ const sortOptions: SortOption[] = [
     }
   },
   {
-    label: "Priority (High to Low)",
-    value: "priority-desc",
-    compareFn: (a, b) => {
+    label: 'Priority (High to Low)',
+    value: 'priority-desc',
+    compareFn: (a: Task, b: Task) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       return priorityOrder[b.priority] - priorityOrder[a.priority];
     }
   },
   {
-    label: "Priority (Low to High)",
-    value: "priority-asc",
-    compareFn: (a, b) => {
+    label: 'Priority (Low to High)',
+    value: 'priority-asc',
+    compareFn: (a: Task, b: Task) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     }
   },
   {
-    label: "Title (A-Z)",
-    value: "title-asc",
-    compareFn: (a, b) => a.title.localeCompare(b.title)
+    label: 'Title (A-Z)',
+    value: 'title-asc',
+    compareFn: (a: Task, b: Task) => a.title.localeCompare(b.title)
   },
   {
-    label: "Title (Z-A)",
-    value: "title-desc",
-    compareFn: (a, b) => b.title.localeCompare(a.title)
+    label: 'Title (Z-A)',
+    value: 'title-desc',
+    compareFn: (a: Task, b: Task) => b.title.localeCompare(a.title)
   }
 ];
-
-interface TasksClientProps {
-  session: Session
-}
 
 export function TasksClient({ session }: TasksClientProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [groups, setGroups] = useState<TaskGroup[]>([])
-  const [filterPresets, setFilterPresets] = useState<TaskFilterPreset[]>([])
+  const [users, setUsers] = useState<{ id: string, name: string }[]>([])
+  const [selectedTask, setSelectedTask] = useState<Task | undefined>()
+  const [selectedGroup, setSelectedGroup] = useState<TaskGroup | undefined>()
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [sortBy, setSortBy] = useState<string>('created-desc')
   const [filters, setFilters] = useState<TaskFilters>({
-    search: "",
+    search: '',
     statuses: [],
     priorities: [],
     groups: [],
@@ -106,18 +106,31 @@ export function TasksClient({ session }: TasksClientProps) {
     hasComments: false,
     isOverdue: false
   })
-  const [selectedTask, setSelectedTask] = useState<Task | undefined>()
-  const [selectedGroup, setSelectedGroup] = useState<TaskGroup | undefined>()
-  const [showTaskModal, setShowTaskModal] = useState(false)
-  const [showGroupModal, setShowGroupModal] = useState(false)
-  const [sortBy, setSortBy] = useState<string>("created-desc")
-  const [users, setUsers] = useState<{id: string, name: string}[]>([])
+  const [filterPresets, setFilterPresets] = useState<TaskFilterPreset[]>([])
 
   useEffect(() => {
-    if (!session?.user) {
-      console.error('No session or user')
-      return
+    const loadTeamsAndGroups = async () => {
+      try {
+        const [teamsResponse, groupsResponse, usersResponse] = await Promise.all([
+          supabase.from('teams').select('id, name, department'),
+          taskGroupService.getGroups(session),
+          supabase.from('users').select('id, name')
+        ])
+
+        if (teamsResponse.error) throw teamsResponse.error
+        if (usersResponse.error) throw usersResponse.error
+        
+        setGroups(groupsResponse)
+        setUsers(usersResponse.data || [])
+      } catch (error) {
+        console.error('Failed to load teams/groups/users:', error)
+        toast.error('Failed to load teams/groups/users')
+      }
     }
+    loadTeamsAndGroups()
+  }, [session])
+
+  useEffect(() => {
     const loadTasks = async () => {
       try {
         const data = await taskService.getTasks(session)
@@ -130,118 +143,12 @@ export function TasksClient({ session }: TasksClientProps) {
     loadTasks()
   }, [session])
 
-  useEffect(() => {
-    const loadTeamsAndGroups = async () => {
-      try {
-        const [teamsResponse, groupsResponse] = await Promise.all([
-          supabase.from('teams').select('id, name, department'),
-          taskGroupService.getGroups(session)
-        ])
-
-        if (teamsResponse.error) throw teamsResponse.error
-        
-        setGroups([
-          ...(teamsResponse.data || []),
-          ...(groupsResponse || [])
-        ])
-      } catch (error) {
-        console.error('Failed to load teams/groups:', error)
-        toast.error('Failed to load teams/groups')
-      }
-    }
-    loadTeamsAndGroups()
-  }, [session])
-
-  useEffect(() => {
-    const loadFilterPresets = async () => {
-      try {
-        console.log('Loading filter presets...')
-        const data = await taskFilterPresetService.getPresets(session)
-        console.log('Loaded presets:', data)
-        setFilterPresets(data)
-      } catch (error: any) {
-        console.error('Failed to load filter presets:', error.message || error)
-        toast.error(`Failed to load filter presets: ${error.message || 'Unknown error'}`)
-      }
-    }
-    loadFilterPresets()
-  }, [session])
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name')
-        if (error) throw error
-        setUsers(data || [])
-      } catch (error) {
-        console.error('Failed to load users:', error)
-        toast.error('Failed to load users')
-      }
-    }
-    loadUsers()
-  }, [])
-
-  // Filter and sort tasks
-  const filteredTasks = useMemo(() => {
-    // First filter
-    const filtered = tasks.filter(task => {
-      // Search filter
-      const matchesSearch = filters.search === "" || 
-        task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        task.description?.toLowerCase().includes(filters.search.toLowerCase());
-
-      // Status filter
-      const matchesStatus = filters.statuses.length === 0 || filters.statuses.includes(task.status);
-
-      // Priority filter
-      const matchesPriority = filters.priorities.length === 0 || filters.priorities.includes(task.priority);
-
-      // Group filter
-      const matchesGroup = filters.groups.length === 0 || filters.groups.includes(task.taskGroupId || "");
-
-      // Date range filter
-      const matchesDateRange = (() => {
-        if (!filters.dateRange.from && !filters.dateRange.to) return true;
-        if (!task.dueDate) return false;
-        const dueDate = new Date(task.dueDate);
-        const fromDate = filters.dateRange.from ? new Date(filters.dateRange.from) : null;
-        const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : null;
-        
-        if (fromDate && toDate) {
-          return dueDate >= fromDate && dueDate <= toDate;
-        }
-        if (fromDate) {
-          return dueDate >= fromDate;
-        }
-        if (toDate) {
-          return dueDate <= toDate;
-        }
-        return true;
-      })();
-
-      // Additional filters
-      const matchesAssigned = !filters.assignedToMe || task.assignedTo === session.user.id;
-      const matchesComments = !filters.hasComments || (task.comments && task.comments.length > 0);
-      const matchesOverdue = !filters.isOverdue || (task.dueDate && new Date(task.dueDate) < new Date());
-
-      // All filters must match
-      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && 
-             matchesDateRange && matchesAssigned && matchesComments && matchesOverdue;
-    });
-
-    // Then sort
-    const sortOption = sortOptions.find(option => option.value === sortBy);
-    if (sortOption) {
-      return [...filtered].sort(sortOption.compareFn);
-    }
-    return filtered;
-  }, [tasks, filters, sortBy, session.user.id]);
-
   const handleCreateTask = async (taskData: Partial<Task>) => {
     try {
-      const newTask = await taskService.createTask(taskData as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, session)
+      const newTask = await taskService.createTask({
+        ...taskData,
+        assigned_to: taskData.assigned_to,
+      } as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, session)
       setTasks([newTask, ...tasks])
       setShowTaskModal(false)
       toast.success('Task created successfully')
@@ -256,7 +163,8 @@ export function TasksClient({ session }: TasksClientProps) {
     try {
       const updatedTask = await taskService.updateTask({
         ...selectedTask,
-        ...taskData
+        ...taskData,
+        assigned_to: taskData.assigned_to,
       }, session)
       setTasks(tasks.map(task => 
         task.id === updatedTask.id ? updatedTask : task
@@ -267,6 +175,65 @@ export function TasksClient({ session }: TasksClientProps) {
     } catch (error) {
       console.error('Failed to update task:', error)
       toast.error('Failed to update task')
+    }
+  }
+
+  const handleCreateGroup = async (group: Partial<TaskGroup>) => {
+    try {
+      const newGroup = await taskGroupService.createGroup({
+        name: group.name || '',
+        color: group.color || '#000000',
+        description: group.description
+      }, session)
+      setGroups([...groups, newGroup])
+      setShowGroupModal(false)
+      toast.success('Group created successfully')
+    } catch (error) {
+      console.error('Failed to create group:', error)
+      toast.error('Failed to create group')
+    }
+  }
+
+  const handleUpdateGroup = async (group: Partial<TaskGroup>) => {
+    if (!selectedGroup) return
+    try {
+      const updatedGroup = await taskGroupService.updateGroup({
+        ...selectedGroup,
+        name: group.name || selectedGroup.name,
+        color: group.color || selectedGroup.color,
+        description: group.description
+      }, session)
+      setGroups(groups.map(g => 
+        g.id === updatedGroup.id ? updatedGroup : g
+      ))
+      setShowGroupModal(false)
+      setSelectedGroup(undefined)
+      toast.success('Group updated successfully')
+    } catch (error) {
+      console.error('Failed to update group:', error)
+      toast.error('Failed to update group')
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await taskGroupService.deleteGroup(groupId, session)
+      setGroups(groups.filter(group => group.id !== groupId))
+      toast.success('Group deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete group:', error)
+      toast.error('Failed to delete group')
+    }
+  }
+
+  const handleSavePreset = async (preset: Omit<TaskFilterPreset, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newPreset = await taskFilterPresetService.createPreset(preset, session)
+      setFilterPresets([newPreset, ...filterPresets])
+      toast.success('Filter preset saved successfully')
+    } catch (error) {
+      console.error('Failed to save filter preset:', error)
+      toast.error('Failed to save filter preset')
     }
   }
 
@@ -312,76 +279,51 @@ export function TasksClient({ session }: TasksClientProps) {
     }
   }
 
-  const handleCreateGroup = async (groupData: Partial<TaskGroup>) => {
-    try {
-      const newGroup = await taskGroupService.createGroup(groupData as Omit<TaskGroup, 'id' | 'created_at' | 'updated_at'>, session)
-      setGroups([...groups, newGroup])
-      setShowGroupModal(false)
-      toast.success('Group created successfully')
-    } catch (error) {
-      console.error('Failed to create group:', error)
-      toast.error('Failed to create group')
-    }
-  }
+  const filteredTasks = useMemo(() => {
+    const filtered = tasks.filter(task => {
+      const matchesSearch = filters.search === "" || 
+        task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        task.description?.toLowerCase().includes(filters.search.toLowerCase());
 
-  const handleUpdateGroup = async (groupData: Partial<TaskGroup>) => {
-    if (!selectedGroup) return
-    try {
-      const updatedGroup = await taskGroupService.updateGroup({
-        ...selectedGroup,
-        ...groupData
-      }, session)
-      setGroups(groups.map(group => 
-        group.id === updatedGroup.id ? updatedGroup : group
-      ))
-      setShowGroupModal(false)
-      setSelectedGroup(undefined)
-      toast.success('Group updated successfully')
-    } catch (error) {
-      console.error('Failed to update group:', error)
-      toast.error('Failed to update group')
-    }
-  }
+      const matchesStatus = filters.statuses.length === 0 || filters.statuses.includes(task.status);
 
-  const handleDeleteGroup = async (groupToDelete: TaskGroup) => {
-    try {
-      await taskGroupService.deleteGroup(groupToDelete.id, session)
-      setGroups(groups.filter(g => g.id !== groupToDelete.id))
-      // Reset group filter if the deleted group was selected
-      if (groupToDelete.id === filters.groups[0]) {
-        setFilters({
-          ...filters,
-          groups: []
-        })
-      }
-      toast.success('Group deleted successfully')
-    } catch (error) {
-      console.error('Failed to delete group:', error)
-      toast.error('Failed to delete group')
-    }
-  }
+      const matchesPriority = filters.priorities.length === 0 || filters.priorities.includes(task.priority);
 
-  const handleSavePreset = async (preset: Omit<TaskFilterPreset, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      const newPreset = await taskFilterPresetService.createPreset(preset, session)
-      setFilterPresets([newPreset, ...filterPresets])
-      toast.success('Filter preset saved successfully')
-    } catch (error) {
-      console.error('Failed to save filter preset:', error)
-      toast.error('Failed to save filter preset')
-    }
-  }
+      const matchesGroup = filters.groups.length === 0 || filters.groups.includes(task.taskGroupId || "");
 
-  const handleDeletePreset = async (presetId: string) => {
-    try {
-      await taskFilterPresetService.deletePreset(presetId, session)
-      setFilterPresets(filterPresets.filter(p => p.id !== presetId))
-      toast.success('Filter preset deleted successfully')
-    } catch (error) {
-      console.error('Failed to delete filter preset:', error)
-      toast.error('Failed to delete filter preset')
+      const matchesDateRange = (() => {
+        if (!filters.dateRange.from && !filters.dateRange.to) return true;
+        if (!task.dueDate) return false;
+        const dueDate = new Date(task.dueDate);
+        const fromDate = filters.dateRange.from ? new Date(filters.dateRange.from) : null;
+        const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : null;
+        
+        if (fromDate && toDate) {
+          return dueDate >= fromDate && dueDate <= toDate;
+        }
+        if (fromDate) {
+          return dueDate >= fromDate;
+        }
+        if (toDate) {
+          return dueDate <= toDate;
+        }
+        return true;
+      })();
+
+      const matchesAssigned = !filters.assignedToMe || task.assigned_to === session.user.id;
+      const matchesComments = !filters.hasComments || (task.comments && task.comments.length > 0);
+      const matchesOverdue = !filters.isOverdue || (task.dueDate && new Date(task.dueDate) < new Date());
+
+      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && 
+             matchesDateRange && matchesAssigned && matchesComments && matchesOverdue;
+    });
+
+    const sortOption = sortOptions.find(option => option.value === sortBy);
+    if (sortOption) {
+      return [...filtered].sort(sortOption.compareFn);
     }
-  }
+    return filtered;
+  }, [tasks, filters, sortBy, session.user.id]);
 
   return (
     <div className="h-full bg-[#030711]">
@@ -399,17 +341,32 @@ export function TasksClient({ session }: TasksClientProps) {
             <div className="flex-shrink-0 flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button 
+                    variant="outline" 
+                    className={cn(
+                      "gap-2 px-4 py-2 h-10",
+                      "bg-[#1C2333] text-gray-300 hover:text-gray-200",
+                      "border-white/10 hover:bg-[#1C2333]/80",
+                      "transition-all duration-200"
+                    )}
+                  >
                     <ArrowUpDown className="h-4 w-4" />
                     Sort
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-48 bg-[#0F1629] border-white/10 text-gray-100"
+                >
                   {sortOptions.map((option) => (
                     <DropdownMenuItem
                       key={option.value}
                       onClick={() => setSortBy(option.value)}
-                      className={sortBy === option.value ? "bg-accent" : ""}
+                      className={cn(
+                        "flex items-center gap-2 text-sm px-2 py-1.5",
+                        "text-gray-300 hover:text-gray-100 cursor-pointer",
+                        sortBy === option.value && "bg-white/5"
+                      )}
                     >
                       {option.label}
                     </DropdownMenuItem>
@@ -418,14 +375,23 @@ export function TasksClient({ session }: TasksClientProps) {
               </DropdownMenu>
               <Button 
                 variant="outline"
-                className="gap-2" 
+                className={cn(
+                  "gap-2 px-4 py-2 h-10",
+                  "bg-[#1C2333] text-gray-300 hover:text-gray-200",
+                  "border-white/10 hover:bg-[#1C2333]/80",
+                  "transition-all duration-200"
+                )}
                 onClick={() => setShowGroupModal(true)}
               >
                 <FolderPlus className="h-4 w-4" />
                 New Group
               </Button>
               <Button 
-                className="gap-2" 
+                className={cn(
+                  "gap-2 px-4 py-2 h-10",
+                  "bg-blue-600 hover:bg-blue-700 text-white",
+                  "transition-all duration-200"
+                )}
                 onClick={() => setShowTaskModal(true)}
               >
                 <Plus className="h-4 w-4" />
@@ -434,69 +400,23 @@ export function TasksClient({ session }: TasksClientProps) {
             </div>
           </div>
 
-          {/* Main Grid */}
-          <div className="grid grid-cols-12 gap-6">
-            {/* Sidebar */}
-            <div className="col-span-12 md:col-span-3 space-y-6">
-              <div className="bg-[#0F1629]/50 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/50 
-                            rounded-lg border border-white/[0.08] shadow-xl p-4">
-                <h3 className="font-medium mb-4">Filters</h3>
-                <AdvancedFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  groups={groups.map(g => ({
-                    id: g.id,
-                    name: g.name,
-                    color: g.color
-                  }))}
-                  presets={filterPresets}
-                  onSavePreset={(preset) => handleSavePreset({
-                    ...preset,
-                    userId: session.user.id,
-                    filters: filters
-                  })}
-                  onDeletePreset={handleDeletePreset}
-                />
-              </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="col-span-12 md:col-span-9">
-              <div className="bg-gradient-to-br from-[#0F1629]/50 via-[#0F1629]/30 to-[#030711]/50 
-                            backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/50 
-                            rounded-lg border border-white/[0.08] shadow-xl p-6">
-                {/* Task List */}
-                <div className="space-y-4">
-                  {filteredTasks.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                      {tasks.length === 0 ? (
-                        "No tasks yet. Create your first task to get started."
-                      ) : (
-                        "No tasks match your filters."
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <TaskList 
-                        tasks={filteredTasks} 
-                        onTaskClick={(task) => {
-                          setSelectedTask(task)
-                          setShowTaskModal(true)
-                        }}
-                        onTaskDelete={handleDeleteTask}
-                        onTaskDuplicate={handleDuplicateTask}
-                        onStatusChange={handleStatusChange}
-                        groups={groups}
-                        users={users}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Task List */}
+          <TaskList
+            tasks={filteredTasks}
+            groups={groups}
+            users={users}
+            onTaskClick={(task) => {
+              setSelectedTask(task)
+              setShowTaskModal(true)
+            }}
+            onTaskDelete={handleDeleteTask}
+            onTaskDuplicate={handleDuplicateTask}
+            onStatusChange={handleStatusChange}
+          />
         </div>
       </TooltipProvider>
+
+      {/* Task Modal */}
       <TaskModal
         isOpen={showTaskModal}
         onClose={() => {
@@ -508,6 +428,8 @@ export function TasksClient({ session }: TasksClientProps) {
         groups={groups}
         session={session}
       />
+
+      {/* Group Modal */}
       <GroupModal
         isOpen={showGroupModal}
         onClose={() => {

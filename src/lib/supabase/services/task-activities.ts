@@ -5,7 +5,7 @@ export interface TaskActivity {
   id: string
   taskId: string
   userId: string
-  actionType: 'status_change' | 'priority_change' | 'title_change' | 'description_change' | 'due_date_change' | 'group_change'
+  actionType: 'status_change' | 'priority_change' | 'title_change' | 'description_change' | 'due_date_change' | 'group_change' | 'department_change' | 'assigned_to_change'
   previousValue: any
   newValue: any
   createdAt: Date

@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
-import { Plus, X } from "lucide-react"
-import { logActivity } from "@/lib/activity-logger"
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { X, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+
+interface ContactTagsProps {
+  contactId?: string
+  onTagsChange: (tags: string[]) => void
+}
 
 interface Tag {
   id: string
-  tag_name: string
+  name: string
   color: string
-}
-
-interface ContactTagsProps {
-  contactId: string
-  onTagsChange?: () => void
 }
 
 export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
@@ -22,109 +23,92 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showTagInput, setShowTagInput] = useState(false)
+  const [showTagSelect, setShowTagSelect] = useState(false)
   const [newTagName, setNewTagName] = useState("")
   const [newTagColor, setNewTagColor] = useState("#3B82F6")
 
   useEffect(() => {
-    fetchTags()
+    if (contactId) {
+      fetchTags()
+    }
     fetchAvailableTags()
   }, [contactId])
-
-  const fetchTags = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('contact_tag_relations')
-        .select(`
-          tag_id,
-          contact_tags (
-            id,
-            tag_name,
-            color
-          )
-        `)
-        .eq('contact_id', contactId)
-
-      if (error) throw error
-
-      setTags(data.map(item => ({
-        id: item.contact_tags.id,
-        tag_name: item.contact_tags.tag_name,
-        color: item.contact_tags.color
-      })))
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
 
   const fetchAvailableTags = async () => {
     try {
       const { data, error } = await supabase
-        .from('contact_tags')
-        .select('id, tag_name, color')
-        .order('tag_name')
+        .from('tags')
+        .select('id, name, color')
+        .order('name')
 
       if (error) throw error
-
-      setAvailableTags(data.map(tag => ({
-        id: tag.id,
-        tag_name: tag.tag_name,
-        color: tag.color
-      })))
+      setAvailableTags(data || [])
     } catch (err: any) {
+      console.error('Error fetching available tags:', err)
       setError(err.message)
     }
   }
 
-  const addTag = async (tagId: string) => {
-    setLoading(true)
+  const fetchTags = async () => {
+    if (!contactId) return
+
     try {
-      const { error } = await supabase
-        .from('contact_tag_relations')
-        .insert([{ contact_id: contactId, tag_id: tagId }])
+      setLoading(true)
+      setError(null)
 
-      if (error) throw error
+      // Get contact's tags
+      const { data: contact, error: contactError } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('id', contactId)
+        .single()
 
-      const tagName = availableTags.find(t => t.id === tagId)?.tag_name
+      if (contactError) throw contactError
 
-      await logActivity(
-        contactId,
-        'tag_added',
-        `Added tag: ${tagName}`,
-        { tagId, tagName }
-      )
+      if (!contact?.tags?.length) {
+        setTags([])
+        return
+      }
 
-      fetchTags()
-      onTagsChange?.()
+      // Get tag details by ID
+      const { data: tagDetails, error: tagsError } = await supabase
+        .from('tags')
+        .select('id, name, color')
+        .in('id', contact.tags)
+
+      if (tagsError) throw tagsError
+
+      setTags(tagDetails || [])
     } catch (err: any) {
+      console.error('Error fetching tags:', err)
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const removeTag = async (tagId: string) => {
-    setLoading(true)
+  const addExistingTag = async (tag: Tag) => {
     try {
-      const tagName = tags.find(t => t.id === tagId)?.tag_name
+      setLoading(true)
+      setError(null)
 
-      const { error } = await supabase
-        .from('contact_tag_relations')
-        .delete()
-        .eq('contact_id', contactId)
-        .eq('tag_id', tagId)
+      const updatedTags = [...tags, tag]
+      const updatedTagIds = updatedTags.map(t => t.id)
+      
+      if (contactId) {
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({ tags: updatedTagIds })
+          .eq('id', contactId)
 
-      if (error) throw error
+        if (updateError) throw updateError
+      }
 
-      await logActivity(
-        contactId,
-        'tag_removed',
-        `Removed tag: ${tagName}`,
-        { tagId, tagName }
-      )
-
-      fetchTags()
-      onTagsChange?.()
+      onTagsChange(updatedTagIds)
+      setTags(updatedTags)
+      setShowTagSelect(false)
     } catch (err: any) {
+      console.error('Error adding tag:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -133,52 +117,41 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
 
   const createTag = async () => {
     if (!newTagName.trim()) return
-    setLoading(true)
+
     try {
-      // First check if tag already exists
-      const { data: existingTag, error: searchError } = await supabase
-        .from('contact_tags')
-        .select('id')
-        .ilike('tag_name', newTagName.trim())
+      setLoading(true)
+      setError(null)
+
+      // Create new tag
+      const { data: newTag, error: createError } = await supabase
+        .from('tags')
+        .insert([{ 
+          name: newTagName.trim(), 
+          color: newTagColor 
+        }])
+        .select('id, name, color')
         .single()
 
-      let tagId;
-      
-      if (existingTag) {
-        tagId = existingTag.id;
-      } else {
-        // Create new tag if it doesn't exist
-        const { data: newTag, error: createError } = await supabase
-          .from('contact_tags')
-          .insert([{ 
-            tag_name: newTagName.trim(), 
-            color: newTagColor 
-          }])
-          .select()
-          .single()
+      if (createError) throw createError
 
-        if (createError) throw createError
-        tagId = newTag.id;
+      // Add tag to contact
+      const updatedTags = [...tags, newTag]
+      const updatedTagIds = updatedTags.map(t => t.id)
+      
+      if (contactId) {
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({ tags: updatedTagIds })
+          .eq('id', contactId)
+
+        if (updateError) throw updateError
       }
 
-      // Create the relation
-      const { error: relationError } = await supabase
-        .from('contact_tag_relations')
-        .insert([{ contact_id: contactId, tag_id: tagId }])
-
-      if (relationError) throw relationError
-
-      await logActivity(
-        contactId,
-        'tag_added',
-        `Added tag: ${newTagName.trim()}`
-      )
-
-      setNewTagName("")
+      onTagsChange(updatedTagIds)
+      setTags(updatedTags)
+      setAvailableTags([...availableTags, newTag])
       setShowTagInput(false)
-      await fetchTags()
-      await fetchAvailableTags()
-      onTagsChange?.()
+      setNewTagName("")
     } catch (err: any) {
       console.error('Error creating tag:', err)
       setError(err.message)
@@ -187,10 +160,46 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
     }
   }
 
+  const removeTag = async (tagId: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const updatedTags = tags.filter(t => t.id !== tagId)
+      const updatedTagIds = updatedTags.map(t => t.id)
+      
+      if (contactId) {
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({ tags: updatedTagIds })
+          .eq('id', contactId)
+
+        if (updateError) throw updateError
+      }
+
+      onTagsChange(updatedTagIds)
+      setTags(updatedTags)
+    } catch (err: any) {
+      console.error('Error removing tag:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-gray-400">
+        <div className="w-4 h-4 rounded-full bg-gray-700 animate-pulse" />
+        Loading tags...
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-2 bg-red-500/10 border border-red-500 rounded text-red-500">
+        <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm">
           {error}
         </div>
       )}
@@ -199,59 +208,106 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
         {tags.map((tag) => (
           <span
             key={tag.id}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-sm transition-colors"
             style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
           >
-            {tag.tag_name}
+            {tag.name}
             <button
               onClick={() => removeTag(tag.id)}
-              className="hover:opacity-75"
+              className="hover:opacity-75 transition-opacity"
             >
               <X className="h-3 w-3" />
             </button>
           </span>
         ))}
-        <button
-          onClick={() => setShowTagInput(true)}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm bg-gray-700 text-gray-300 hover:bg-gray-600"
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowTagSelect(true)}
+          className="h-7 px-2 border-dashed"
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-3.5 w-3.5 mr-1" />
           Add Tag
-        </button>
+        </Button>
       </div>
 
+      {showTagSelect && (
+        <div className="space-y-2 bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+          <div className="grid gap-2">
+            <div className="flex flex-wrap gap-2">
+              {availableTags
+                .filter(t => !tags.some(existingTag => existingTag.id === t.id))
+                .map(tag => (
+                  <button
+                    key={tag.id}
+                    onClick={() => addExistingTag(tag)}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-sm transition-colors hover:opacity-80"
+                    style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                  >
+                    {tag.name}
+                    <Plus className="h-3 w-3" />
+                  </button>
+                ))}
+            </div>
+            <div className="flex justify-between items-center border-t border-gray-700/50 pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowTagSelect(false)
+                  setShowTagInput(true)
+                }}
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Create New Tag
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTagSelect(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showTagInput && (
-        <div className="space-y-2">
+        <div className="space-y-2 bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
               placeholder="Tag name..."
-              className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white"
+              className="flex-1 h-8 bg-[#1C2333] border-white/10 focus:border-blue-500"
             />
             <input
               type="color"
               value={newTagColor}
               onChange={(e) => setNewTagColor(e.target.value)}
-              className="p-1 bg-gray-700 border border-gray-600 rounded"
+              className="w-8 h-8 p-1 bg-[#1C2333] border border-white/10 rounded"
             />
-            <button
+            <Button
               onClick={createTag}
               disabled={loading || !newTagName.trim()}
-              className="px-2 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+              size="sm"
+              className="h-8"
             >
               Add
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setShowTagInput(false)
                 setNewTagName("")
               }}
-              className="px-2 py-1 bg-gray-700 text-gray-300 rounded"
+              className="h-8"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

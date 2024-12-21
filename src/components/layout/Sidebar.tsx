@@ -10,7 +10,7 @@ import {
   Target,
   Calendar,
   MessageSquare,
-  BarChart3,
+  Wrench,
   Menu,
   X,
   Shield,
@@ -58,10 +58,10 @@ const navigation = [
     iconClass: "icon-messages",
   },
   {
-    name: "Reports",
-    href: "/reports",
-    icon: BarChart3,
-    iconClass: "icon-reports",
+    name: "Tools",
+    href: "/tools",
+    icon: Wrench,
+    iconClass: "icon-tools",
   },
 ]
 

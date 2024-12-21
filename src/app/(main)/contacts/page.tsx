@@ -13,7 +13,7 @@ import { BulkTagModal } from "@/components/contacts/bulk-tag-modal"
 import { TagStatisticsModal } from "@/components/contacts/tag-statistics-modal"
 import { TagManagementModal } from "@/components/contacts/tag-management-modal"
 import { IndustryManagementModal } from "@/components/contacts/industry-management-modal"
-import { Avatar } from "@/components/contacts/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { TagFilterMenu } from "@/components/contacts/tag-filter-menu"
 import { Button } from "@/components/ui/button"
 import { Fragment } from "react"
@@ -22,50 +22,57 @@ import { validateContact } from '@/lib/validation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-
-interface Contact {
-  id: string
-  first_name: string
-  last_name: string | null
-  email: string | null
-  phone: string | null
-  created_at: string
-  company: string | null
-  job_title: string | null
-  address_line1: string | null
-  address_line2: string | null
-  city: string | null
-  region: string | null
-  postcode: string | null
-  country: string | null
-  website: string | null
-  linkedin: string | null
-  twitter: string | null
-  avatar_url: string | null
-  industry_id: string | null
-  tags: string[]
-  industries: {
-    id: string
-    name: string
-  } | null
-  name: string
-}
+import { ContactTag } from "@/components/contacts/contact-tag"
+import { contactsService } from "@/lib/supabase/services/contacts"
+import { cn } from "@/lib/utils"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { Session } from "@supabase/supabase-js"
+import type { Contact } from "@/lib/supabase/services/contacts"
 
 type SortField = keyof Contact
 type SortDirection = 'asc' | 'desc'
 
-// Add interface for BulkDeleteModal props
-interface BulkDeleteModalProps {
-  isOpen: boolean
-  onClose: () => void
-  selectedContactIds: string[]
-  onComplete: (retryCount?: number) => Promise<void>
+interface ContactAvatarProps {
+  contact: Contact
+  size: "sm" | "lg"
 }
 
-// Add interface for the minimal contact type needed
-interface ScheduleActivityContact {
-  id: string
-  name: string
+function ContactAvatar({ contact, size }: ContactAvatarProps) {
+  const initials = [contact.first_name, contact.last_name]
+    .filter(Boolean)
+    .map(name => name?.[0] || '')
+    .join('')
+    .toUpperCase()
+
+  return (
+    <Avatar className={cn(
+      "bg-blue-500",
+      size === "lg" ? "h-12 w-12 text-lg" : "h-8 w-8 text-sm"
+    )}>
+      <AvatarFallback>{initials}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+interface ContactDetailsModalProps {
+  contact: Contact | null
+  isOpen: boolean
+  onClose: () => void
+  onEdit: () => void
+}
+
+function transformContactForSchedule(contact: Contact | null): { id: string; name: string } | null {
+  if (!contact) return null
+  const displayName = contact.name || `${contact.first_name} ${contact.last_name || ''}`.trim()
+  return {
+    id: contact.id,
+    name: displayName
+  }
+}
+
+// Add type for tag ID
+interface ContactTagProps {
+  tagId: string
 }
 
 export default function ContactsPage() {
@@ -94,6 +101,25 @@ export default function ContactsPage() {
   const tagFilterMenuRef = useRef<any>(null)
   const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string; count: number }>>([])
   const [tagDetails, setTagDetails] = useState<{ [key: string]: { name: string; color: string } }>({})
+  const [session, setSession] = useState<Session | null>(null)
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    const initSession = async () => {
+      const { data: { session: initialSession } } = await supabase.auth.getSession()
+      setSession(initialSession)
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session)
+      })
+
+      return () => subscription.unsubscribe()
+    }
+
+    initSession()
+  }, [])
 
   useEffect(() => {
     fetchContacts()
@@ -126,9 +152,8 @@ export default function ContactsPage() {
 
       const transformedData = data.map(contact => ({
         ...contact,
-        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-        tags: contact.tags || [],
-        industries: contact.industries || null
+        name: contact.name || `${contact.first_name} ${contact.last_name || ''}`.trim(),
+        tags: contact.tags || []
       })) as Contact[]
 
       setContacts(transformedData)
@@ -269,15 +294,6 @@ export default function ContactsPage() {
     setIsBulkTagModalOpen(true)
   }
 
-  // Add a transform function before passing to ScheduleActivityModal
-  const transformContactForSchedule = (contact: Contact | null): ScheduleActivityContact | null => {
-    if (!contact) return null
-    return {
-      id: contact.id,
-      name: contact.name
-    }
-  }
-
   return (
     <div className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto max-w-[1600px] p-8">
@@ -401,7 +417,7 @@ export default function ContactsPage() {
                     <div className="space-y-4 relative z-0">
                       <div className="flex items-center gap-3">
                         <div className="flex-shrink-0 relative">
-                          <Avatar 
+                          <ContactAvatar 
                             contact={contact} 
                             size="lg"
                           />
@@ -442,22 +458,9 @@ export default function ContactsPage() {
 
                       {contact.tags && contact.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-2">
-                          {contact.tags.map((tagId) => {
-                            const tag = tagDetails[tagId]
-                            if (!tag) return null
-                            return (
-                              <span
-                                key={tagId}
-                                className="px-2 py-0.5 rounded-full text-xs font-medium"
-                                style={{
-                                  backgroundColor: tag.color + '20',
-                                  color: tag.color
-                                }}
-                              >
-                                {tag.name}
-                              </span>
-                            )
-                          })}
+                          {contact.tags.map((tagId: string) => (
+                            <ContactTag key={tagId} tagId={tagId} />
+                          ))}
                         </div>
                       )}
 
@@ -501,15 +504,18 @@ export default function ContactsPage() {
         onContactCreated={fetchContacts}
       />
 
-      <EditContactModal
-        contact={selectedContact}
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false)
-          setSelectedContact(null)
-        }}
-        onContactUpdated={fetchContacts}
-      />
+      {selectedContact && (
+        <EditContactModal
+          contact={selectedContact}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setSelectedContact(null)
+          }}
+          onContactUpdated={fetchContacts}
+          session={session}
+        />
+      )}
 
       <DeleteContactModal
         contactId={selectedContact?.id || null}
