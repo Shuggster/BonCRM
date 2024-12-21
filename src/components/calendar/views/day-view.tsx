@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Clock, Grid, List } from "lucide-react"
 import { format, isSameDay, set } from "date-fns"
@@ -11,8 +11,9 @@ import { EVENT_CATEGORIES } from "@/lib/constants/categories"
 
 interface DayViewProps {
   events: CalendarEvent[]
-  onEventClick?: (event: CalendarEvent) => void
-  onEventCreate?: (start: Date, end: Date) => void
+  onEventClick: (event: CalendarEvent) => void
+  onEventCreate: (event: Partial<CalendarEvent>) => void
+  onEventResize?: (event: CalendarEvent, newStart: Date, newEnd: Date) => void
   currentDate: Date
 }
 
@@ -21,9 +22,15 @@ const BUSINESS_HOURS = {
   end: 20,  // 8 PM
 }
 
-export function DayView({ events = [], onEventClick, onEventCreate, currentDate }: DayViewProps) {
+export function DayView({ 
+  events = [], 
+  onEventClick, 
+  onEventCreate, 
+  onEventResize,
+  currentDate 
+}: DayViewProps) {
   const [showFullDay, setShowFullDay] = useState(false)
-  const [viewType, setViewType] = useState<'timeline' | 'grid'>('timeline')
+  const [viewType, setViewType] = useState<'grid' | 'timeline'>('grid')
   const gridRef = useRef<HTMLDivElement>(null)
 
   const startHour = showFullDay ? 0 : BUSINESS_HOURS.start
@@ -211,9 +218,9 @@ export function DayView({ events = [], onEventClick, onEventCreate, currentDate 
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between bg-[#1C2333]/50 backdrop-blur-xl rounded-lg border border-white/[0.08] p-4">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           {format(currentDate, 'EEEE, MMMM d, yyyy')}
         </h2>
         
@@ -222,7 +229,12 @@ export function DayView({ events = [], onEventClick, onEventCreate, currentDate 
             variant="ghost"
             size="sm"
             onClick={() => setShowFullDay(!showFullDay)}
-            className="gap-2"
+            className={cn(
+              "gap-2 px-3 py-2 h-8",
+              "text-gray-400 hover:text-gray-300",
+              "hover:bg-white/5",
+              "transition-all duration-200"
+            )}
           >
             <Clock className="h-4 w-4" />
             {showFullDay ? '24 Hours' : 'Business Hours'}
@@ -231,7 +243,12 @@ export function DayView({ events = [], onEventClick, onEventCreate, currentDate 
             variant="ghost"
             size="sm"
             onClick={() => setViewType(viewType === 'timeline' ? 'grid' : 'timeline')}
-            className="gap-2"
+            className={cn(
+              "gap-2 px-3 py-2 h-8",
+              "text-gray-400 hover:text-gray-300",
+              "hover:bg-white/5",
+              "transition-all duration-200"
+            )}
           >
             {viewType === 'timeline' ? (
               <><Grid className="h-4 w-4" /> Grid</>
@@ -242,7 +259,7 @@ export function DayView({ events = [], onEventClick, onEventCreate, currentDate 
         </div>
       </div>
 
-      <div className="bg-white/5 rounded-lg p-4">
+      <div className="bg-[#0F1629]/30 backdrop-blur-xl rounded-lg border border-white/[0.08] shadow-xl p-4">
         {viewType === 'timeline' ? <TimelineView /> : <GridView />}
       </div>
     </div>

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { TeamSelect } from "@/components/ui/team-select"
 import { CalendarEvent, RecurrenceRule } from "@/types/calendar"
+import { EVENT_CATEGORIES, EventCategory } from "@/lib/constants/categories"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { addMinutes } from 'date-fns'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 interface EventModalProps {
   isOpen: boolean
@@ -34,7 +36,7 @@ interface EventModalProps {
 export function EventModal({ isOpen, onClose, onSave, event, initialData, session }: EventModalProps) {
   const [title, setTitle] = useState(initialData?.title || '')
   const [description, setDescription] = useState(initialData?.description || '')
-  const [category, setCategory] = useState(initialData?.category || 'default')
+  const [category, setCategory] = useState<EventCategory>(initialData?.category as EventCategory || 'default')
   const [startDate, setStartDate] = useState<Date>(initialData?.start || new Date())
   const [endDate, setEndDate] = useState<Date>(initialData?.end || new Date())
   const [recurrence, setRecurrence] = useState<RecurrenceRule | undefined>(initialData?.recurrence)
@@ -78,7 +80,7 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
     if (event) {
       setTitle(event.title)
       setDescription(event.description || '')
-      setCategory(event.category || 'default')
+      setCategory(event.category as EventCategory || 'default')
       setStartDate(new Date(event.start))
       setEndDate(new Date(event.end))
       setRecurrence(event.recurrence)
@@ -86,9 +88,9 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
       setAssignedToType(event.assigned_to_type)
       setDepartment(event.department)
     } else if (initialData) {
-      setTitle('')
-      setDescription('')
-      setCategory('default')
+      setTitle(initialData.title)
+      setDescription(initialData.description)
+      setCategory(initialData.category as EventCategory || 'default')
       setStartDate(initialData.start)
       setEndDate(initialData.end)
       setRecurrence(initialData.recurrence)
@@ -100,20 +102,16 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
   }, [event, initialData])
 
   const handleAssignment = (selection: { type: 'user' | 'team', id: string, department?: string }) => {
-    // If selection is empty or invalid, clear all assignment fields
     if (!selection || !selection.id) {
-      console.log('Clearing assignment fields');
       setAssignedTo(null)
       setAssignedToType(null)
       setDepartment(null)
       return
     }
 
-    console.log('Assignment selection received:', selection);
     setAssignedTo(selection.id)
     setAssignedToType(selection.type)
     setDepartment(selection.department || null)
-    console.log('State after setting:', { assignedTo, assignedToType, department });
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,19 +128,6 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
       return
     }
 
-    // Log the data we're about to send
-    console.log('Event data being sent:', {
-      title,
-      description,
-      category,
-      start: startDate,
-      end: endDate,
-      recurrence,
-      assigned_to: assignedTo,
-      assigned_to_type: assignedToType,
-      department
-    })
-
     onSave({
       title,
       description,
@@ -158,112 +143,171 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] md:max-w-[85vw] max-h-[90vh] overflow-y-auto bg-[#0F1629] text-white border-white/10">
-        <DialogHeader>
-          <DialogTitle>{event ? 'Edit Event' : 'Create Event'}</DialogTitle>
+      <DialogContent className="max-w-[95vw] md:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#0F1629]/95 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0F1629]/90 border-white/[0.08] shadow-xl">
+        <DialogHeader className="px-6 pt-6">
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            {event ? 'Edit Event' : 'Create Event'}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>Title</Label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
-            />
-          </div>
 
-          <div>
-            <Label>Description</Label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
-            />
-          </div>
-
-          <div>
-            <Label>Category</Label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
-            >
-              <option value="default">Default</option>
-              <option value="meeting">Meeting</option>
-              <option value="task">Task</option>
-              <option value="reminder">Reminder</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Start Time</Label>
-              <DatePicker
-                selected={startDate}
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    setStartDate(date)
-                    setError(null)
-                  }
-                }}
-                showTimeSelect
-                dateFormat="MMMM d, yyyy h:mm aa"
-                className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
-                required
-              />
-            </div>
-
-            <div>
-              <Label>End Time</Label>
-              <DatePicker
-                selected={endDate}
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    setEndDate(date)
-                    setError(null)
-                  }
-                }}
-                showTimeSelect
-                dateFormat="MMMM d, yyyy h:mm aa"
-                className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
-                required
-                minDate={startDate}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Assign To</Label>
-            <TeamSelect
-              onSelect={handleAssignment}
-              defaultValue={assignedTo ? { 
-                type: assignedToType as 'user' | 'team', 
-                id: assignedTo 
-              } : undefined}
-              includeTeams={true}
-              currentDepartment={userDepartment || undefined}
-              allowCrossDepartment={isAdmin}
-            />
-            {!isAdmin && userDepartment && (
-              <p className="text-xs text-gray-400 mt-1">
-                You can only assign to members of the {userDepartment} department
-              </p>
+        <form onSubmit={handleSubmit} className="px-6 pb-6">
+          <div className="space-y-6">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+                <p className="text-sm text-red-500">{error}</p>
+              </div>
             )}
-          </div>
 
-          {error && (
-            <div className="text-red-500 text-sm">{error}</div>
-          )}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Title</Label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className={cn(
+                    "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                    "bg-[#1C2333] border-white/[0.08]",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                    "placeholder:text-gray-400"
+                  )}
+                  placeholder="Event title"
+                />
+              </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" onClick={onClose} variant="outline">
-              Cancel
-            </Button>
-            <Button type="submit">
-              {event ? 'Update Event' : 'Create Event'}
-            </Button>
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Description</Label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className={cn(
+                    "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                    "bg-[#1C2333] border-white/[0.08]",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                    "placeholder:text-gray-400",
+                    "resize-none"
+                  )}
+                  placeholder="Event description"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Category</Label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as EventCategory)}
+                  className={cn(
+                    "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                    "bg-[#1C2333] border-white/[0.08]",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  )}
+                >
+                  {Object.entries(EVENT_CATEGORIES).map(([key, { label }]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-200">Start Time</Label>
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setStartDate(date)
+                        setError(null)
+                      }
+                    }}
+                    showTimeSelect
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    className={cn(
+                      "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                      "bg-[#1C2333] border-white/[0.08]",
+                      "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                      "placeholder:text-gray-400"
+                    )}
+                    required
+                    placeholderText="Select start time"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-200">End Time</Label>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setEndDate(date)
+                        setError(null)
+                      }
+                    }}
+                    showTimeSelect
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    className={cn(
+                      "mt-1.5 w-full rounded-md border px-3 py-2 text-sm",
+                      "bg-[#1C2333] border-white/[0.08]",
+                      "focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+                      "placeholder:text-gray-400"
+                    )}
+                    required
+                    placeholderText="Select end time"
+                    minDate={startDate}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-200">Assign To</Label>
+                <div className="mt-1.5">
+                  <TeamSelect
+                    onSelect={handleAssignment}
+                    defaultValue={assignedTo ? { 
+                      type: assignedToType as 'user' | 'team', 
+                      id: assignedTo 
+                    } : undefined}
+                    includeTeams={true}
+                    currentDepartment={userDepartment || undefined}
+                    allowCrossDepartment={isAdmin}
+                  />
+                </div>
+                {!isAdmin && userDepartment && (
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    You can only assign to members of the {userDepartment} department
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-6 mt-6 border-t border-white/[0.08]">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                className={cn(
+                  "px-4 py-2 h-9",
+                  "text-gray-400 hover:text-gray-300",
+                  "hover:bg-white/5",
+                  "transition-all duration-200"
+                )}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className={cn(
+                  "px-4 py-2 h-9",
+                  "bg-blue-600 hover:bg-blue-700 text-white",
+                  "transition-all duration-200"
+                )}
+              >
+                {event ? 'Update' : 'Create'} Event
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

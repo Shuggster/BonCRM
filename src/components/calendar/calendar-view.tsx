@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { CalendarEvent, ViewType } from "@/types/calendar"
 import { CalendarViewToggle } from './calendar-view-toggle'
 import { Button } from "@/components/ui/button"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { MonthView } from './views/month-view'
 import { WeekView } from './views/week-view'
 import { DayView } from './views/day-view'
 import { EventModal } from './event-modal'
 import { CalendarDndContext } from './calendar-dnd-context'
 import { subMonths, addMonths, subWeeks, addWeeks, subDays, addDays, format } from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface CalendarViewProps {
   events: CalendarEvent[]
@@ -163,8 +163,8 @@ export function CalendarView({
 
   return (
     <CalendarDndContext onEventDrop={onEventDrop}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between bg-[#0F1629]/50 backdrop-blur-xl rounded-lg border border-white/[0.08] shadow-xl p-4">
           <div className="flex items-center gap-4">
             <CalendarViewToggle
               currentView={currentView}
@@ -174,36 +174,55 @@ export function CalendarView({
               variant="outline"
               size="sm"
               onClick={() => handleDateChange(new Date())}
-              className="gap-2"
+              className={cn(
+                "gap-2 px-4 py-2 h-9",
+                "bg-[#1C2333] text-gray-300 hover:text-gray-200",
+                "border-white/10 hover:bg-[#1C2333]/80",
+                "transition-all duration-200"
+              )}
             >
               <CalendarIcon className="h-4 w-4" />
               Today
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrevious}
-              className="hover:bg-white/5"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium min-w-[150px] text-center">
-              {format(currentDate, 'MMMM yyyy')}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNext}
-              className="hover:bg-white/5"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-[#1C2333] rounded-md border border-white/10 p-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePrevious}
+                className={cn(
+                  "h-7 w-7",
+                  "text-gray-400 hover:text-gray-300",
+                  "hover:bg-white/5",
+                  "transition-all duration-200"
+                )}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium min-w-[150px] text-center text-gray-200">
+                {format(currentDate, 'MMMM yyyy')}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNext}
+                className={cn(
+                  "h-7 w-7",
+                  "text-gray-400 hover:text-gray-300",
+                  "hover:bg-white/5",
+                  "transition-all duration-200"
+                )}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        {currentViewComponent}
+        <div className="bg-[#0F1629]/30 backdrop-blur-xl rounded-lg border border-white/[0.08] shadow-xl overflow-hidden">
+          {currentViewComponent}
+        </div>
 
         <EventModal
           isOpen={showEventModal}

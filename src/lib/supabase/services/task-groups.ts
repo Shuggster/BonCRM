@@ -55,5 +55,42 @@ export const taskGroupService = {
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at)
     } as TaskGroup
+  },
+
+  async updateGroup(group: TaskGroup, session: Session) {
+    const { data, error } = await supabase
+      .from('task_groups')
+      .update({
+        name: group.name,
+        color: group.color,
+        description: group.description,
+        user_id: session.user.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', group.id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return {
+      id: data.id,
+      name: data.name,
+      color: data.color,
+      description: data.description,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
+    } as TaskGroup
+  },
+
+  async deleteGroup(groupId: string, session: Session) {
+    const { error } = await supabase
+      .from('task_groups')
+      .delete()
+      .eq('id', groupId)
+      .eq('user_id', session.user.id)
+
+    if (error) throw error
   }
 } 
