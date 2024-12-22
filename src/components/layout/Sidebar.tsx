@@ -166,7 +166,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <motion.div 
-        className={`${isMobile ? 'fixed' : 'relative'} z-40`}
+        className={`${isMobile ? 'fixed' : 'relative'} z-40 bg-background`}
         initial={false}
         animate={{
           width: isOpen ? "288px" : isMobile ? "0px" : "72px",
@@ -175,37 +175,27 @@ export default function Sidebar() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         <div className="flex h-full">
-          <div className={`flex ${isOpen ? 'w-72' : 'w-[72px]'} flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
-            <div className="flex h-16 shrink-0 items-center px-6 border-b border-border/40">
-              <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                {isOpen ? (
-                  <span className="text-xl font-bold text-primary">Bonnymans</span>
-                ) : (
-                  <span className="text-xl font-bold text-primary">B</span>
-                )}
-              </Link>
-            </div>
-
-            <nav className="flex flex-col flex-1 px-3 py-4">
-              <div className="flex-1">
-                <AnimatePresence>
-                  {renderNavItems(navigation)}
-                </AnimatePresence>
-              </div>
-
+          <div className="flex h-screen w-full flex-col gap-4 border-r border-border/40 bg-background px-3 pb-3 pt-16">
+            <nav className="sidebar-nav flex flex-1 flex-col gap-1 p-2">
+              {renderNavItems(navigation)}
+              
               {isAdmin && (
-                <div className="pt-4 mt-4 border-t border-border/40">
-                  <AnimatePresence>
-                    {isOpen && <div className="mb-2 text-sm font-medium text-muted-foreground">Admin</div>}
-                    {renderNavItems(adminNavigation)}
-                  </AnimatePresence>
+                <div className="mt-4 pt-4 border-t border-border/40">
+                  {isOpen && (
+                    <div className="mb-2 px-3 text-xs font-medium text-muted-foreground">
+                      Admin
+                    </div>
+                  )}
+                  {renderNavItems(adminNavigation)}
                 </div>
               )}
-
-              <div className="pt-4">
-                {isOpen && <ShugbotButton />}
-              </div>
             </nav>
+
+            {isOpen && (
+              <div className="px-2">
+                <ShugbotButton />
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

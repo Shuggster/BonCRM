@@ -251,6 +251,64 @@ WHERE id IN (
    - Verify password hashing
    - Ensure all required fields
 
+3. **Type and Field Name Mismatches**
+   - **Database vs UI Field Names**:
+     - Common pattern: Database uses snake_case (e.g., `start_time`), while UI uses camelCase (e.g., `start`)
+     - Solution: Map fields consistently in service layer
+     ```typescript
+     // In service layer
+     return {
+       ...dbEvent,
+       start: new Date(dbEvent.start_time),
+       end: new Date(dbEvent.end_time)
+     }
+     ```
+
+   - **Date Field Handling**:
+     - Problem: "Invalid Date" errors in UI
+     - Common causes:
+       - Mismatch between database timestamp and UI Date object
+       - Using wrong field names (e.g., `start_time` vs `start`)
+       - Not converting ISO strings to Date objects
+     - Solution:
+       ```typescript
+       // When sending to database
+       start_time: eventData.start?.toISOString()
+       
+       // When receiving from database
+       start: new Date(dbEvent.start_time)
+       ```
+
+   - **Type Definition Mismatches**:
+     - Keep database types and UI types in sync
+     - Use interface inheritance for related types
+     ```typescript
+     // Database type
+     interface DbEvent {
+       start_time: string;
+       end_time: string;
+     }
+     
+     // UI type
+     interface CalendarEvent {
+       start: Date;
+       end: Date;
+     }
+     ```
+
+   - **Prevention Checklist**:
+     - [ ] Review database schema for field names
+     - [ ] Check type definitions match database schema
+     - [ ] Verify date field handling in services
+     - [ ] Test data conversion in both directions
+     - [ ] Document field name mappings
+
+   Remember:
+   1. Always convert between snake_case and camelCase consistently
+   2. Handle date conversions explicitly
+   3. Keep type definitions updated
+   4. Test with real data before deploying
+
 ## 5. Maintenance Guidelines
 
 ### A. User Management
@@ -356,6 +414,131 @@ async function createUser(userData: CreateUserInput) {
   return data
 }
 ```
+
+### C. Testing and Mocking Patterns
+```typescript
+// Mock Supabase for Integration Tests
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => {
+    let currentQuery: any[] = []
+    let currentTable = ''
+
+    const queryBuilder = {
+      select: jest.fn().mockImplementation((fields = '*') => {
+        // Handle relationships in select queries
+        if (fields.includes('task_calendar_relations')) {
+          currentQuery = currentQuery.map(task => ({
+            ...task,
+            task_calendar_relations: mockStore.task_calendar_relations.filter(r => r.task_id === task.id)
+          }))
+        }
+        return queryBuilder
+      }),
+      insert: jest.fn().mockImplementation((data: any) => {
+        const newData = Array.isArray(data) ? data : [data]
+        const insertedData = newData.map(item => ({ ...item, id: 'new-id' }))
+        currentQuery = insertedData
+        return queryBuilder
+      }),
+      update: jest.fn().mockImplementation((data: any) => {
+        // Handle snake_case to camelCase conversions
+        if (data.schedule_status) {
+          data.scheduleStatus = data.schedule_status
+          delete data.schedule_status
+        }
+        currentQuery = currentQuery.map(item => ({ ...item, ...data }))
+        return queryBuilder
+      })
+    }
+
+    return { from: jest.fn(() => queryBuilder) }
+  })
+}))
+
+// Key Testing Patterns:
+// 1. Property Name Handling
+type DbTask = {
+  id: string
+  // Database uses snake_case
+  schedule_status?: string
+  last_scheduled_at?: string
+}
+
+type ServiceTask = {
+  id: string
+  // Service layer uses camelCase
+  scheduleStatus?: string
+  lastScheduledAt?: string
+}
+
+// 2. Mock Store Structure
+const mockStore = {
+  tasks: [/* type-safe mock data */],
+  calendar_events: [/* type-safe mock data */],
+  task_calendar_relations: [/* type-safe mock data */]
+}
+
+// 3. Relationship Handling
+if (fields.includes('task_calendar_relations')) {
+  // Handle one-to-many relationships
+  task.task_calendar_relations = mockStore.task_calendar_relations
+    .filter(r => r.task_id === task.id)
+}
+
+// 4. Error Simulation
+const mockWithError = {
+  data: null,
+  error: { message: 'Simulated error', code: 'TEST_ERROR' }
+}
+```
+
+### Common Testing Issues and Solutions:
+
+1. **Property Name Mismatches**:
+   - Problem: Database uses snake_case, service layer uses camelCase
+   - Solution: Convert in mock update operations
+   ```typescript
+   if (data.schedule_status) {
+     data.scheduleStatus = data.schedule_status
+     delete data.schedule_status
+   }
+   ```
+
+2. **Relationship Testing**:
+   - Problem: Complex relationships between tables
+   - Solution: Maintain relationship integrity in mock store
+   ```typescript
+   const mockStore = {
+     tasks: [{ id: 'task-1' }],
+     relations: [{ task_id: 'task-1', event_id: 'event-1' }]
+   }
+   ```
+
+3. **Type Safety**:
+   - Problem: Type errors in mock implementations
+   - Solution: Use proper type definitions and guards
+   ```typescript
+   type MockStore = {
+     tasks: DbTask[]
+     calendar_events: DbEvent[]
+     task_calendar_relations: DbRelation[]
+   }
+   ```
+
+4. **Test Performance**:
+   - Problem: Slow test execution
+   - Solution: 
+     - Simplify mock data structure
+     - Reduce type casting operations
+     - Improve query filtering
+     - Keep mock store in memory
+
+Remember:
+1. Always match database schema in mocks
+2. Handle both snake_case and camelCase properly
+3. Maintain relationship integrity
+4. Keep mock implementations simple
+5. Use type-safe operations where possible
 
 ## IMPORTANT NOTES
 1. NextAuth.js is the primary authentication system

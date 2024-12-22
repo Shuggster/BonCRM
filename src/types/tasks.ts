@@ -10,19 +10,21 @@ export interface TaskComment {
 export interface Task {
   id: string
   title: string
-  description?: string
+  description: string
   status: 'todo' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
   dueDate?: Date
-  assigned_to?: string
-  assigned_to_type?: 'user' | 'team'
-  department?: string
   taskGroupId?: string
+  assigned_to?: string | null
+  assigned_to_type?: 'user' | 'team' | null
+  department?: string | null
   userId: string
   createdAt: Date
   updatedAt: Date
-  comments?: TaskComment[]
+  schedule_status?: ScheduleStatus | null
 }
+
+export type ScheduleStatus = 'scheduled' | 'unscheduled' | 'pending'
 
 export interface TaskFilters {
   search: string

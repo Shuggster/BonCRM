@@ -11,7 +11,6 @@ import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { addMinutes } from 'date-fns'
 import { Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 interface EventModalProps {
@@ -44,29 +43,6 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
   const [assignedToType, setAssignedToType] = useState<'user' | 'team' | null | undefined>(initialData?.assigned_to_type)
   const [department, setDepartment] = useState<string | null | undefined>(initialData?.department)
   const [error, setError] = useState<string | null>(null)
-
-  // Get current user's department from session
-  const [userDepartment, setUserDepartment] = useState<string | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  // Fetch current user's department
-  useEffect(() => {
-    async function fetchUserDetails() {
-      if (session?.user?.id) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('department, role')
-          .eq('id', session.user.id)
-          .single()
-
-        if (!error && data) {
-          setUserDepartment(data.department)
-          setIsAdmin(data.role === 'admin')
-        }
-      }
-    }
-    fetchUserDetails()
-  }, [session?.user?.id])
 
   // Set default end time to 1 hour after start time when start time changes
   useEffect(() => {
@@ -139,6 +115,15 @@ export function EventModal({ isOpen, onClose, onSave, event, initialData, sessio
       assigned_to_type: assignedToType || null,
       department: department || null
     })
+  }
+
+  // Safely access session properties with defaults
+  const isAdmin = session?.user?.role === 'admin' || false
+  const userDepartment = session?.user?.department || null
+
+  // If no session, show loading or error state
+  if (!session?.user) {
+    return null // Or loading state if preferred
   }
 
   return (

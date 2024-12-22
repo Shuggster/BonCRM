@@ -139,5 +139,22 @@ export const taskService = {
       .eq('id', id)
 
     if (error) throw error
+  },
+
+  async searchTasks(query: string): Promise<Task[]> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select()
+      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+      .order('createdAt', { ascending: false })
+      .limit(10)
+
+    if (error) throw error
+    return data?.map(task => ({
+      ...task,
+      dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+      createdAt: new Date(task.createdAt),
+      updatedAt: new Date(task.updatedAt)
+    })) || []
   }
 }

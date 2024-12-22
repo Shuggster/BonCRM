@@ -9,14 +9,48 @@ import { EventModal } from "@/components/calendar/event-modal"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { CalendarEvent } from "@/types/calendar"
-import { startOfMonth, endOfMonth, addDays, addWeeks, addMonths, addYears } from "date-fns"
+import { startOfMonth, endOfMonth } from "date-fns"
 import { MiniCalendar } from "@/components/calendar/mini-calendar"
 import { calendarService } from '@/lib/supabase/services/calendar'
+import { UserSession } from "@/types/session"
 import { Session } from '@supabase/supabase-js'
 
-export function CalendarClient({ session }: { session: Session }) {
-  // Debug log the session
-  console.log('Client session:', session)
+interface CalendarClientProps {
+  session: UserSession
+}
+
+function isValidSession(session: any): session is UserSession {
+  return session && session.user && typeof session.user.id === 'string';
+}
+
+function toSupabaseSession(nextAuthSession: any): Session {
+  return {
+    access_token: '',
+    token_type: 'bearer',
+    expires_in: 3600,
+    refresh_token: '',
+    user: {
+      id: nextAuthSession.user.id,
+      email: nextAuthSession.user.email,
+      role: nextAuthSession.user.role,
+      aud: 'authenticated',
+      app_metadata: {},
+      user_metadata: {},
+      created_at: '',
+    }
+  }
+}
+
+export function CalendarClient({ session }: CalendarClientProps) {
+  if (!session?.user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
+  const supabaseSession = toSupabaseSession(session)
 
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -30,12 +64,10 @@ export function CalendarClient({ session }: { session: Session }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Debug log in effect
-    console.log('Loading events with session:', session)
     const loadEvents = async () => {
       try {
         setError(null)
-        const events = await calendarService.getEvents(session)
+        const events = await calendarService.getEvents(supabaseSession)
         setEvents(events)
       } catch (error) {
         console.error('Failed to load events:', error)
@@ -45,16 +77,11 @@ export function CalendarClient({ session }: { session: Session }) {
     loadEvents()
   }, [session])
 
-  // Filter events based on selected categories and search query
   const filteredEvents = events.filter(event => {
-    // If no categories are selected, show all events
     const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(event.category || 'default');
-    
-    // Filter by search query if one exists
     const searchMatch = !searchQuery || 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (event.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-
     return categoryMatch && searchMatch;
   });
 
@@ -70,7 +97,7 @@ export function CalendarClient({ session }: { session: Session }) {
       const newEnd = new Date(newStart.getTime() + duration);
       
       const updatedEvent = await calendarService.updateEvent(
-        session,
+        supabaseSession,
         event.id,
         { ...event, start: newStart, end: newEnd }
       );
@@ -85,7 +112,7 @@ export function CalendarClient({ session }: { session: Session }) {
   const handleEventCreate = async (eventData: Partial<CalendarEvent>) => {
     try {
       setError(null);
-      const newEvent = await calendarService.createEvent(session, {
+      const newEvent = await calendarService.createEvent(supabaseSession, {
         title: eventData.title || 'New Event',
         description: eventData.description || '',
         start: eventData.start!,
@@ -108,7 +135,7 @@ export function CalendarClient({ session }: { session: Session }) {
     try {
       setError(null);
       const updatedEvent = await calendarService.updateEvent(
-        session,
+        supabaseSession,
         event.id,
         { ...event, end: newEnd }
       );
@@ -129,13 +156,13 @@ export function CalendarClient({ session }: { session: Session }) {
       setError(null);
       if (selectedEvent) {
         const updatedEvent = await calendarService.updateEvent(
-          session,
+          supabaseSession,
           selectedEvent.id,
           { ...selectedEvent, ...eventData }
         );
         setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
       } else {
-        const newEvent = await calendarService.createEvent(session, {
+        const newEvent = await calendarService.createEvent(supabaseSession, {
           title: eventData.title || 'New Event',
           description: eventData.description || '',
           start: eventData.start!,
@@ -230,7 +257,7 @@ export function CalendarClient({ session }: { session: Session }) {
           }}
           onSave={handleEventSave}
           event={selectedEvent}
-          session={session}
+          session={supabaseSession}
         />
       </div>
     </>

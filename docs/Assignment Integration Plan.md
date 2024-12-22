@@ -1,4 +1,4 @@
-# Assignment Integration Plan
+# Assignment Integration Plan (Updated)
 
 ## Current Implementation Insights
 
@@ -18,6 +18,7 @@
      - Cross-department assignments for admins
      - Visual separation of name and department in dropdowns
      - Support for both user and team assignments
+     - Enhanced UI with better spacing and borders
 
 3. **Assignment Rules**
    - Regular users can only assign within their department
@@ -40,58 +41,139 @@
    }
    ```
 
-### Current Progress
-1. ✅ Tasks Module Integration
-   - Fully implemented with department validation
+## Implementation Status
+
+### Completed Features ✅
+1. **Tasks Module Integration**
+   - Full department validation
    - User/team assignment working
    - Activity logging for assignments
+   - Admin override for cross-department
+   - Helpful user messages about restrictions
 
-2. 🔄 Calendar Module (In Progress)
-   - Schema updated
-   - Types defined
-   - UI components pending update
+2. **Database Updates**
+   - Assignment fields in calendar_events
+   - Assignment fields in contacts
+   - Foreign key constraints
+   - Schema validation
 
-3. 🔄 Contacts Module (In Progress)
-   - Schema updated
-   - Types defined
-   - UI components pending update
+3. **Type System**
+   - CalendarEvent interface updated
+   - Contact interface updated
+   - Basic validation types
+
+4. **UI Components**
+   - TeamSelect improvements
+   - Task Modal integration
+   - Department validation for tasks
+
+### In Progress Features 🔄
+
+1. **Calendar Module**
+   - [x] Schema updated
+   - [x] Types defined
+   - [ ] Event modal update (Next Priority)
+   - [ ] Department validation
+   - [ ] Admin override implementation
+
+2. **Contacts Module**
+   - [x] Schema updated
+   - [x] Types defined
+   - [ ] Contact form update
+   - [ ] Assignment features
+   - [ ] Department validation
 
 ## Implementation Plan
 
-### Phase 1: Database Updates (Completed)
-- [x] Add assignment fields to calendar_events
-- [x] Add assignment fields to contacts
-- [x] Create necessary foreign key constraints
+### Phase 1: Calendar Integration (Current Focus)
+1. **Event Modal Update**
+   - [ ] Integrate TeamSelect component
+   - [ ] Add department validation
+   - [ ] Implement admin override
+   - [ ] Add error messages
+   - [ ] Update activity logging
 
-### Phase 2: Type System Updates (In Progress)
-- [x] Update CalendarEvent interface
-- [x] Update Contact interface
-- [ ] Add validation types for assignments
+2. **Calendar Service Updates**
+   - [ ] Add department validation logic
+   - [ ] Update event creation/editing
+   - [ ] Add assignment validation
+   - [ ] Implement error handling
 
-### Phase 3: UI Component Updates
-- [x] Implement TeamSelect improvements
-- [ ] Update Calendar event modal
-- [ ] Update Contact form
-- [ ] Add department validation to both modules
+### Phase 2: Contacts Integration
+1. **Contact Form Update**
+   - [ ] Add TeamSelect integration
+   - [ ] Implement department validation
+   - [ ] Add assignment features
+   - [ ] Update UI for assignments
 
-### Phase 4: Service Layer Updates
-- [ ] Update calendar service
-- [ ] Update contacts service
-- [ ] Add department validation logic
+2. **Contacts Service Updates**
+   - [ ] Add department validation
+   - [ ] Update contact operations
+   - [ ] Implement assignment logic
+   - [ ] Add error handling
 
-### Phase 5: Testing
-- [ ] Test regular user assignments (department-restricted)
-- [ ] Test admin user assignments (cross-department)
-- [ ] Test team assignments
-- [ ] Verify department validation
-- [ ] Test error handling
+### Phase 3: Testing & Validation
+1. **User Assignment Testing**
+   - [ ] Regular user (department-restricted)
+   - [ ] Admin user (cross-department)
+   - [ ] Team assignments
+   - [ ] Error scenarios
 
-## Rollback Plan
-- Backup of original files maintained in `backups/pre_assignment_integration`
-- Database rollback scripts for schema changes
-- Type system can be reverted to previous commit
+2. **Integration Testing**
+   - [ ] Calendar-Task relations
+   - [ ] Contact-Task relations
+   - [ ] Cross-module assignments
 
-## Notes
-- Keep department validation consistent across modules
-- Maintain activity logging for all assignment changes
-- Consider bulk assignment features for future updates 
+3. **Validation Testing**
+   - [ ] Department rules
+   - [ ] Permission checks
+   - [ ] Error handling
+   - [ ] Activity logging
+
+## Rollback Procedures
+- Backup location: `backups/pre_assignment_integration`
+- Database rollback scripts available
+- Type system version control
+- Component backup files
+
+## Best Practices & Notes
+1. **Consistency**
+   - Use same validation patterns across modules
+   - Maintain consistent error messages
+   - Keep UI/UX patterns similar
+
+2. **Performance**
+   - Implement efficient department filtering
+   - Optimize database queries
+   - Cache user/team data where appropriate
+
+3. **Future Considerations**
+   - Bulk assignment features
+   - Advanced filtering options
+   - Team hierarchy support
+   - Department grouping features
+
+## Next Steps (Priority Order)
+1. Complete Calendar event modal update
+2. Implement calendar service updates
+3. Begin contacts form integration
+4. Add comprehensive testing
+5. Document new features
+
+## Recent Updates
+1. **TeamSelect Improvements**
+   - Enhanced UI/UX
+   - Better department filtering
+   - Improved error handling
+   - Cross-department support
+
+2. **Task Integration**
+   - Successful TeamSelect integration
+   - Working department validation
+   - Admin override functioning
+   - Activity logging implemented
+
+3. **Type System**
+   - Updated interfaces
+   - Added validation types
+   - Improved error types

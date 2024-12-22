@@ -93,7 +93,7 @@ export function TaskActivities({ taskId, session }: TaskActivitiesProps) {
               {getActivityIcon(activity.actionType, activity.newValue)}
               <div>
                 <p className="text-muted-foreground">
-                  {formatActivityMessage(activity)}
+                  {formatActivityText(activity)}
                 </p>
                 <span className="text-xs text-muted-foreground">
                   {formatDistanceToNow(activity.createdAt, { addSuffix: true })}
@@ -107,34 +107,32 @@ export function TaskActivities({ taskId, session }: TaskActivitiesProps) {
   )
 }
 
-function formatActivityMessage(activity: TaskActivity): string {
+function formatActivityText(activity: TaskActivity): string {
   switch (activity.actionType) {
     case 'status_change':
-      return `Status changed from "${activity.previousValue}" to "${activity.newValue}"`
+      return `Status changed from ${activity.previousValue} to ${activity.newValue}`
     case 'priority_change':
-      return `Priority changed from "${activity.previousValue}" to "${activity.newValue}"`
+      return `Priority changed from ${activity.previousValue} to ${activity.newValue}`
     case 'title_change':
-      return `Title changed from "${activity.previousValue}" to "${activity.newValue}"`
+      return `Title updated`
     case 'description_change':
       return `Description updated`
     case 'due_date_change':
-      return activity.newValue 
-        ? `Due date set to ${format(new Date(activity.newValue), 'PPP')}`
-        : `Due date removed`
+      return `Due date changed`
     case 'group_change':
-      return activity.newValue
-        ? `Moved to group "${activity.newValue}"`
-        : `Removed from group`
+      return `Group changed`
     case 'department_change':
-      return activity.newValue
-        ? `Department changed to "${activity.newValue}"`
-        : `Department removed`
+      return `Department changed`
     case 'assigned_to_change':
-      return activity.newValue
-        ? `Assigned to user "${activity.newValue}"`
-        : `Unassigned`
+      return `Assignment changed`
+    case 'calendar_event_create':
+      return `Calendar event created: ${activity.newValue}`
+    case 'calendar_event_update':
+      return `Calendar event updated: ${activity.newValue}`
+    case 'calendar_event_delete':
+      return `Calendar event removed: ${activity.previousValue}`
     default:
-      return `Unknown activity`
+      return `Activity logged`
   }
 }
 
