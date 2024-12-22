@@ -26,7 +26,7 @@ export async function PUT(
     // First verify if the assigned user exists
     if (contact.assigned_to && contact.assigned_to_type === 'user') {
       const { data: user, error: userError } = await supabaseAdmin
-        .from('users')
+        .from('auth.users')
         .select('id')
         .eq('id', contact.assigned_to)
         .single()
@@ -35,6 +35,27 @@ export async function PUT(
         return NextResponse.json(
           { error: 'Invalid user assignment' },
           { status: 400 }
+        )
+      }
+
+      // Create assignment in assignments table
+      const { error: assignmentError } = await supabaseAdmin
+        .from('assignments')
+        .upsert({
+          assignable_id: id,
+          assignable_type: 'contact',
+          assigned_to: contact.assigned_to,
+          assigned_to_type: contact.assigned_to_type,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'assignable_id,assignable_type,assigned_to,assigned_to_type'
+        })
+
+      if (assignmentError) {
+        console.error('Error creating assignment:', assignmentError)
+        return NextResponse.json(
+          { error: 'Failed to create assignment' },
+          { status: 500 }
         )
       }
     }
@@ -58,8 +79,6 @@ export async function PUT(
         website: contact.website,
         linkedin: contact.linkedin,
         twitter: contact.twitter,
-        assigned_to: contact.assigned_to,
-        assigned_to_type: contact.assigned_to_type,
         department: contact.department,
         notes: contact.notes,
         updated_at: new Date().toISOString()
