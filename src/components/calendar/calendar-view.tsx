@@ -10,8 +10,10 @@ import { WeekView } from './views/week-view'
 import { DayView } from './views/day-view'
 import { EventModal } from './event-modal'
 import { CalendarDndContext } from './calendar-dnd-context'
-import { subMonths, addMonths, subWeeks, addWeeks, subDays, addDays, format } from 'date-fns'
+import { subMonths, addMonths, subWeeks, addWeeks, subDays, addDays, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { generateRecurringInstances } from '@/lib/utils/recurrence'
+import { UserSession } from '@/types/users'
 
 interface CalendarViewProps {
   events: CalendarEvent[]
@@ -21,6 +23,7 @@ interface CalendarViewProps {
   onEventResize?: (event: CalendarEvent, newStart: Date, newEnd: Date) => void
   onDateChange?: (date: Date) => void
   selectedDate?: Date
+  session: UserSession
 }
 
 export function CalendarView({ 
@@ -30,7 +33,8 @@ export function CalendarView({
   onEventCreate,
   onEventResize,
   onDateChange,
-  selectedDate = new Date()
+  selectedDate = new Date(),
+  session
 }: CalendarViewProps) {
   const [currentView, setCurrentView] = useState<ViewType>('month')
   const [showEventModal, setShowEventModal] = useState(false)
@@ -78,9 +82,11 @@ export function CalendarView({
     handleDateChange(newDate)
   }, [currentView, currentDate, handleDateChange])
 
-  const handleEventCreate = useCallback((start: Date, end: Date) => {
-    setNewEventTime({ start, end })
-    setShowEventModal(true)
+  const handleEventCreate = useCallback((eventData: Partial<CalendarEvent>) => {
+    if (eventData.start && eventData.end) {
+      setNewEventTime({ start: eventData.start, end: eventData.end })
+      setShowEventModal(true)
+    }
   }, [])
 
   const handleSaveEvent = useCallback((eventData: Partial<CalendarEvent>) => {
@@ -88,7 +94,10 @@ export function CalendarView({
       onEventCreate({
         ...eventData,
         start: newEventTime.start,
-        end: newEventTime.end
+        end: newEventTime.end,
+        title: eventData.title || '',
+        description: eventData.description || '',
+        category: eventData.category || 'default'
       })
     }
     setShowEventModal(false)
@@ -127,12 +136,38 @@ export function CalendarView({
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleKeyPress])
 
+  const visibleEvents = useMemo(() => {
+    let rangeStart: Date
+    let rangeEnd: Date
+
+    switch (currentView) {
+      case 'month':
+        rangeStart = startOfMonth(currentDate)
+        rangeEnd = endOfMonth(currentDate)
+        break
+      case 'week':
+        rangeStart = startOfWeek(currentDate)
+        rangeEnd = endOfWeek(currentDate)
+        break
+      case 'day':
+        rangeStart = currentDate
+        rangeEnd = addDays(currentDate, 1)
+        break
+      default:
+        rangeStart = currentDate
+        rangeEnd = currentDate
+    }
+
+    // Generate recurring instances for each event
+    return events.flatMap(event => generateRecurringInstances(event, rangeStart, rangeEnd))
+  }, [events, currentView, currentDate])
+
   const currentViewComponent = useMemo(() => {
     switch (currentView) {
       case 'month':
         return (
           <MonthView 
-            events={events} 
+            events={visibleEvents} 
             onEventClick={onEventClick}
             onEventDrop={onEventDrop}
             currentDate={currentDate}
@@ -141,7 +176,7 @@ export function CalendarView({
       case 'week':
         return (
           <WeekView 
-            events={events} 
+            events={visibleEvents} 
             onEventClick={onEventClick}
             currentDate={currentDate}
           />
@@ -149,7 +184,7 @@ export function CalendarView({
       case 'day':
         return (
           <DayView 
-            events={events} 
+            events={visibleEvents} 
             onEventClick={onEventClick}
             onEventCreate={handleEventCreate}
             onEventResize={onEventResize}
@@ -159,7 +194,7 @@ export function CalendarView({
       default:
         return null
     }
-  }, [currentView, events, currentDate, onEventClick, onEventDrop, handleEventCreate, onEventResize])
+  }, [currentView, visibleEvents, currentDate, onEventClick, onEventDrop, handleEventCreate, onEventResize])
 
   return (
     <CalendarDndContext onEventDrop={onEventDrop}>
@@ -231,7 +266,14 @@ export function CalendarView({
             setNewEventTime(null)
           }}
           onSave={handleSaveEvent}
-          initialData={newEventTime}
+          initialData={newEventTime ? {
+            title: '',
+            description: '',
+            category: 'default',
+            start: newEventTime.start,
+            end: newEventTime.end
+          } : undefined}
+          session={session}
         />
       </div>
     </CalendarDndContext>

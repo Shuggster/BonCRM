@@ -12,33 +12,12 @@ import { CalendarEvent } from "@/types/calendar"
 import { startOfMonth, endOfMonth } from "date-fns"
 import { MiniCalendar } from "@/components/calendar/mini-calendar"
 import { calendarService } from '@/lib/supabase/services/calendar'
-import { UserSession } from "@/types/session"
+import { UserSession } from "@/types/users"
 import { Session } from '@supabase/supabase-js'
+import { AssignmentFilter } from "@/components/calendar/assignment-filter"
 
 interface CalendarClientProps {
   session: UserSession
-}
-
-function isValidSession(session: any): session is UserSession {
-  return session && session.user && typeof session.user.id === 'string';
-}
-
-function toSupabaseSession(nextAuthSession: any): Session {
-  return {
-    access_token: '',
-    token_type: 'bearer',
-    expires_in: 3600,
-    refresh_token: '',
-    user: {
-      id: nextAuthSession.user.id,
-      email: nextAuthSession.user.email,
-      role: nextAuthSession.user.role,
-      aud: 'authenticated',
-      app_metadata: {},
-      user_metadata: {},
-      created_at: '',
-    }
-  }
 }
 
 export function CalendarClient({ session }: CalendarClientProps) {
@@ -50,10 +29,9 @@ export function CalendarClient({ session }: CalendarClientProps) {
     );
   }
 
-  const supabaseSession = toSupabaseSession(session)
-
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedAssignments, setSelectedAssignments] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [showEventModal, setShowEventModal] = useState(false)
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -67,7 +45,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
     const loadEvents = async () => {
       try {
         setError(null)
-        const events = await calendarService.getEvents(supabaseSession)
+        const events = await calendarService.getEvents(session)
         setEvents(events)
       } catch (error) {
         console.error('Failed to load events:', error)
@@ -82,7 +60,10 @@ export function CalendarClient({ session }: CalendarClientProps) {
     const searchMatch = !searchQuery || 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (event.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return categoryMatch && searchMatch;
+    const assignmentMatch = selectedAssignments.length === 0 || 
+      (event.assigned_to && selectedAssignments.includes(event.assigned_to)) ||
+      (event.department && selectedAssignments.includes(event.department));
+    return categoryMatch && searchMatch && assignmentMatch;
   });
 
   const handleEventClick = (event: CalendarEvent) => {
@@ -97,7 +78,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
       const newEnd = new Date(newStart.getTime() + duration);
       
       const updatedEvent = await calendarService.updateEvent(
-        supabaseSession,
+        session,
         event.id,
         { ...event, start: newStart, end: newEnd }
       );
@@ -112,7 +93,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
   const handleEventCreate = async (eventData: Partial<CalendarEvent>) => {
     try {
       setError(null);
-      const newEvent = await calendarService.createEvent(supabaseSession, {
+      const newEvent = await calendarService.createEvent(session, {
         title: eventData.title || 'New Event',
         description: eventData.description || '',
         start: eventData.start!,
@@ -135,7 +116,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
     try {
       setError(null);
       const updatedEvent = await calendarService.updateEvent(
-        supabaseSession,
+        session,
         event.id,
         { ...event, end: newEnd }
       );
@@ -156,13 +137,13 @@ export function CalendarClient({ session }: CalendarClientProps) {
       setError(null);
       if (selectedEvent) {
         const updatedEvent = await calendarService.updateEvent(
-          supabaseSession,
+          session,
           selectedEvent.id,
           { ...selectedEvent, ...eventData }
         );
         setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
       } else {
-        const newEvent = await calendarService.createEvent(supabaseSession, {
+        const newEvent = await calendarService.createEvent(session, {
           title: eventData.title || 'New Event',
           description: eventData.description || '',
           start: eventData.start!,
@@ -180,6 +161,19 @@ export function CalendarClient({ session }: CalendarClientProps) {
     } catch (error) {
       console.error('Failed to save event:', error);
       setError(error instanceof Error ? error.message : 'Failed to save event');
+    }
+  };
+
+  const handleEventDelete = async (event: CalendarEvent) => {
+    try {
+      setError(null);
+      await calendarService.deleteEvent(session, event.id);
+      setEvents(events.filter(e => e.id !== event.id));
+      setShowEventModal(false);
+      setSelectedEvent(null);
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete event');
     }
   };
 
@@ -229,6 +223,11 @@ export function CalendarClient({ session }: CalendarClientProps) {
                 selectedCategories={selectedCategories}
                 onChange={setSelectedCategories}
               />
+              <AssignmentFilter
+                selectedAssignments={selectedAssignments}
+                onChange={setSelectedAssignments}
+                session={session}
+              />
             </div>
           </div>
 
@@ -248,18 +247,19 @@ export function CalendarClient({ session }: CalendarClientProps) {
             </div>
           </div>
         </div>
-
-        <EventModal
-          isOpen={showEventModal}
-          onClose={() => {
-            setShowEventModal(false);
-            setSelectedEvent(null);
-          }}
-          onSave={handleEventSave}
-          event={selectedEvent}
-          session={supabaseSession}
-        />
       </div>
+
+      <EventModal
+        isOpen={showEventModal}
+        event={selectedEvent}
+        onSave={handleEventSave}
+        onDelete={handleEventDelete}
+        onClose={() => {
+          setShowEventModal(false)
+          setSelectedEvent(null)
+        }}
+        session={session}
+      />
     </>
   );
 } 

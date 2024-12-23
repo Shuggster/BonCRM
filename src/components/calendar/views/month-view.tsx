@@ -39,6 +39,9 @@ const DraggableEvent = ({ event, onClick }: { event: CalendarEvent; onClick: () 
     opacity: isDragging ? 0.5 : 1
   }
 
+  const category = event.category as keyof typeof EVENT_CATEGORIES || 'default'
+  const categoryColor = EVENT_CATEGORIES[category]?.bgClass.split('-')[1] || 'blue'
+
   return (
     <div
       ref={setNodeRef}
@@ -49,7 +52,7 @@ const DraggableEvent = ({ event, onClick }: { event: CalendarEvent; onClick: () 
         "text-xs px-2 py-1 rounded-md",
         "bg-white/5 hover:bg-white/10 transition-colors",
         "border-l-2",
-        EVENT_CATEGORIES[event.category || 'default']?.borderClass,
+        `border-${categoryColor}-500`,
         isDragging && "ring-1 ring-purple-500 shadow-lg"
       )}
     >

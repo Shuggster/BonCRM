@@ -33,9 +33,11 @@
   - Use this as template for auth features
 
 - ✅ Working Calendar Module (Reference Implementation)
-  - Event management
-  - Auth required
-  - Use this as template for auth features
+  - Event management with assignments
+  - Department-aware assignments
+  - Working TeamSelect integration
+  - Auth required with department validation
+  - Use this as template for auth + assignment features
 
 - ✅ Working Contacts Module (Public Access)
   - Basic CRUD
@@ -48,6 +50,24 @@
   - Adding TeamSelect to forms
   - Department validation
   - Assignment filters
+
+### Assignment System Patterns
+1. **Calendar Events Assignment**
+   - Uses assignments table for user/team assignments
+   - Department stored in main event record
+   - Null values used for optional assignments
+   - Working example in calendar-client.tsx and event-modal.tsx
+
+2. **Form Implementation**
+   - Empty form fields for new events
+   - Proper state reset on modal close
+   - Department validation in TeamSelect
+   - See event-modal.tsx for reference
+
+3. **Service Layer Pattern**
+   - Two-step save: main record + assignment
+   - Proper cleanup on assignment failure
+   - See calendar.ts service for reference
 
 ### Key Architecture Points
 1. **Auth Pattern:**
@@ -875,7 +895,7 @@ Error: Unauthorized - Session required
 **Quick Fixes:**
 1. For Contacts Module:
    ```typescript
-   // REMOVE ALL auth ��
+   // REMOVE ALL auth 
    export const contactsService = {
      getNotes() {  // No session
        return supabase.from('contact_notes').select('*')
@@ -1004,48 +1024,42 @@ Still stuck? → Check reference implementation:
 └─── Tasks/Cal → src/lib/supabase/services/task-calendar.ts
 ```
 
-### Top 5 New Agent Mistakes (Don't Do These!)
+### Top 5 New Agent Mistakes (DON'T DO THESE!)
 
-1. **❌ Adding auth to Contacts**
-   ```typescript
-   // DON'T DO THIS IN CONTACTS MODULE!
-   if (!session) throw new Error('No session')
-   if (!user) return null
-   withAuth(Component)
-   ```
-   ✅ Just use direct database access in Contacts
+1. **Auth Mistakes**
+   - DON'T mix auth/no-auth patterns
+   - DON'T skip session validation
+   - DON'T hardcode user IDs
+   - DO use session.user.id
+   - DO follow Tasks module pattern
 
-2. **❌ Putting notes in main table**
-   ```typescript
-   // DON'T DO THIS!
-   .from('contacts')
-   .select('notes')  // Wrong! Notes is separate table
-   ```
-   ✅ Use contact_notes table instead
+2. **Database Access**
+   - DON'T query without error handling
+   - DON'T skip type checking
+   - DON'T use raw SQL
+   - DO use service layer
+   - DO handle all errors
 
-3. **❌ Missing created_at**
-   ```typescript
-   // DON'T DO THIS!
-   .select('id, content')  // Missing created_at
-   ```
-   ✅ Always include created_at in select
+3. **Component Updates**
+   - DON'T modify working patterns
+   - DON'T skip state updates
+   - DON'T mix patterns
+   - DO follow existing examples
+   - DO test all changes
 
-4. **❌ Mixing auth patterns**
-   ```typescript
-   // DON'T MIX THESE!
-   async function one(session: Session) {}
-   async function two() {}  // Inconsistent!
-   ```
-   ✅ Be consistent: all functions need session or none do
+4. **Type Safety**
+   - DON'T ignore TypeScript errors
+   - DON'T use 'any' type
+   - DON'T skip interface updates
+   - DO define proper types
+   - DO follow schema types
 
-5. **❌ Copying wrong module**
-   ```typescript
-   // DON'T COPY TASKS PATTERN FOR CONTACTS!
-   export const contactsService = {
-     async getContacts(session: Session) {  // Wrong!
-       if (!session) throw new Error('No session')
-   ```
-   ✅ Check module type first, then copy correct pattern
+5. **Assignment Handling**
+   - DON'T change working null/undefined patterns
+   - DON'T modify assignment table structure
+   - DON'T mix auth patterns with assignments
+   - DO use existing service patterns
+   - DO follow calendar module example
 
 ### 🔍 Quick Reference - Working Examples
 

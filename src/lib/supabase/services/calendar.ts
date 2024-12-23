@@ -1,9 +1,36 @@
 import { supabase } from '@/lib/supabase/client'
 import { CalendarEvent } from '@/types/calendar'
-import { Session } from '@supabase/supabase-js'
+import { UserSession } from '@/types/users'
 
 export const calendarService = {
-  async getEvents(session: Session) {
+  async getDepartments(session: UserSession): Promise<string[]> {
+    if (!session?.user?.id) {
+      throw new Error('No user session found')
+    }
+
+    // If not admin, return only user's department
+    if (session.user.role !== 'admin') {
+      return session.user.department ? [session.user.department] : []
+    }
+
+    // For admins, get all departments from users
+    const { data, error } = await supabase
+      .from('users')
+      .select('department')
+      .not('department', 'is', null)
+      .order('department')
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
+    // Get unique departments
+    const departments = [...new Set(data.map(user => user.department))]
+    return departments
+  },
+
+  async getEvents(session: UserSession) {
     if (!session?.user?.id) {
       throw new Error('No user session found')
     }
@@ -48,14 +75,14 @@ export const calendarService = {
         end: new Date(event.end_time),
         category: event.category,
         recurrence: event.recurrence,
-        assigned_to: assignment?.assigned_to || null,
-        assigned_to_type: assignment?.assigned_to_type || null,
-        department: event.department || null
+        assigned_to: assignment?.assigned_to || undefined,
+        assigned_to_type: assignment?.assigned_to_type || undefined,
+        department: event.department || undefined
       }
     }) || []
   },
 
-  async createEvent(session: Session, event: Omit<CalendarEvent, 'id'>) {
+  async createEvent(session: UserSession, event: Omit<CalendarEvent, 'id'>) {
     // First create the event
     const { data: eventData, error: eventError } = await supabase
       .from('calendar_events')
@@ -65,9 +92,13 @@ export const calendarService = {
         start_time: event.start.toISOString(),
         end_time: event.end.toISOString(),
         category: event.category,
-        recurrence: event.recurrence,
+        recurrence: event.recurrence ? {
+          frequency: event.recurrence.frequency,
+          interval: event.recurrence.interval || 1,
+          endDate: event.recurrence.endDate?.toISOString()
+        } : null,
         user_id: session.user.id,
-        department: event.department
+        department: event.department || undefined
       })
       .select()
       .single()
@@ -99,21 +130,27 @@ export const calendarService = {
       }
     }
 
+    // Return the event with assignment data
     return {
-      id: eventData.id,
-      title: eventData.title,
-      description: eventData.description || '',
+      ...eventData,
       start: new Date(eventData.start_time),
       end: new Date(eventData.end_time),
-      category: eventData.category,
-      recurrence: eventData.recurrence,
-      assigned_to: event.assigned_to || null,
-      assigned_to_type: event.assigned_to_type || null,
-      department: eventData.department || null
+      assigned_to: event.assigned_to || undefined,
+      assigned_to_type: event.assigned_to_type || undefined,
+      department: event.department || undefined,
+      recurrence: event.recurrence ? {
+        frequency: event.recurrence.frequency,
+        interval: event.recurrence.interval || 1,
+        endDate: event.recurrence.endDate
+      } : undefined
     }
   },
 
-  async updateEvent(session: Session, id: string, event: Partial<CalendarEvent>) {
+  async updateEvent(session: UserSession, id: string, event: Partial<CalendarEvent>) {
+    if (!session?.user?.id) {
+      throw new Error('No user session found')
+    }
+
     // First update the event
     const { data: eventData, error: eventError } = await supabase
       .from('calendar_events')
@@ -122,12 +159,16 @@ export const calendarService = {
         description: event.description,
         start_time: event.start?.toISOString(),
         end_time: event.end?.toISOString(),
-        category: event.category,
-        recurrence: event.recurrence,
+        category: event.category || 'default',
+        recurrence: event.recurrence ? {
+          frequency: event.recurrence.frequency,
+          interval: event.recurrence.interval || 1,
+          endDate: event.recurrence.endDate?.toISOString()
+        } : null,
         department: event.department
       })
       .eq('id', id)
-      .select()
+      .select('*')
       .single()
 
     if (eventError) {
@@ -135,54 +176,66 @@ export const calendarService = {
       throw eventError
     }
 
-    // Then handle assignment
-    if (event.assigned_to && event.assigned_to_type) {
-      // Update or create assignment
-      const { error: assignmentError } = await supabase
-        .from('assignments')
-        .upsert({
-          assignable_id: id,
-          assignable_type: 'calendar_event',
-          assigned_to: event.assigned_to,
-          assigned_to_type: event.assigned_to_type,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'assignable_id,assignable_type,assigned_to,assigned_to_type'
-        })
+    if (!eventData) {
+      throw new Error('Event not found')
+    }
 
-      if (assignmentError) {
-        console.error('Assignment error:', assignmentError)
-        throw assignmentError
-      }
-    } else {
-      // Remove assignment if it exists
-      const { error: deleteError } = await supabase
+    // Then handle assignment
+    let assignment = null
+    if (event.assigned_to && event.assigned_to_type) {
+      // First delete any existing assignment
+      await supabase
         .from('assignments')
         .delete()
         .eq('assignable_id', id)
         .eq('assignable_type', 'calendar_event')
 
-      if (deleteError) {
-        console.error('Error removing assignment:', deleteError)
-        throw deleteError
+      // Then create the new assignment
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from('assignments')
+        .insert({
+          assignable_id: id,
+          assignable_type: 'calendar_event',
+          assigned_to: event.assigned_to,
+          assigned_to_type: event.assigned_to_type
+        })
+        .select()
+        .single()
+
+      if (assignmentError) {
+        console.error('Assignment error:', assignmentError)
+        throw assignmentError
       }
+      assignment = assignmentData
+    } else {
+      // Remove assignment if it exists
+      await supabase
+        .from('assignments')
+        .delete()
+        .eq('assignable_id', id)
+        .eq('assignable_type', 'calendar_event')
     }
 
+    // Return the complete updated event with all fields
     return {
       id: eventData.id,
       title: eventData.title,
       description: eventData.description || '',
       start: new Date(eventData.start_time),
       end: new Date(eventData.end_time),
-      category: eventData.category,
-      recurrence: eventData.recurrence,
-      assigned_to: event.assigned_to,
-      assigned_to_type: event.assigned_to_type,
+      category: eventData.category || 'default',
+      recurrence: eventData.recurrence ? {
+        frequency: eventData.recurrence.frequency,
+        interval: eventData.recurrence.interval || 1,
+        endDate: eventData.recurrence.endDate ? new Date(eventData.recurrence.endDate) : undefined
+      } : undefined,
+      assigned_to: assignment?.assigned_to || event.assigned_to,
+      assigned_to_type: assignment?.assigned_to_type || event.assigned_to_type,
       department: eventData.department
     }
   },
 
-  async deleteEvent(session: Session, id: string) {
+  async deleteEvent(session: UserSession, id: string) {
     const { error } = await supabase
       .from('calendar_events')
       .delete()
@@ -192,5 +245,60 @@ export const calendarService = {
       console.error('Supabase error:', error)
       throw error
     }
+  },
+
+  async getUsers(session: UserSession) {
+    if (!session?.user?.id) {
+      throw new Error('No user session found')
+    }
+
+    // If not admin, return only the current user
+    if (session.user.role !== 'admin') {
+      return [{
+        id: session.user.id,
+        name: session.user.name || session.user.email
+      }]
+    }
+
+    // For admins, get all users
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .order('name')
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
+    return data.map(user => ({
+      id: user.id,
+      name: user.name || user.email
+    }))
+  },
+
+  async getTeams(session: UserSession) {
+    if (!session?.user?.id) {
+      throw new Error('No user session found')
+    }
+
+    // If not admin, get only teams in user's department
+    const query = supabase
+      .from('teams')
+      .select('id, name')
+      .order('name')
+
+    if (session.user.role !== 'admin' && session.user.department) {
+      query.eq('department', session.user.department)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
+    return data
   }
 }

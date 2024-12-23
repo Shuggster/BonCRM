@@ -5,6 +5,7 @@ export interface User {
   email: string | null
   name?: string | null
   role?: string
+  department?: string | null
 }
 
 export type UserSession = Session & {
