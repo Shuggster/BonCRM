@@ -24,7 +24,7 @@ import { toast } from 'sonner'
 import { ContactTag } from "@/components/contacts/contact-tag"
 import { cn } from "@/lib/utils"
 import { UserSession } from "@/types/users"
-import type { Contact } from "@/lib/supabase/services/contacts"
+import type { Contact, LeadStatus } from "@/lib/supabase/services/contacts"
 import { Session } from "next-auth"
 import { convertNextAuthToUserSession } from "@/lib/session"
 
@@ -35,7 +35,11 @@ interface ContactsClientProps {
 type SortField = keyof Contact
 type SortDirection = 'asc' | 'desc'
 
-function transformContactForSchedule(contact: Contact | null) {
+interface ContactWithName extends Contact {
+  name: string
+}
+
+function transformContactForSchedule(contact: ContactWithName | null) {
   if (!contact) return null
   const displayName = contact.name || `${contact.first_name} ${contact.last_name || ''}`.trim()
   return {
@@ -45,7 +49,7 @@ function transformContactForSchedule(contact: Contact | null) {
 }
 
 interface ContactAvatarProps {
-  contact: Contact
+  contact: ContactWithName
   size: "sm" | "lg"
 }
 
@@ -68,14 +72,14 @@ function ContactAvatar({ contact, size }: ContactAvatarProps) {
 
 export function ContactsClient({ session }: ContactsClientProps) {
   const userSession = convertNextAuthToUserSession(session)
-  const [contacts, setContacts] = useState<Contact[]>([])
+  const [contacts, setContacts] = useState<ContactWithName[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortField, setSortField] = useState<SortField>('first_name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [selectedContact, setSelectedContact] = useState<ContactWithName | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
@@ -116,7 +120,7 @@ export function ContactsClient({ session }: ContactsClientProps) {
         ...contact,
         name: contact.name || `${contact.first_name} ${contact.last_name || ''}`.trim(),
         tags: contact.tags || []
-      })) as Contact[]
+      })) as ContactWithName[]
 
       setContacts(transformedData)
     } catch (error: any) {
@@ -180,7 +184,7 @@ export function ContactsClient({ session }: ContactsClientProps) {
     }
   }
 
-  const handleContactClick = (contact: Contact, event: React.MouseEvent) => {
+  const handleContactClick = (contact: ContactWithName, event: React.MouseEvent) => {
     const target = event.target as HTMLElement
     if (target.closest('.checkbox-container')) {
       return
@@ -220,7 +224,7 @@ export function ContactsClient({ session }: ContactsClientProps) {
   const groupedContacts = () => {
     if (groupBy === 'none') return { 'All Contacts': filteredContacts }
 
-    const groups: { [key: string]: Contact[] } = {}
+    const groups: { [key: string]: ContactWithName[] } = {}
     filteredContacts.forEach(contact => {
       const groupName = contact.company || 'No Company'
       if (!groups[groupName]) {
@@ -234,7 +238,7 @@ export function ContactsClient({ session }: ContactsClientProps) {
       .reduce((acc, key) => {
         acc[key] = groups[key]
         return acc
-      }, {} as { [key: string]: Contact[] })
+      }, {} as { [key: string]: ContactWithName[] })
   }
 
   const toggleGroup = (groupName: string) => {
@@ -423,6 +427,48 @@ export function ContactsClient({ session }: ContactsClientProps) {
                               : contact.assigned_to_type === 'team' && contact.assigned_team
                               ? contact.assigned_team.name
                               : 'Unassigned'}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Lead Management Section */}
+                      <div className="pt-2 border-t border-gray-700/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "px-2 py-1 rounded text-xs font-medium",
+                              contact.lead_status === 'new' && "bg-blue-500/20 text-blue-400",
+                              contact.lead_status === 'contacted' && "bg-yellow-500/20 text-yellow-400",
+                              contact.lead_status === 'qualified' && "bg-green-500/20 text-green-400",
+                              contact.lead_status === 'proposal' && "bg-purple-500/20 text-purple-400",
+                              contact.lead_status === 'negotiation' && "bg-orange-500/20 text-orange-400",
+                              contact.lead_status === 'won' && "bg-emerald-500/20 text-emerald-400",
+                              contact.lead_status === 'lost' && "bg-red-500/20 text-red-400"
+                            )}>
+                              {contact.lead_status.charAt(0).toUpperCase() + contact.lead_status.slice(1)}
+                            </div>
+                            {contact.lead_source && (
+                              <div className="text-xs text-gray-400">
+                                via {contact.lead_source.replace('_', ' ')}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-gray-400">Score</div>
+                            <div className={cn(
+                              "px-2 py-1 rounded text-xs font-medium",
+                              contact.lead_score >= 80 && "bg-green-500/20 text-green-400",
+                              contact.lead_score >= 50 && contact.lead_score < 80 && "bg-yellow-500/20 text-yellow-400",
+                              contact.lead_score < 50 && "bg-red-500/20 text-red-400"
+                            )}>
+                              {contact.lead_score}
+                            </div>
+                          </div>
+                        </div>
+                        {contact.expected_value && (
+                          <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
+                            <span>Expected Value</span>
+                            <span className="text-green-400">${contact.expected_value.toLocaleString()}</span>
                           </div>
                         )}
                       </div>

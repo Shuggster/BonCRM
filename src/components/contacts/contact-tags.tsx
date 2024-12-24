@@ -56,25 +56,24 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
       setLoading(true)
       setError(null)
 
-      // Get contact's tags
-      const { data: contact, error: contactError } = await supabase
-        .from('contacts')
-        .select('tags')
-        .eq('id', contactId)
-        .single()
+      // Get contact's tags through the junction table
+      const { data: relations, error: relationsError } = await supabase
+        .from('contact_tag_relations')
+        .select('tag_id')
+        .eq('contact_id', contactId)
 
-      if (contactError) throw contactError
+      if (relationsError) throw relationsError
 
-      if (!contact?.tags?.length) {
+      if (!relations?.length) {
         setTags([])
         return
       }
 
-      // Get tag details by ID
+      // Get tag details
       const { data: tagDetails, error: tagsError } = await supabase
-        .from('tags')
+        .from('contact_tags')
         .select('id, name, color')
-        .in('id', contact.tags)
+        .in('id', relations.map(r => r.tag_id))
 
       if (tagsError) throw tagsError
 
@@ -92,19 +91,21 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
       setLoading(true)
       setError(null)
 
-      const updatedTags = [...tags, tag]
-      const updatedTagIds = updatedTags.map(t => t.id)
-      
       if (contactId) {
-        const { error: updateError } = await supabase
-          .from('contacts')
-          .update({ tags: updatedTagIds })
-          .eq('id', contactId)
+        // Add relation to junction table
+        const { error: relationError } = await supabase
+          .from('contact_tag_relations')
+          .insert({
+            contact_id: contactId,
+            tag_id: tag.id,
+            created_at: new Date().toISOString()
+          })
 
-        if (updateError) throw updateError
+        if (relationError) throw relationError
       }
 
-      onTagsChange(updatedTagIds)
+      const updatedTags = [...tags, tag]
+      onTagsChange(updatedTags.map(t => t.id))
       setTags(updatedTags)
       setShowTagSelect(false)
     } catch (err: any) {
@@ -124,7 +125,7 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
 
       // Create new tag
       const { data: newTag, error: createError } = await supabase
-        .from('tags')
+        .from('contact_tags')
         .insert([{ 
           name: newTagName.trim(), 
           color: newTagColor 
@@ -134,20 +135,21 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
 
       if (createError) throw createError
 
-      // Add tag to contact
-      const updatedTags = [...tags, newTag]
-      const updatedTagIds = updatedTags.map(t => t.id)
-      
       if (contactId) {
-        const { error: updateError } = await supabase
-          .from('contacts')
-          .update({ tags: updatedTagIds })
-          .eq('id', contactId)
+        // Add relation to junction table
+        const { error: relationError } = await supabase
+          .from('contact_tag_relations')
+          .insert({
+            contact_id: contactId,
+            tag_id: newTag.id,
+            created_at: new Date().toISOString()
+          })
 
-        if (updateError) throw updateError
+        if (relationError) throw relationError
       }
 
-      onTagsChange(updatedTagIds)
+      const updatedTags = [...tags, newTag]
+      onTagsChange(updatedTags.map(t => t.id))
       setTags(updatedTags)
       setAvailableTags([...availableTags, newTag])
       setShowTagInput(false)
@@ -165,19 +167,19 @@ export function ContactTags({ contactId, onTagsChange }: ContactTagsProps) {
       setLoading(true)
       setError(null)
 
-      const updatedTags = tags.filter(t => t.id !== tagId)
-      const updatedTagIds = updatedTags.map(t => t.id)
-      
       if (contactId) {
-        const { error: updateError } = await supabase
-          .from('contacts')
-          .update({ tags: updatedTagIds })
-          .eq('id', contactId)
+        // Remove relation from junction table
+        const { error: deleteError } = await supabase
+          .from('contact_tag_relations')
+          .delete()
+          .eq('contact_id', contactId)
+          .eq('tag_id', tagId)
 
-        if (updateError) throw updateError
+        if (deleteError) throw deleteError
       }
 
-      onTagsChange(updatedTagIds)
+      const updatedTags = tags.filter(t => t.id !== tagId)
+      onTagsChange(updatedTags.map(t => t.id))
       setTags(updatedTags)
     } catch (err: any) {
       console.error('Error removing tag:', err)

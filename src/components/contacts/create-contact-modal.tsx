@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Building2, Briefcase, MapPin, Globe, Mail, Phone, X, Tags } from "lucide-react"
+import { User, Building2, Briefcase, MapPin, Globe, Mail, Phone, X, Tags, Target } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { TeamSelect } from "@/components/ui/team-select"
 import { ContactTags } from "@/components/contacts/contact-tags"
 import { toast } from "sonner"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
 interface FormData {
   first_name: string
@@ -31,6 +32,12 @@ interface FormData {
   assigned_to_type: string
   department: string
   tags: string[]
+  lead_status: string
+  lead_source: string
+  lead_score: string
+  expected_value: string
+  probability: string
+  next_follow_up: string
 }
 
 interface CreateContactModalProps {
@@ -62,7 +69,13 @@ export function CreateContactModal({
     assigned_to: "",
     assigned_to_type: "",
     department: "",
-    tags: []
+    tags: [],
+    lead_status: "",
+    lead_source: "",
+    lead_score: "",
+    expected_value: "",
+    probability: "",
+    next_follow_up: ""
   })
 
   const [loading, setLoading] = useState(false)
@@ -261,6 +274,108 @@ export function CreateContactModal({
                       onSelect={handleAssignment}
                       includeTeams={true}
                     />
+                  </div>
+                </div>
+
+                {/* Lead Management */}
+                <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/[.05] before:to-transparent">
+                  <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-blue-500" />
+                    Lead Information
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Lead Status</Label>
+                        <Select
+                          value={formData.lead_status}
+                          onValueChange={(value) => handleChange('lead_status', value)}
+                        >
+                          <SelectTrigger className="bg-[#1C2333] border-white/10 focus:border-blue-500">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="contacted">Contacted</SelectItem>
+                            <SelectItem value="qualified">Qualified</SelectItem>
+                            <SelectItem value="proposal">Proposal</SelectItem>
+                            <SelectItem value="negotiation">Negotiation</SelectItem>
+                            <SelectItem value="won">Won</SelectItem>
+                            <SelectItem value="lost">Lost</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Lead Source</Label>
+                        <Select
+                          value={formData.lead_source || ''}
+                          onValueChange={(value) => handleChange('lead_source', value)}
+                        >
+                          <SelectTrigger className="bg-[#1C2333] border-white/10 focus:border-blue-500">
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="website">Website</SelectItem>
+                            <SelectItem value="referral">Referral</SelectItem>
+                            <SelectItem value="social_media">Social Media</SelectItem>
+                            <SelectItem value="email_campaign">Email Campaign</SelectItem>
+                            <SelectItem value="cold_call">Cold Call</SelectItem>
+                            <SelectItem value="event">Event</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Lead Score (0-100)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={formData.lead_score}
+                          onChange={(e) => handleChange('lead_score', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Expected Value ($)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={formData.expected_value}
+                          onChange={(e) => handleChange('expected_value', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Probability (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={formData.probability}
+                          onChange={(e) => handleChange('probability', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Next Follow-up</Label>
+                        <Input
+                          type="date"
+                          value={formData.next_follow_up || ''}
+                          onChange={(e) => handleChange('next_follow_up', e.target.value)}
+                          className="bg-[#1C2333] border-white/10 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

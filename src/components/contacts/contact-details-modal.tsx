@@ -2,24 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, Mail, Phone, ExternalLink, Edit, X, Calendar, Clock, CheckCircle2, XCircle, Users, ArrowRight } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { User, Building2, Briefcase, MapPin, Globe, Linkedin, Twitter, Mail, Phone, ExternalLink, Edit, X, Calendar, Clock, CheckCircle2, XCircle, Users, ArrowRight, ArrowUpRight, PoundSterling, Percent, CalendarClock, HelpCircle } from "lucide-react"
+import { supabase } from "@/lib/supabase/client"
 import { ContactNotes } from "./contact-notes"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 import type { Contact } from "@/lib/supabase/services/contacts"
-import { ContactTag } from "./contact-tag"
-import { activityCalendarService } from '@/lib/supabase/services/activity-calendar'
-import type { UserSession } from "@/types/users"
-import { useSession } from "next-auth/react"
-
-interface ScheduledActivity {
-  id: string
-  type: 'call' | 'email' | 'meeting' | 'follow_up'
-  title: string
-  description: string | null
-  scheduled_for: string
-  status: 'pending' | 'completed' | 'cancelled'
-  completed_at: string | null
-}
+import { toast } from "sonner"
 
 interface ContactDetailsModalProps {
   contact: Contact | null
@@ -28,406 +22,293 @@ interface ContactDetailsModalProps {
   onEdit: () => void
 }
 
+interface ContactWithName extends Contact {
+  name: string
+}
+
+interface AssignedUser {
+  id: string
+  name: string
+  department?: string
+}
+
+interface AssignedTeam {
+  id: string
+  name: string
+  department?: string
+}
+
+interface ScheduledActivity {
+  id: string
+  type: string
+  title: string
+  description: string | null
+  scheduled_for: string
+  duration_minutes: number
+  status: string
+  created_at: string
+  updated_at: string
+  contact_id: string
+  user_id: string
+}
+
+const getScoreTooltipContent = (score: number) => {
+  const factors = []
+  if (score >= 80) {
+    factors.push("✓ High engagement level")
+    factors.push("✓ Clear budget indication")
+    factors.push("✓ Decision maker")
+    factors.push("✓ Immediate need")
+  } else if (score >= 50) {
+    factors.push("✓ Regular engagement")
+    factors.push("✓ Budget discussion started")
+    factors.push("✓ Influencer level")
+    factors.push("⚠ Timeline undefined")
+  } else {
+    factors.push("⚠ Low engagement")
+    factors.push("⚠ No budget discussion")
+    factors.push("⚠ Role unclear")
+    factors.push("⚠ No timeline")
+  }
+  return factors.join("\n")
+}
+
 export function ContactDetailsModal({
-  contact,
+  contact: initialContact,
   isOpen,
   onClose,
   onEdit,
 }: ContactDetailsModalProps) {
-  const { data: session } = useSession()
+  const [contact, setContact] = useState<ContactWithName | null>(null)
   const [activities, setActivities] = useState<ScheduledActivity[]>([])
-  const [assignedUserDetails, setAssignedUserDetails] = useState<{ name: string, email: string } | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (contact && isOpen) {
+    if (initialContact) {
+      setContact({
+        ...initialContact,
+        name: `${initialContact.first_name} ${initialContact.last_name || ''}`.trim()
+      })
+    }
+  }, [initialContact])
+
+  useEffect(() => {
+    if (contact?.id) {
       fetchActivities()
     }
-  }, [contact, isOpen])
-
-  useEffect(() => {
-    async function fetchAssignedUser() {
-      if (contact?.assigned_to && contact?.assigned_to_type === 'user') {
-        const { data, error } = await supabase
-          .from('users')
-          .select('name, email')
-          .eq('id', contact.assigned_to)
-          .single()
-
-        if (!error && data) {
-          setAssignedUserDetails(data)
-        }
-      } else {
-        setAssignedUserDetails(null)
-      }
-    }
-
-    fetchAssignedUser()
-  }, [contact?.assigned_to, contact?.assigned_to_type])
+  }, [contact?.id])
 
   const fetchActivities = async () => {
-    if (!contact) return
+    if (!contact?.id) return
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_activities')
+        .select(`
+          id,
+          type,
+          title,
+          description,
+          scheduled_for,
+          duration_minutes,
+          status,
+          created_at,
+          updated_at,
+          contact_id,
+          user_id
+        `)
+        .eq('contact_id', contact.id)
+        .order('scheduled_for', { ascending: true })
 
-    const { data, error } = await supabase
-      .from('scheduled_activities')
-      .select('*')
-      .eq('contact_id', contact.id)
-      .order('scheduled_for', { ascending: true })
+      if (error) {
+        console.error('Error fetching activities:', error)
+        toast.error('Failed to load activities')
+        return
+      }
 
-    if (error) {
+      setActivities(data || [])
+    } catch (error) {
       console.error('Error fetching activities:', error)
-      return
+      toast.error('Failed to load activities')
+    } finally {
+      setLoading(false)
     }
-
-    setActivities(data || [])
   }
 
   if (!contact) return null
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'call':
-        return <Phone className="w-5 h-5 text-green-400" />
-      case 'email':
-        return <Mail className="w-5 h-5 text-blue-400" />
-      case 'meeting':
-        return <Users className="w-5 h-5 text-purple-400" />
-      default:
-        return <ArrowRight className="w-5 h-5 text-orange-400" />
-    }
-  }
-
-  const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400'
-      case 'cancelled':
-        return 'text-red-400'
-      default:
-        return 'text-yellow-400'
-    }
-  }
-
-  const formatAddress = () => {
-    const parts = [
-      contact.address_line1,
-      contact.address_line2,
-      contact.city,
-      contact.region,
-      contact.postcode,
-      contact.country
-    ].filter(Boolean)
-    return parts.length > 0 ? (
-      <div className="flex flex-col">
-        {contact.address_line1 && <span>{contact.address_line1}</span>}
-        {contact.address_line2 && <span>{contact.address_line2}</span>}
-        {contact.city && <span>{contact.city}</span>}
-        {contact.region && <span>{contact.region}</span>}
-        {contact.postcode && <span>{contact.postcode}</span>}
-        {contact.country && <span>{contact.country}</span>}
-      </div>
-    ) : null
-  }
-
-  const handleComplete = async (activityId: string) => {
-    try {
-      if (!session?.user) {
-        console.error('No session found')
-        return
-      }
-
-      // Convert NextAuth session to UserSession
-      const userSession: UserSession = {
-        user: {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name,
-          role: session.user.role,
-          department: session.user.department
-        }
-      }
-
-      await activityCalendarService.updateActivityStatus(userSession, activityId, 'completed')
-      fetchActivities()
-      // Trigger calendar refresh
-      window.dispatchEvent(new Event('calendar:refresh'))
-    } catch (error) {
-      console.error('Error completing activity:', error)
-    }
-  }
-
-  const handleCancel = async (activityId: string) => {
-    try {
-      if (!session?.user) {
-        console.error('No session found')
-        return
-      }
-
-      // Convert NextAuth session to UserSession
-      const userSession: UserSession = {
-        user: {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name,
-          role: session.user.role,
-          department: session.user.department
-        }
-      }
-
-      await activityCalendarService.updateActivityStatus(userSession, activityId, 'cancelled')
-      fetchActivities()
-      // Trigger calendar refresh
-      window.dispatchEvent(new Event('calendar:refresh'))
-    } catch (error) {
-      console.error('Error cancelling activity:', error)
-    }
-  }
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
-          />
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 40 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 40 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="w-full max-w-2xl bg-gradient-to-br from-background via-background to-background/80 rounded-lg shadow-xl border border-border/50 backdrop-blur-sm"
-            >
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-border/50">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                    Contact Details
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={onEdit}
-                      className="p-2 hover:bg-primary/10 rounded-full transition-colors duration-200"
-                      title="Edit Contact"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={onClose}
-                      className="p-2 hover:bg-destructive/10 text-destructive rounded-full transition-colors duration-200"
-                      title="Close"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6 space-y-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    {/* Basic Info */}
-                    <Section title="Basic Information">
-                      <InfoItem icon={User} label="Name" value={contact.name} />
-                      <InfoItem icon={Mail} label="Email" value={contact.email} isEmail />
-                      {contact.phone && (
-                        <InfoItem icon={Phone} label="Phone" value={contact.phone} isPhone />
-                      )}
-                    </Section>
-
-                    {/* Work Info */}
-                    {(contact.company || contact.job_title) && (
-                      <Section title="Work">
-                        {contact.company && (
-                          <InfoItem icon={Building2} label="Company" value={contact.company} />
-                        )}
-                        {contact.job_title && (
-                          <InfoItem icon={Briefcase} label="Job Title" value={contact.job_title} />
-                        )}
-                      </Section>
-                    )}
-
-                    {/* Assignment Info */}
-                    {(contact.assigned_to || contact.department) && (
-                      <Section title="Assignment">
-                        {contact.assigned_to && (
-                          <InfoItem 
-                            icon={User} 
-                            label="Assigned To" 
-                            value={
-                              <div className="flex flex-col">
-                                <span>
-                                  {contact.assigned_to_type === 'user' && contact.assigned_user
-                                    ? contact.assigned_user.name
-                                    : contact.assigned_to_type === 'team' && contact.assigned_team
-                                    ? contact.assigned_team.name
-                                    : 'Unassigned'}
-                                </span>
-                                {contact.assigned_to_type === 'user' && contact.assigned_user?.department && (
-                                  <span className="text-sm text-muted-foreground">
-                                    {contact.assigned_user.department}
-                                  </span>
-                                )}
-                              </div>
-                            }
-                          />
-                        )}
-                        {contact.department && (
-                          <InfoItem 
-                            icon={Users} 
-                            label="Department" 
-                            value={contact.department.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
-                          />
-                        )}
-                      </Section>
-                    )}
-
-                    {/* Notes Section */}
-                    <Section title="Notes">
-                      <ContactNotes contactId={contact.id} />
-                    </Section>
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    {/* Address */}
-                    {formatAddress() && (
-                      <Section title="Address">
-                        <InfoItem icon={MapPin} label="Address" value={formatAddress()} />
-                      </Section>
-                    )}
-
-                    {/* Online Presence */}
-                    {(contact.website || contact.linkedin || contact.twitter) && (
-                      <Section title="Online Presence">
-                        {contact.website && (
-                          <InfoItem
-                            icon={Globe}
-                            label="Website"
-                            value={contact.website}
-                            href={contact.website}
-                          />
-                        )}
-                        {contact.linkedin && (
-                          <InfoItem 
-                            icon={Linkedin} 
-                            label="LinkedIn" 
-                            value="View Profile" 
-                            href={contact.linkedin}
-                          />
-                        )}
-                        {contact.twitter && (
-                          <InfoItem 
-                            icon={Twitter} 
-                            label="Twitter" 
-                            value="View Profile" 
-                            href={contact.twitter}
-                          />
-                        )}
-                      </Section>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tags - Full Width */}
-                {contact.tags && contact.tags.length > 0 && (
-                  <Section title="Tags" className="col-span-full">
-                    <div className="flex flex-wrap gap-2">
-                      {contact.tags.map((tagId) => (
-                        <ContactTag key={tagId} tagId={tagId} />
-                      ))}
-                    </div>
-                  </Section>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+        <DialogHeader className="px-6 pt-6">
+          <DialogTitle>Contact Details</DialogTitle>
+        </DialogHeader>
+        
+        <ScrollArea className="h-[calc(90vh-8rem)] px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <Section title="Basic Information">
+                <InfoItem icon={User} label="Name" value={contact.name} />
+                <InfoItem icon={Mail} label="Email" value={contact.email} isEmail />
+                {contact.phone && (
+                  <InfoItem icon={Phone} label="Phone" value={contact.phone} isPhone />
                 )}
+              </Section>
 
-                {/* Scheduled Activities */}
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-purple-400" />
-                    Scheduled Activities
-                  </h3>
+              {/* Work Info */}
+              {(contact.company || contact.job_title) && (
+                <Section title="Work">
+                  {contact.company && (
+                    <InfoItem icon={Building2} label="Company" value={contact.company} />
+                  )}
+                  {contact.job_title && (
+                    <InfoItem icon={Briefcase} label="Job Title" value={contact.job_title} />
+                  )}
+                </Section>
+              )}
+
+              {/* Lead Management */}
+              <Section title="Lead Management">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "px-2 py-1 rounded text-xs font-medium",
+                        contact.lead_status === 'new' && "bg-blue-500/20 text-blue-400",
+                        contact.lead_status === 'contacted' && "bg-yellow-500/20 text-yellow-400",
+                        contact.lead_status === 'qualified' && "bg-green-500/20 text-green-400",
+                        contact.lead_status === 'proposal' && "bg-purple-500/20 text-purple-400",
+                        contact.lead_status === 'negotiation' && "bg-orange-500/20 text-orange-400",
+                        contact.lead_status === 'won' && "bg-emerald-500/20 text-emerald-400",
+                        contact.lead_status === 'lost' && "bg-red-500/20 text-red-400"
+                      )}>
+                        {contact.lead_status.charAt(0).toUpperCase() + contact.lead_status.slice(1)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "px-2 py-1 rounded text-xs font-medium",
+                        contact.lead_score >= 80 && "bg-green-500/20 text-green-400",
+                        contact.lead_score >= 50 && contact.lead_score < 80 && "bg-yellow-500/20 text-yellow-400",
+                        contact.lead_score < 50 && "bg-red-500/20 text-red-400"
+                      )}>
+                        Score: {contact.lead_score}
+                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium mb-1">Lead Score Factors:</p>
+                            <pre className="text-xs whitespace-pre-wrap">
+                              {getScoreTooltipContent(contact.lead_score)}
+                            </pre>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+
+                  {contact.lead_source && (
+                    <InfoItem 
+                      icon={ArrowUpRight} 
+                      label="Lead Source" 
+                      value={contact.lead_source.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
+                    />
+                  )}
+
+                  {contact.first_contact_date && (
+                    <InfoItem 
+                      icon={Calendar} 
+                      label="First Contact" 
+                      value={new Date(contact.first_contact_date).toLocaleDateString()} 
+                    />
+                  )}
+
+                  {contact.last_contact_date && (
+                    <InfoItem 
+                      icon={Calendar} 
+                      label="Last Contact" 
+                      value={new Date(contact.last_contact_date).toLocaleDateString()} 
+                    />
+                  )}
+
+                  {contact.expected_value && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Expected Value:</span>
+                      <span>£{contact.expected_value.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {contact.probability !== null && (
+                    <InfoItem 
+                      icon={Percent} 
+                      label="Probability" 
+                      value={`${contact.probability}%`} 
+                    />
+                  )}
+
+                  {contact.next_follow_up && (
+                    <InfoItem 
+                      icon={CalendarClock} 
+                      label="Next Follow-up" 
+                      value={new Date(contact.next_follow_up).toLocaleDateString()} 
+                    />
+                  )}
+                </div>
+              </Section>
+
+              {/* Notes Section */}
+              <Section title="Notes">
+                <ContactNotes contactId={contact.id} />
+              </Section>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Activities */}
+              <Section title="Activities">
+                {loading ? (
+                  <div className="text-center py-4">Loading activities...</div>
+                ) : activities.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">No activities found</div>
+                ) : (
                   <div className="space-y-4">
-                    {activities.length === 0 ? (
-                      <p className="text-gray-400 text-sm">No activities scheduled</p>
-                    ) : (
-                      activities.map((activity) => (
-                        <div
-                          key={activity.id}
-                          className="bg-gray-800/50 rounded-lg p-4 border border-gray-700"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-3">
-                              {getActivityIcon(activity.type)}
-                              <div>
-                                <h4 className="text-white font-medium">{activity.title}</h4>
-                                {activity.description && (
-                                  <p className="text-gray-400 text-sm mt-1">{activity.description}</p>
-                                )}
-                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
-                                  <Clock className="w-4 h-4" />
-                                  {formatDateTime(activity.scheduled_for)}
-                                  <span className={`ml-2 ${getStatusColor(activity.status)}`}>
-                                    • {activity.status}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleComplete(activity.id)}
-                                className="p-1.5 rounded-lg hover:bg-gray-700 text-green-400"
-                                title="Mark as completed"
-                              >
-                                <CheckCircle2 className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => handleCancel(activity.id)}
-                                className="p-1.5 rounded-lg hover:bg-gray-700 text-red-400"
-                                title="Cancel activity"
-                              >
-                                <XCircle className="w-5 h-5" />
-                              </button>
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="bg-muted/50 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-blue-400" />
+                          <div>
+                            <h4 className="font-medium">{activity.title}</h4>
+                            {activity.description && (
+                              <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                              <Clock className="w-4 h-4" />
+                              {new Date(activity.scheduled_for).toLocaleString()}
                             </div>
                           </div>
                         </div>
-                      ))
-                    )}
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </div>
-            </motion.div>
+                )}
+              </Section>
+            </div>
           </div>
-        </> 
-      )}
-    </AnimatePresence>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-const Section = ({ title, children, className = "" }: { 
-  title: string
-  children: React.ReactNode
-  className?: string
-}) => (
-  <div className={`space-y-3 ${className}`}>
-    <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-    <div className="space-y-2">
-      {children}
-    </div>
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="space-y-4">
+    <h3 className="text-lg font-medium">{title}</h3>
+    <div className="space-y-3">{children}</div>
   </div>
 )
 
@@ -441,55 +322,29 @@ const InfoItem = ({ icon: Icon, label, value, href, isEmail, isPhone }: {
 }) => {
   if (!value) return null
 
-  // Color mapping for icons
-  const getIconColor = (icon: any) => {
-    switch (icon) {
-      case User:
-        return "text-blue-400"
-      case Mail:
-        return "text-purple-400"
-      case Phone:
-        return "text-green-400"
-      case Building2:
-        return "text-amber-400"
-      case Briefcase:
-        return "text-orange-400"
-      case MapPin:
-        return "text-red-400"
-      case Globe:
-        return "text-cyan-400"
-      case Linkedin:
-        return "text-blue-500"
-      case Twitter:
-        return "text-sky-400"
-      default:
-        return "text-muted-foreground"
-    }
-  }
-
-  // If it's an email or phone, create the appropriate href
   const finalHref = isEmail ? `mailto:${value}` : isPhone ? `tel:${value}` : href
 
   const content = (
-    <div className={`group flex items-center gap-3 p-3 rounded-lg bg-muted/50 ${finalHref ? 'hover:bg-muted/80' : ''} transition-all duration-200`}>
-      <Icon className={`w-5 h-5 ${getIconColor(Icon)} transition-colors duration-200`} />
+    <div className={cn(
+      "flex items-center gap-3 p-3 rounded-lg bg-muted/50",
+      finalHref && "hover:bg-muted/80 cursor-pointer"
+    )}>
+      <Icon className="w-5 h-5 text-primary" />
       <div className="flex-grow min-w-0">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
         {typeof value === 'string' ? (
-          <p className={`text-sm truncate ${finalHref ? 'group-hover:text-primary' : ''}`}>{value}</p>
+          <p className="text-sm truncate">{value}</p>
         ) : (
           value
         )}
       </div>
-      {finalHref && (
-        <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-      )}
+      {finalHref && <ExternalLink className="w-4 h-4 text-muted-foreground" />}
     </div>
   )
 
   if (finalHref) {
     return (
-      <a href={finalHref} target={isEmail || isPhone ? undefined : "_blank"} rel="noopener noreferrer" className="block">
+      <a href={finalHref} target={isEmail || isPhone ? undefined : "_blank"} rel="noopener noreferrer">
         {content}
       </a>
     )

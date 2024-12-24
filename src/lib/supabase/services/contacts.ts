@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost'
+export type LeadSource = 'website' | 'referral' | 'social_media' | 'email_campaign' | 'cold_call' | 'event' | 'other'
+export type ConversionStatus = 'lead' | 'opportunity' | 'customer'
+
 export interface Contact {
   id: string
   created_at: string
@@ -23,7 +27,17 @@ export interface Contact {
   industry_id: string | null
   updated_at: string
   department: string | null
-  // These come from assignments
+  // Lead Management Fields
+  lead_status: LeadStatus
+  lead_source: LeadSource | null
+  lead_score: number
+  conversion_status: ConversionStatus
+  first_contact_date: string | null
+  last_contact_date: string | null
+  expected_value: number | null
+  probability: number | null
+  next_follow_up: string | null
+  // Assignment Fields
   assigned_to?: string | null
   assigned_to_type?: 'user' | 'team' | null
   assigned_user?: { id: string; name: string } | null
@@ -86,16 +100,15 @@ export const contactsService = {
           id: user.id,
           name: user.name,
           department: user.department
-        } : null
+        } : null,
+        // Ensure lead management fields have defaults
+        lead_status: contact.lead_status || 'new',
+        lead_score: contact.lead_score || 0,
+        conversion_status: contact.conversion_status || 'lead',
+        expected_value: contact.expected_value || null,
+        probability: contact.probability || null
       }
     })
-
-    console.log('Mapped contacts:', mappedData.map(c => ({
-      id: c.id,
-      name: c.name,
-      assigned_type: c.assigned_to_type,
-      assigned_user: c.assigned_user?.name
-    })))
 
     return mappedData
   },
@@ -118,5 +131,45 @@ export const contactsService = {
     }
 
     return await response.json()
+  },
+
+  async updateLeadStatus(contactId: string, status: LeadStatus) {
+    const { data, error } = await supabase
+      .from('contacts')
+      .update({ lead_status: status })
+      .eq('id', contactId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async updateLeadScore(contactId: string, score: number) {
+    const { data, error } = await supabase
+      .from('contacts')
+      .update({ lead_score: score })
+      .eq('id', contactId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async convertLead(contactId: string, status: ConversionStatus, expectedValue?: number) {
+    const { data, error } = await supabase
+      .from('contacts')
+      .update({
+        conversion_status: status,
+        expected_value: expectedValue,
+        last_contact_date: new Date().toISOString()
+      })
+      .eq('id', contactId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
   }
 } 
