@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Calendar, Clock, X, Phone, Mail, Users, ArrowRight } from "lucide-react"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
-import { supabase } from "@/lib/supabase"
+import { activityCalendarService } from "@/lib/supabase/services/activity-calendar"
+import { UserSession } from "@/types/users"
+import { useSession } from "next-auth/react"
 
 interface ScheduleActivityModalProps {
   contact: {
@@ -14,155 +16,110 @@ interface ScheduleActivityModalProps {
   } | null
   isOpen: boolean
   onClose: () => void
-  onActivityScheduled: () => void
+  onActivityScheduled?: () => void
 }
 
 export function ScheduleActivityModal({
   contact,
   isOpen,
   onClose,
-  onActivityScheduled,
+  onActivityScheduled
 }: ScheduleActivityModalProps) {
+  const { data: nextAuthSession } = useSession()
   const [title, setTitle] = useState("")
   const [activityType, setActivityType] = useState<'call' | 'email' | 'meeting' | 'follow_up'>('call')
   const [notes, setNotes] = useState("")
   const [scheduledFor, setScheduledFor] = useState<Date | null>(new Date())
+  const [duration, setDuration] = useState(30) // Default 30 minutes
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  console.log('Modal props received:', JSON.stringify({
+  // Debug log when component mounts or props change
+  console.log('ScheduleActivityModal props:', {
     contactId: contact?.id,
     contactName: contact?.name,
-    isOpen
-  }, null, 2))
+    isOpen,
+    hasSession: !!nextAuthSession,
+    sessionUserId: nextAuthSession?.user?.id
+  })
 
   const handleScheduleActivity = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('1. Starting activity scheduling...')
+    console.log('Form submitted')
+    console.log('Form data:', {
+      title,
+      activityType,
+      notes,
+      scheduledFor,
+      duration,
+      contactId: contact?.id,
+      sessionUserId: nextAuthSession?.user?.id
+    })
     setSaving(true)
     setError(null)
     
     try {
-      // Temporarily hardcode a user ID for testing
-      const user = { id: 'd1baaba0-29d4-4660-a8af-f371d31d028f' } // Hugh's user ID
-      
+      if (!nextAuthSession?.user) {
+        console.error('No session found')
+        throw new Error('No user session found')
+      }
+
+      // Convert NextAuth session to UserSession
+      const session: UserSession = {
+        user: {
+          id: nextAuthSession.user.id,
+          email: nextAuthSession.user.email,
+          name: nextAuthSession.user.name,
+          role: nextAuthSession.user.role,
+          department: nextAuthSession.user.department
+        }
+      }
+
       // Validate required fields
       if (!contact?.id) {
+        console.error('No contact ID')
         throw new Error('Contact ID is required')
       }
       if (!scheduledFor) {
-        throw new Error('Schedule date is required')
+        console.error('No schedule date')
+        throw new Error('Please select a date and time')
       }
-      if (!title) {
-        throw new Error('Title is required')
+      if (!title.trim()) {
+        console.error('No title')
+        throw new Error('Please enter a title for the activity')
       }
       if (!activityType) {
-        throw new Error('Activity type is required')
+        console.error('No activity type')
+        throw new Error('Please select an activity type')
       }
 
-      // Log the exact data we're sending
-      console.log('Preparing activity with:', JSON.stringify({
-        userId: user.id,
-        contactId: contact?.id,
-        title,
-        activityType,
-        scheduledFor: scheduledFor?.toISOString()
-      }, null, 2))
-
-      const activityData = {
-        user_id: user.id,
-        contact_id: contact.id,
+      console.log('All validation passed, creating activity...')
+      const result = await activityCalendarService.createActivityWithEvent(session, {
         title: title.trim(),
         type: activityType,
-        description: notes.trim() || null,
-        scheduled_for: scheduledFor.toISOString(),
-        status: 'pending'
-      }
-      console.log('2. Activity data prepared:', activityData)
+        description: notes.trim() || undefined,
+        contact_id: contact.id,
+        scheduled_for: scheduledFor,
+        duration_minutes: duration
+      })
+      console.log('Activity created successfully:', result)
 
-      // First verify we can read from the table
-      console.log('3. Testing table access...')
-      const { error: testError } = await supabase
-        .from('scheduled_activities')
-        .select('id')
-        .limit(1)
-
-      if (testError) {
-        console.log('4A. Test query failed:', {
-          code: testError.code,
-          message: testError.message,
-          details: testError.details,
-          hint: testError.hint
-        })
-        throw testError
-      }
-
-      console.log('4B. Test query successful, proceeding with insert')
-
-      // Then try to insert
-      const response = await supabase
-        .from('scheduled_activities')
-        .insert(activityData)
-        .select()
-        .single()
-
-      console.log('5. Insert response:', JSON.stringify({
-        data: response.data,
-        error: response.error,
-        status: response.status
-      }, null, 2))
-
-      if (response.error) {
-        console.log('6A. Insert failed:', JSON.stringify({
-          code: response.error.code,
-          message: response.error.message,
-          details: response.error.details,
-          hint: response.error.hint
-        }, null, 2))
-        throw response.error
-      }
-
-      console.log('6B. Insert successful:', response.data)
+      // Trigger calendar refresh by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('calendar:refresh'))
 
       // Clear form and close
       setTitle('')
       setActivityType('call')
       setNotes('')
       setScheduledFor(new Date())
-      onActivityScheduled()
+      setDuration(30)
+      if (onActivityScheduled) {
+        onActivityScheduled()
+      }
       onClose()
     } catch (err: any) {
-      console.log('7. Error caught:', {
-        error: err,
-        type: typeof err,
-        code: err?.code,
-        message: err?.message,
-        details: err?.details,
-        hint: err?.hint,
-        status: err?.status
-      })
-      
-      // Handle Supabase errors specifically
-      if (err?.code) {
-        switch (err.code) {
-          case '42501':
-            setError('Permission denied. Please check if you are logged in.')
-            break
-          case '23505':
-            setError('This activity already exists.')
-            break
-          case 'PGRST301':
-            setError('Database row not found.')
-            break
-          case '23503':
-            setError('This action references invalid data.')
-            break
-          default:
-            setError(err.message || 'Failed to schedule activity')
-        }
-      } else {
-        setError(err?.message || 'An unexpected error occurred')
-      }
+      console.error('Error scheduling activity:', err)
+      setError(err?.message || 'Failed to schedule activity')
     } finally {
       setSaving(false)
     }
@@ -223,20 +180,26 @@ export function ScheduleActivityModal({
               <form onSubmit={handleScheduleActivity} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Title
+                    Title <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Activity title"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
+                    required
+                    className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 ${
+                      error?.includes('title') ? 'border-red-500' : 'border-gray-600'
+                    }`}
                   />
+                  {error?.includes('title') && (
+                    <p className="mt-1 text-sm text-red-400">Please enter a title for the activity</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Type
+                    Type <span className="text-red-400">*</span>
                   </label>
                   <div className="grid grid-cols-4 gap-2">
                     {['call', 'email', 'meeting', 'follow_up'].map((type) => (
@@ -248,7 +211,7 @@ export function ScheduleActivityModal({
                           flex flex-col items-center gap-1 p-3 rounded-lg border
                           ${type === activityType
                             ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                            : 'border-gray-700 hover:border-gray-600'
+                            : 'border-gray-600 hover:border-gray-500'
                           }
                         `}
                       >
@@ -263,40 +226,31 @@ export function ScheduleActivityModal({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Date & Time
+                    Schedule For
                   </label>
-                  <div className="relative">
-                    <DatePicker
-                      selected={scheduledFor}
-                      onChange={(date) => setScheduledFor(date)}
-                      showTimeSelect
-                      timeFormat="HH:mm"
-                      timeIntervals={15}
-                      dateFormat="MMMM d, yyyy h:mm aa"
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
-                      calendarClassName="bg-gray-800 border border-gray-700 text-white rounded-lg shadow-xl"
-                      wrapperClassName="w-full"
-                      popperClassName="react-datepicker-popper"
-                      customInput={
-                        <div className="relative w-full">
-                          <input
-                            type="text"
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
-                            value={scheduledFor?.toLocaleString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit',
-                              hour12: true
-                            })}
-                            readOnly
-                          />
-                          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        </div>
-                      }
-                    />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <DatePicker
+                        selected={scheduledFor}
+                        onChange={(date) => setScheduledFor(date)}
+                        showTimeSelect
+                        dateFormat="MMMM d, yyyy h:mm aa"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
+                      />
+                    </div>
+                    <div className="w-24">
+                      <input
+                        type="number"
+                        value={duration}
+                        onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
+                        min="5"
+                        max="480"
+                        step="5"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
+                      />
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Duration in minutes</p>
                 </div>
 
                 <div>
@@ -307,18 +261,16 @@ export function ScheduleActivityModal({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add any notes or details..."
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 resize-none"
                     rows={3}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
                   />
                 </div>
 
                 {error && (
-                  <div className="text-sm text-red-500">
-                    {error}
-                  </div>
+                  <div className="text-red-400 text-sm">{error}</div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={onClose}
@@ -329,7 +281,7 @@ export function ScheduleActivityModal({
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-md"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
                   >
                     {saving ? 'Scheduling...' : 'Schedule Activity'}
                   </button>

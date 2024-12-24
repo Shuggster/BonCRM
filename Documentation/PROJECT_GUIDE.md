@@ -6,11 +6,13 @@
 1. First time setup → [Project Setup](#1-project-setup)
 2. Understanding the codebase → [Project Overview](#-project-overview-read-first)
 3. Where to find examples → [Quick Reference](#-quick-reference---working-examples)
+4. UI/UX Guidelines → [UI Patterns](#10-uiux-patterns-and-guidelines)
 
 ### 🔧 Adding New Features?
 1. Check current focus → [Current Development Focus](#-current-development-focus)
 2. Find reference code → [Module-Specific Requirements](#1-module-specific-requirements-read-first)
 3. Follow patterns → [Database Access Patterns](#5-database-access-patterns)
+4. UI Components → [Component Patterns](#component-patterns)
 
 ### ❌ Getting Errors?
 1. Common errors → [STOP! READ THIS IF YOU GET ERRORS](#-stop-read-this-if-you-get-errors)
@@ -18,10 +20,11 @@
 3. Schema issues → [Schema Cache Errors](#b-schema-cache-errors)
 4. Quick fixes → [Top 5 New Agent Mistakes](#top-5-new-agent-mistakes-dont-do-these)
 
-### 🤔 Not Sure About Auth?
-1. Which pattern to use → [Authentication Decision Tree](#2-authentication-decision-tree-required)
-2. Common mistakes → [Common Auth Mistakes](#3-common-auth-mistakes-avoid-these)
-3. Validation steps → [Auth Validation Checklist](#4-auth-validation-checklist-use-this)
+### 🤔 UI/UX Guidelines
+1. Modal patterns → [Modal Implementation](#modal-implementation-pattern)
+2. Form patterns → [Form Implementation](#form-implementation-pattern)
+3. Filter patterns → [Filter Implementation](#filter-implementation-pattern)
+4. Styling guide → [Styling Guidelines](#styling-guidelines)
 
 ## 🚀 Project Overview (READ FIRST!)
 
@@ -1159,93 +1162,254 @@ flowchart TD
 
 ## 9. Recent Changes & Updates
 
-### Latest Updates (2024-01-22)
-1. **Assignment System**
-   - Added to Contacts module
-   - TeamSelect component integration
-   - Department validation
+### Latest Updates (2024-01-24)
+1. **Calendar Filtering System**
+   - Simplified filtering UI with dropdowns
+   - Default view shows all entries for admin users
+   - Added department and user filters
+   - Improved filter reset functionality
 
-2. **Auth Patterns**
-   - Simplified Contacts auth (removed all checks)
-   - Standardized Tasks/Calendar auth
-   - Updated error messages
+2. **Task UI Improvements**
+   - Updated task modal layout and styling
+   - Improved responsive design
+   - Enhanced form organization
+   - Better handling of comments and activities
 
-3. **Schema Updates**
-   - Added created_at to all tables
-   - Moved notes to junction tables
-   - Updated assignment relationships
+3. **Component Patterns**
+   - Standardized modal sizes and layouts
+   - Improved form field organization
+   - Enhanced Select component handling
+   - Better empty state management
 
-### Known Issues & Solutions:
-1. **Notes Column Error**
+### Current Implementation Patterns:
+
+1. **Calendar Filtering Pattern**
    ```typescript
-   // FIXED: Use contact_notes table
-   const { data } = await supabase
-     .from('contact_notes')
-     .select('content, created_at')
+   // Simple Filter Implementation
+   function CalendarClient() {
+     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
+     const [selectedUser, setSelectedUser] = useState<string | null>(null)
+     
+     // Filter events based on selections
+     const filteredEvents = events.filter(event => {
+       if (selectedDepartment && event.department !== selectedDepartment) return false
+       if (selectedUser && event.assigned_to !== selectedUser) return false
+       return true
+     })
+
+     return (
+       <div>
+         {/* Department Filter */}
+         <Select
+           value={selectedDepartment}
+           onValueChange={setSelectedDepartment}
+         >
+           <SelectTrigger>
+             <SelectValue placeholder="All Departments" />
+           </SelectTrigger>
+           <SelectContent>
+             <SelectItem value={null}>All Departments</SelectItem>
+             {departments.map(dept => (
+               <SelectItem value={dept.id}>{dept.name}</SelectItem>
+             ))}
+           </SelectContent>
+         </Select>
+
+         {/* Reset Filters */}
+         <Button
+           onClick={() => {
+             setSelectedDepartment(null)
+             setSelectedUser(null)
+           }}
+         >
+           Reset Filters
+         </Button>
+       </div>
+     )
+   }
    ```
 
-2. **Auth Confusion**
+2. **Task Modal Pattern**
    ```typescript
-   // FIXED: No auth in Contacts
-   export const contactsService = {
-     getContacts() {  // No session param
-       return supabase.from('contacts')
+   // Modal Size and Layout
+   <DialogContent className="max-w-[95vw] md:max-w-[800px] max-h-[90vh] overflow-y-auto">
+     <DialogHeader className="px-6 py-4">
+       <DialogTitle>Task Details</DialogTitle>
+     </DialogHeader>
+
+     <form className="space-y-6">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         {/* Left Column - Main Details */}
+         <div className="space-y-4">
+           <FormField label="Title" />
+           <FormField label="Description" type="textarea" />
+         </div>
+
+         {/* Right Column - Additional Details */}
+         <div className="space-y-4">
+           <FormField label="Due Date" type="date" />
+           <FormField label="Priority" type="select" />
+         </div>
+       </div>
+     </form>
+   </DialogContent>
+   ```
+
+## 10. UI/UX Patterns and Guidelines
+
+### Modal Implementation Pattern
+1. **Size and Layout**
+   ```typescript
+   // Standard Modal Sizes
+   const modalSizes = {
+     small: "max-w-[500px]",
+     medium: "max-w-[800px]",
+     large: "max-w-[1100px]"
+   }
+
+   // Standard Modal Layout
+   <DialogContent className={cn(
+     modalSizes.medium,
+     "max-h-[90vh] overflow-y-auto",
+     "bg-[#0F1629] text-white border-white/10"
+   )}>
+     <DialogHeader className="px-6 py-4 border-b border-white/10">
+       <DialogTitle>{title}</DialogTitle>
+     </DialogHeader>
+
+     <div className="px-6 py-4">
+       {content}
+     </div>
+
+     <div className="sticky bottom-0 px-6 py-4 border-t border-white/10">
+       {actions}
+     </div>
+   </DialogContent>
+   ```
+
+### Form Implementation Pattern
+1. **Field Layout**
+   ```typescript
+   // Standard Form Grid
+   <form className="space-y-6">
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       {/* Form fields */}
+     </div>
+   </form>
+
+   // Standard Field Spacing
+   <div className="space-y-3">
+     <Label className="text-sm font-medium text-gray-200">
+       {label}
+     </Label>
+     <Input className="h-9 bg-[#1C2333] border-white/10" />
+   </div>
+   ```
+
+### Filter Implementation Pattern
+1. **Simple Filters**
+   ```typescript
+   // Standard Filter Layout
+   <div className="flex items-center gap-4">
+     <Select
+       value={selected}
+       onValueChange={setSelected}
+     >
+       <SelectTrigger className="w-[200px]">
+         <SelectValue placeholder={`All ${label}s`} />
+       </SelectTrigger>
+       <SelectContent>
+         <SelectItem value={null}>{`All ${label}s`}</SelectItem>
+         {options.map(option => (
+           <SelectItem value={option.id}>{option.name}</SelectItem>
+         ))}
+       </SelectContent>
+     </Select>
+
+     <Button
+       variant="outline"
+       onClick={() => setSelected(null)}
+     >
+       Reset
+     </Button>
+   </div>
+   ```
+
+### Styling Guidelines
+1. **Colors**
+   ```typescript
+   // Background Colors
+   const bgColors = {
+     primary: "bg-[#0F1629]",
+     secondary: "bg-[#1C2333]",
+     hover: "hover:bg-white/5"
+   }
+
+   // Text Colors
+   const textColors = {
+     primary: "text-white",
+     secondary: "text-gray-200",
+     muted: "text-gray-400"
+   }
+
+   // Border Colors
+   const borderColors = {
+     primary: "border-white/10",
+     focus: "focus:border-blue-500"
+   }
+   ```
+
+2. **Spacing**
+   ```typescript
+   // Standard Spacing
+   const spacing = {
+     modal: {
+       header: "px-6 py-4",
+       content: "px-6 py-4",
+       footer: "px-6 py-4"
+     },
+     form: {
+       section: "space-y-6",
+       field: "space-y-3",
+       grid: "gap-6"
      }
    }
    ```
 
-3. **406 Errors**
+3. **Typography**
    ```typescript
-   // FIXED: Include created_at
-   .select('*, created_at')
-   .order('created_at', { ascending: false })
+   // Text Styles
+   const typography = {
+     title: "text-xl font-medium",
+     label: "text-sm font-medium text-gray-200",
+     input: "text-sm text-gray-100",
+     helper: "text-xs text-gray-400"
+   }
    ```
 
-4. **Assignment Name Display**
-   ```typescript
-   // WRONG: Don't join directly with users/teams in contacts module ❌
-   .select(`
-     *,
-     users!contacts_assigned_to_fkey (name)
-   `)
+### Best Practices
+1. **Modal Design**
+   - Use consistent sizing (800px for standard forms)
+   - Include sticky headers and footers
+   - Implement proper overflow handling
+   - Maintain consistent padding and spacing
 
-   // RIGHT: Fetch names in separate queries ✅
-   const { data: users } = await supabase
-     .from('users')
-     .select('id, name')
-     .in('id', userIds)
+2. **Form Layout**
+   - Group related fields together
+   - Use two-column layout on desktop
+   - Single column on mobile
+   - Consistent field spacing
 
-   const { data: teams } = await supabase
-     .from('teams')
-     .select('id, name')
-     .in('id', teamIds)
+3. **Filter Design**
+   - Simple, intuitive controls
+   - Clear default states
+   - Easy reset functionality
+   - Responsive layout
 
-   // Then map the names to contacts
-   return contacts.map(contact => ({
-     ...contact,
-     assigned_name: contact.assigned_to_type === 'user'
-       ? userMap[contact.assigned_to || '']
-       : teamMap[contact.assigned_to || '']
-   }))
-   ```
-   - Problem: Trying to join with auth-protected tables in public module
-   - Solution: Fetch names separately and map them to contacts
-   - Best Practice: Keep contacts module public, handle relationships through separate queries
-
-### Upcoming Changes:
-1. **Assignment System**
-   - Adding filters by department
-   - Extending to Calendar module
-   - Improving validation rules
-
-2. **Component Updates**
-   - Standardizing modal patterns
-   - Adding error boundaries
-   - Improving form validation
-
-3. **Schema Updates**
-   - Adding indexes for performance
-   - Optimizing junction tables
-   - Enhancing type safety
+4. **Styling Consistency**
+   - Use predefined color variables
+   - Maintain consistent spacing
+   - Follow typography guidelines
+   - Use standard component variants
 
 [Rest of existing content...]

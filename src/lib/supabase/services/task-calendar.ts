@@ -2,9 +2,6 @@ import { supabase } from '../client'
 import { Session } from '@supabase/supabase-js'
 import { CalendarEvent } from '@/types/calendar'
 import { Task } from '@/types/tasks'
-import { createClient } from '@supabase/supabase-js'
-
-export type ScheduleStatus = 'scheduled' | 'unscheduled' | 'partially_scheduled'
 
 export interface TaskWithEvents extends Task {
   events: CalendarEvent[]
@@ -46,6 +43,7 @@ interface DatabaseEventInput {
 interface TaskCalendarRelation {
   task_id: string
   event_id: string
+  created_at: Date
 }
 
 export const taskCalendarService = {
@@ -97,14 +95,18 @@ export const taskCalendarService = {
         description: event.description || '',
         start: new Date(event.start_time),
         end: new Date(event.end_time),
-        category: event.category,
-        recurrence: event.recurrence,
-        assigned_to: event.assigned_to,
-        assigned_to_type: event.assigned_to_type,
-        department: event.department,
+        category: event.category || 'default',
+        recurrence: event.recurrence ? {
+          frequency: event.recurrence.frequency,
+          interval: event.recurrence.interval || 1,
+          endDate: event.recurrence.endDate ? new Date(event.recurrence.endDate) : undefined
+        } : undefined,
+        assigned_to: event.assigned_to || undefined,
+        assigned_to_type: event.assigned_to_type || undefined,
+        department: event.department || undefined,
         user_id: event.user_id,
-        created_at: new Date(event.created_at || Date.now()),
-        updated_at: new Date(event.updated_at || Date.now()),
+        created_at: event.created_at ? new Date(event.created_at) : undefined,
+        updated_at: event.updated_at ? new Date(event.updated_at) : undefined,
         task: null
       }
     }
@@ -124,14 +126,18 @@ export const taskCalendarService = {
       description: event.description || '',
       start: new Date(event.start_time),
       end: new Date(event.end_time),
-      category: event.category,
-      recurrence: event.recurrence,
-      assigned_to: event.assigned_to,
-      assigned_to_type: event.assigned_to_type,
-      department: event.department,
+      category: event.category || 'default',
+      recurrence: event.recurrence ? {
+        frequency: event.recurrence.frequency,
+        interval: event.recurrence.interval || 1,
+        endDate: event.recurrence.endDate ? new Date(event.recurrence.endDate) : undefined
+      } : undefined,
+      assigned_to: event.assigned_to || undefined,
+      assigned_to_type: event.assigned_to_type || undefined,
+      department: event.department || undefined,
       user_id: event.user_id,
-      created_at: new Date(event.created_at || Date.now()),
-      updated_at: new Date(event.updated_at || Date.now()),
+      created_at: event.created_at ? new Date(event.created_at) : undefined,
+      updated_at: event.updated_at ? new Date(event.updated_at) : undefined,
       task: task || null
     }
   },
@@ -161,14 +167,18 @@ export const taskCalendarService = {
       description: event.description || '',
       start: new Date(event.start_time),
       end: new Date(event.end_time),
-      category: event.category,
-      recurrence: event.recurrence,
-      assigned_to: event.assigned_to,
-      assigned_to_type: event.assigned_to_type,
-      department: event.department,
+      category: event.category || 'default',
+      recurrence: event.recurrence ? {
+        frequency: event.recurrence.frequency,
+        interval: event.recurrence.interval || 1,
+        endDate: event.recurrence.endDate ? new Date(event.recurrence.endDate) : undefined
+      } : undefined,
+      assigned_to: event.assigned_to || undefined,
+      assigned_to_type: event.assigned_to_type || undefined,
+      department: event.department || undefined,
       user_id: event.user_id,
-      created_at: new Date(event.created_at || Date.now()),
-      updated_at: new Date(event.updated_at || Date.now())
+      created_at: event.created_at ? new Date(event.created_at) : undefined,
+      updated_at: event.updated_at ? new Date(event.updated_at) : undefined
     }))
   },
 
@@ -177,22 +187,20 @@ export const taskCalendarService = {
     eventData: Partial<CalendarEvent>,
     session: Session
   ): Promise<CalendarEvent> {
-    console.log('Session:', {
-      accessToken: session.access_token,
-      user: session.user.id,
-      expires: session.expires_at
-    })
-
-    // First create the event using the original supabase client
+    // First create the event
     const { data: event, error: eventError } = await supabase
       .from('calendar_events')
       .insert({
         title: eventData.title || '',
-        description: eventData.description || null,
+        description: eventData.description || '',
         start_time: eventData.start?.toISOString() || null,
         end_time: eventData.end?.toISOString() || null,
         category: eventData.category || 'task',
-        recurrence: eventData.recurrence || null,
+        recurrence: eventData.recurrence ? {
+          frequency: eventData.recurrence.frequency,
+          interval: eventData.recurrence.interval || 1,
+          endDate: eventData.recurrence.endDate?.toISOString()
+        } : null,
         assigned_to: eventData.assigned_to || null,
         assigned_to_type: eventData.assigned_to_type || null,
         department: eventData.department || null,
@@ -207,7 +215,7 @@ export const taskCalendarService = {
     }
     if (!event) throw new Error('Failed to create event')
 
-    // Then create the relation using the original supabase client
+    // Then create the relation
     const { error: relationError } = await supabase
       .from('task_calendar_relations')
       .insert({
@@ -218,6 +226,11 @@ export const taskCalendarService = {
 
     if (relationError) {
       console.error('Relation creation error:', relationError)
+      // Clean up the event since relation failed
+      await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('id', event.id)
       throw relationError
     }
 
@@ -229,14 +242,18 @@ export const taskCalendarService = {
       description: dbEvent.description || '',
       start: new Date(dbEvent.start_time),
       end: new Date(dbEvent.end_time),
-      category: dbEvent.category,
-      recurrence: dbEvent.recurrence,
-      assigned_to: dbEvent.assigned_to,
-      assigned_to_type: dbEvent.assigned_to_type,
-      department: dbEvent.department,
+      category: dbEvent.category || 'default',
+      recurrence: dbEvent.recurrence ? {
+        frequency: dbEvent.recurrence.frequency,
+        interval: dbEvent.recurrence.interval || 1,
+        endDate: dbEvent.recurrence.endDate ? new Date(dbEvent.recurrence.endDate) : undefined
+      } : undefined,
+      assigned_to: dbEvent.assigned_to || undefined,
+      assigned_to_type: dbEvent.assigned_to_type || undefined,
+      department: dbEvent.department || undefined,
       user_id: dbEvent.user_id,
-      created_at: new Date(dbEvent.created_at || Date.now()),
-      updated_at: new Date(dbEvent.updated_at || Date.now())
+      created_at: dbEvent.created_at ? new Date(dbEvent.created_at) : undefined,
+      updated_at: dbEvent.updated_at ? new Date(dbEvent.updated_at) : undefined
     }
   },
 
@@ -261,11 +278,18 @@ export const taskCalendarService = {
       .from('calendar_events')
       .update({
         title: eventData.title,
-        description: eventData.description,
+        description: eventData.description || '',
         start_time: eventData.start?.toISOString(),
         end_time: eventData.end?.toISOString(),
-        category: eventData.category,
-        recurrence: eventData.recurrence
+        category: eventData.category || 'default',
+        recurrence: eventData.recurrence ? {
+          frequency: eventData.recurrence.frequency,
+          interval: eventData.recurrence.interval || 1,
+          endDate: eventData.recurrence.endDate?.toISOString()
+        } : null,
+        assigned_to: eventData.assigned_to || null,
+        assigned_to_type: eventData.assigned_to_type || null,
+        department: eventData.department || null
       })
       .eq('id', eventId)
       .select()
@@ -282,14 +306,18 @@ export const taskCalendarService = {
       description: dbEvent.description || '',
       start: new Date(dbEvent.start_time),
       end: new Date(dbEvent.end_time),
-      category: dbEvent.category,
-      recurrence: dbEvent.recurrence,
-      assigned_to: dbEvent.assigned_to,
-      assigned_to_type: dbEvent.assigned_to_type,
-      department: dbEvent.department,
-      user_id: dbEvent.id,
-      created_at: new Date(dbEvent.created_at || Date.now()),
-      updated_at: new Date(dbEvent.updated_at || Date.now())
+      category: dbEvent.category || 'default',
+      recurrence: dbEvent.recurrence ? {
+        frequency: dbEvent.recurrence.frequency,
+        interval: dbEvent.recurrence.interval || 1,
+        endDate: dbEvent.recurrence.endDate ? new Date(dbEvent.recurrence.endDate) : undefined
+      } : undefined,
+      assigned_to: dbEvent.assigned_to || undefined,
+      assigned_to_type: dbEvent.assigned_to_type || undefined,
+      department: dbEvent.department || undefined,
+      user_id: dbEvent.user_id,
+      created_at: dbEvent.created_at ? new Date(dbEvent.created_at) : undefined,
+      updated_at: dbEvent.updated_at ? new Date(dbEvent.updated_at) : undefined
     }
   },
 
@@ -325,15 +353,18 @@ export const taskCalendarService = {
       .single()
 
     if (error) throw error
+    if (!relation) throw new Error('Failed to create task-event relation')
+
     return {
-      ...relation,
+      task_id: relation.task_id,
+      event_id: relation.event_id,
       created_at: new Date(relation.created_at)
     }
   },
 
   async updateTaskScheduleStatus(
     taskId: string,
-    status: ScheduleStatus,
+    status: 'unscheduled' | 'scheduled' | 'partially_scheduled',
     session: Session
   ): Promise<void> {
     const { error } = await supabase

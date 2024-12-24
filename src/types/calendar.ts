@@ -9,16 +9,21 @@ export interface RecurrenceRule {
 export interface CalendarEvent {
   id: string
   title: string
-  description?: string
+  description: string
   start: Date
   end: Date
-  category?: string
-  recurrence?: RecurrenceRule
+  category: string
+  recurrence?: {
+    frequency: 'daily' | 'weekly' | 'monthly'
+    interval?: number
+    endDate?: Date
+  }
   assigned_to?: string
   assigned_to_type?: 'user' | 'team'
   department?: string
-  isRecurring?: boolean
-  originalEventId?: string
+  user_id: string
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface EventWithLayout extends CalendarEvent {

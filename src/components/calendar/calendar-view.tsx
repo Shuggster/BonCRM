@@ -255,26 +255,28 @@ export function CalendarView({
           </div>
         </div>
 
-        <div className="bg-[#0F1629]/30 backdrop-blur-xl rounded-lg border border-white/[0.08] shadow-xl overflow-hidden">
+        <div className="relative">
           {currentViewComponent}
         </div>
 
-        <EventModal
-          isOpen={showEventModal}
-          onClose={() => {
-            setShowEventModal(false)
-            setNewEventTime(null)
-          }}
-          onSave={handleSaveEvent}
-          initialData={newEventTime ? {
-            title: '',
-            description: '',
-            category: 'default',
-            start: newEventTime.start,
-            end: newEventTime.end
-          } : undefined}
-          session={session}
-        />
+        {showEventModal && newEventTime && (
+          <EventModal
+            isOpen={showEventModal}
+            onClose={() => {
+              setShowEventModal(false)
+              setNewEventTime(null)
+            }}
+            onSave={handleSaveEvent}
+            initialData={{
+              title: '',
+              description: '',
+              category: 'default',
+              start: newEventTime.start,
+              end: newEventTime.end
+            }}
+            session={session}
+          />
+        )}
       </div>
     </CalendarDndContext>
   )

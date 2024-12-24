@@ -7,6 +7,9 @@ import { supabase } from "@/lib/supabase"
 import { ContactNotes } from "./contact-notes"
 import type { Contact } from "@/lib/supabase/services/contacts"
 import { ContactTag } from "./contact-tag"
+import { activityCalendarService } from '@/lib/supabase/services/activity-calendar'
+import type { UserSession } from "@/types/users"
+import { useSession } from "next-auth/react"
 
 interface ScheduledActivity {
   id: string
@@ -31,6 +34,7 @@ export function ContactDetailsModal({
   onClose,
   onEdit,
 }: ContactDetailsModalProps) {
+  const { data: session } = useSession()
   const [activities, setActivities] = useState<ScheduledActivity[]>([])
   const [assignedUserDetails, setAssignedUserDetails] = useState<{ name: string, email: string } | null>(null)
 
@@ -134,6 +138,60 @@ export function ContactDetailsModal({
     ) : null
   }
 
+  const handleComplete = async (activityId: string) => {
+    try {
+      if (!session?.user) {
+        console.error('No session found')
+        return
+      }
+
+      // Convert NextAuth session to UserSession
+      const userSession: UserSession = {
+        user: {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name,
+          role: session.user.role,
+          department: session.user.department
+        }
+      }
+
+      await activityCalendarService.updateActivityStatus(userSession, activityId, 'completed')
+      fetchActivities()
+      // Trigger calendar refresh
+      window.dispatchEvent(new Event('calendar:refresh'))
+    } catch (error) {
+      console.error('Error completing activity:', error)
+    }
+  }
+
+  const handleCancel = async (activityId: string) => {
+    try {
+      if (!session?.user) {
+        console.error('No session found')
+        return
+      }
+
+      // Convert NextAuth session to UserSession
+      const userSession: UserSession = {
+        user: {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name,
+          role: session.user.role,
+          department: session.user.department
+        }
+      }
+
+      await activityCalendarService.updateActivityStatus(userSession, activityId, 'cancelled')
+      fetchActivities()
+      // Trigger calendar refresh
+      window.dispatchEvent(new Event('calendar:refresh'))
+    } catch (error) {
+      console.error('Error cancelling activity:', error)
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -207,14 +265,24 @@ export function ContactDetailsModal({
                     {/* Assignment Info */}
                     {(contact.assigned_to || contact.department) && (
                       <Section title="Assignment">
-                        {assignedUserDetails && (
+                        {contact.assigned_to && (
                           <InfoItem 
                             icon={User} 
                             label="Assigned To" 
                             value={
                               <div className="flex flex-col">
-                                <span>{assignedUserDetails.name}</span>
-                                <span className="text-sm text-muted-foreground">{assignedUserDetails.email}</span>
+                                <span>
+                                  {contact.assigned_to_type === 'user' && contact.assigned_user
+                                    ? contact.assigned_user.name
+                                    : contact.assigned_to_type === 'team' && contact.assigned_team
+                                    ? contact.assigned_team.name
+                                    : 'Unassigned'}
+                                </span>
+                                {contact.assigned_to_type === 'user' && contact.assigned_user?.department && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {contact.assigned_user.department}
+                                  </span>
+                                )}
                               </div>
                             }
                           />
@@ -321,26 +389,14 @@ export function ContactDetailsModal({
                             </div>
                             <div className="flex items-center gap-2">
                               <button
-                                onClick={async () => {
-                                  const { error } = await supabase
-                                    .from('scheduled_activities')
-                                    .update({ status: 'completed', completed_at: new Date().toISOString() })
-                                    .eq('id', activity.id)
-                                  if (!error) fetchActivities()
-                                }}
+                                onClick={() => handleComplete(activity.id)}
                                 className="p-1.5 rounded-lg hover:bg-gray-700 text-green-400"
                                 title="Mark as completed"
                               >
                                 <CheckCircle2 className="w-5 h-5" />
                               </button>
                               <button
-                                onClick={async () => {
-                                  const { error } = await supabase
-                                    .from('scheduled_activities')
-                                    .update({ status: 'cancelled' })
-                                    .eq('id', activity.id)
-                                  if (!error) fetchActivities()
-                                }}
+                                onClick={() => handleCancel(activity.id)}
                                 className="p-1.5 rounded-lg hover:bg-gray-700 text-red-400"
                                 title="Cancel activity"
                               >

@@ -4,18 +4,15 @@ import { CalendarEvent } from '@/types/calendar'
 import { calendarService } from '@/lib/supabase/services/calendar'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { CalendarIcon, Plus } from 'lucide-react'
+import { CalendarIcon, Plus, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { CalendarView } from '@/components/calendar/calendar-view'
 import { EventModal } from '@/components/calendar/event-modal'
 import { MiniCalendar } from '@/components/calendar/mini-calendar'
-import { EventSearch } from '@/components/calendar/event-search'
-import { CategoryFilter } from '@/components/calendar/category-filter'
-import { DepartmentFilter } from '@/components/calendar/department-filter'
-import { AssignmentFilter } from '@/components/calendar/assignment-filter'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { EVENT_CATEGORIES } from '@/lib/constants/categories'
-import { addMinutes } from 'date-fns'
+import { Input } from '@/components/ui/input'
 
 interface CalendarClientProps {
   session: UserSession
@@ -27,16 +24,19 @@ export function CalendarClient({ session }: CalendarClientProps) {
   const [showEventModal, setShowEventModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(Object.keys(EVENT_CATEGORIES))
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
+  
+  // New simpler filter state
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('')
+  const [selectedUser, setSelectedUser] = useState<string>('')
   const [availableDepartments, setAvailableDepartments] = useState<string[]>([])
-  const [selectedAssignments, setSelectedAssignments] = useState<string[]>([])
+  const [availableUsers, setAvailableUsers] = useState<{id: string, name: string}[]>([])
 
   // Fetch events
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const events = await calendarService.getEvents(session)
+        console.log('Raw events from service:', events)
         setEvents(events)
       } catch (error) {
         console.error('Error fetching events:', error)
@@ -44,35 +44,43 @@ export function CalendarClient({ session }: CalendarClientProps) {
       }
     }
     fetchEvents()
+
+    // Add event listeners for calendar refresh
+    const handleRefresh = () => {
+      console.log('Calendar refresh event received')
+      fetchEvents()
+    }
+
+    window.addEventListener('calendar:refresh', handleRefresh)
+    window.addEventListener('refresh', handleRefresh)
+
+    return () => {
+      window.removeEventListener('calendar:refresh', handleRefresh)
+      window.removeEventListener('refresh', handleRefresh)
+    }
   }, [session])
 
-  // Fetch available departments
+  // Fetch available departments and users
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchFilters = async () => {
       try {
         const departments = await calendarService.getDepartments(session)
         setAvailableDepartments(departments)
+        
+        const users = await calendarService.getUsers(session)
+        setAvailableUsers(users)
       } catch (error) {
-        console.error('Error fetching departments:', error)
-        toast.error('Failed to load departments')
+        console.error('Error fetching filters:', error)
+        toast.error('Failed to load filters')
       }
     }
-    fetchDepartments()
+    fetchFilters()
   }, [session])
 
   const handleEventClick = useCallback((event: CalendarEvent) => {
-    console.log('Event clicked:', {
-      event,
-      eventId: event.id,
-      eventTitle: event.title,
-      isRecurring: event.isRecurring,
-      originalEventId: event.originalEventId
-    })
-
     // Create a clean copy of the event data
     const cleanEvent = {
       ...event,
-      id: event.originalEventId || event.id, // Use the original event ID if this is a recurring instance
       start: new Date(event.start),
       end: new Date(event.end),
       description: event.description || '',
@@ -82,23 +90,14 @@ export function CalendarClient({ session }: CalendarClientProps) {
       department: event.department || undefined
     } as CalendarEvent
 
-    console.log('Setting selected event:', cleanEvent)
     setSelectedEvent(cleanEvent)
     setShowEventModal(true)
   }, [])
 
   const handleEventDelete = useCallback(async (event: CalendarEvent) => {
     try {
-      console.log('Deleting event:', event)
-      // If this is a recurring instance, we need to delete the original event
-      const eventId = event.originalEventId || event.id
-      await calendarService.deleteEvent(session, eventId)
-      
-      // Remove the event from the local state
-      setEvents(prevEvents => prevEvents.filter(e => 
-        e.id !== eventId && e.originalEventId !== eventId
-      ))
-      
+      await calendarService.deleteEvent(session, event.id)
+      setEvents(prevEvents => prevEvents.filter(e => e.id !== event.id))
       toast.success('Event deleted successfully')
       setShowEventModal(false)
       setSelectedEvent(null)
@@ -181,7 +180,6 @@ export function CalendarClient({ session }: CalendarClientProps) {
           ...eventData,
           category: eventData.category || 'default'
         })
-        // Update the events array with the complete updated event
         setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e))
         toast.success('Event updated successfully')
       } else {
@@ -202,23 +200,40 @@ export function CalendarClient({ session }: CalendarClientProps) {
     }
   }
 
-  // Filter events based on selected categories, departments, and assignments
+  // New simpler filtering logic
   const filteredEvents = events.filter(event => {
-    // If no categories selected, show all categories
-    const categoryMatch = selectedCategories.length === 0 || 
-      (event.category && selectedCategories.includes(event.category)) ||
-      (!event.category && selectedCategories.includes('default'))
-    
-    // If no departments selected, show all departments
-    const departmentMatch = selectedDepartments.length === 0 || 
-      (event.department && selectedDepartments.includes(event.department))
-    
-    // If no assignments selected, show all events
-    const assignmentMatch = selectedAssignments.length === 0 ||
-      (event.assigned_to && selectedAssignments.includes(event.assigned_to))
+    // If no filters are selected, show all events
+    if (!selectedDepartment && !selectedUser && !searchQuery) {
+      return true
+    }
 
-    return categoryMatch && departmentMatch && assignmentMatch
+    // Apply department filter
+    if (selectedDepartment && event.department !== selectedDepartment) {
+      return false
+    }
+
+    // Apply user filter
+    if (selectedUser && event.user_id !== selectedUser) {
+      return false
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      const search = searchQuery.toLowerCase()
+      return (
+        event.title.toLowerCase().includes(search) ||
+        event.description.toLowerCase().includes(search)
+      )
+    }
+
+    return true
   })
+
+  const resetFilters = () => {
+    setSelectedDepartment('')
+    setSelectedUser('')
+    setSearchQuery('')
+  }
 
   return (
     <div className="h-full bg-[#030711]">
@@ -259,28 +274,56 @@ export function CalendarClient({ session }: CalendarClientProps) {
               />
             </div>
             
-            {/* Filters */}
-            <div className="bg-[#0F1629] rounded-lg border border-white/[0.08] shadow-xl p-4 space-y-6">
-              <EventSearch 
-                value={searchQuery} 
-                onChange={setSearchQuery}
-                events={events}
-              />
-              <CategoryFilter 
-                selectedCategories={selectedCategories}
-                onChange={setSelectedCategories}
-              />
-              <DepartmentFilter
-                selectedDepartments={selectedDepartments}
-                onChange={setSelectedDepartments}
-                session={session}
-                departments={availableDepartments}
-              />
-              <AssignmentFilter
-                selectedAssignments={selectedAssignments}
-                onChange={setSelectedAssignments}
-                session={session}
-              />
+            {/* New Simplified Filters */}
+            <div className="bg-[#0F1629] rounded-lg border border-white/[0.08] shadow-xl p-4 space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-white">Filters</h3>
+                {(selectedDepartment || selectedUser || searchQuery) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="h-8 px-2 text-white"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Reset
+                  </Button>
+                )}
+              </div>
+              
+              <div className="space-y-4">
+                <Input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search events..."
+                  className="w-full"
+                />
+
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Departments</SelectItem>
+                    {availableDepartments.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedUser} onValueChange={setSelectedUser}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by User" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Users</SelectItem>
+                    {availableUsers.map(user => (
+                      <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </aside>
 
@@ -306,7 +349,6 @@ export function CalendarClient({ session }: CalendarClientProps) {
       <EventModal
         isOpen={showEventModal}
         onClose={() => {
-          console.log('Closing modal, clearing selected event')
           setShowEventModal(false)
           setSelectedEvent(null)
         }}

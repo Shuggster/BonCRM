@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { TeamSelect } from "@/components/ui/team-select"
 import { supabase } from '@/lib/supabase'
-import { Session } from '@supabase/supabase-js'
+import { UserSession } from "@/types/users"
 import { cn } from "@/lib/utils"
 import { ContactTags } from "@/components/contacts/contact-tags"
 
@@ -25,7 +25,7 @@ interface EditContactModalProps {
   isOpen: boolean
   onClose: () => void
   onContactUpdated: () => void
-  session: Session | null
+  session: UserSession | null
 }
 
 export function EditContactModal({

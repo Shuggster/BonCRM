@@ -8,6 +8,7 @@ if (!supabaseUrl) {
     throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL');
 }
 if (!supabaseServiceKey) {
+    console.error('Environment variables available:', Object.keys(process.env));
     throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY');
 }
 

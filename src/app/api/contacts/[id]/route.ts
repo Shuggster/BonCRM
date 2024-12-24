@@ -23,32 +23,50 @@ export async function PUT(
     const contact = await request.json()
     const { id } = params
 
-    // First verify if the assigned user exists
-    if (contact.assigned_to && contact.assigned_to_type === 'user') {
-      const { data: user, error: userError } = await supabaseAdmin
-        .from('auth.users')
-        .select('id')
-        .eq('id', contact.assigned_to)
-        .single()
+    // Handle assignment
+    if (contact.assigned_to && contact.assigned_to_type) {
+      // First verify if the assigned entity exists
+      if (contact.assigned_to_type === 'user') {
+        const { data: user, error: userError } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('id', contact.assigned_to)
+          .single()
 
-      if (userError || !user) {
+        if (userError || !user) {
+          console.error('User validation error:', userError)
+          return NextResponse.json(
+            { error: 'Invalid user assignment' },
+            { status: 400 }
+          )
+        }
+      }
+
+      // Delete any existing assignments
+      const { error: deleteError } = await supabaseAdmin
+        .from('assignments')
+        .delete()
+        .match({
+          assignable_id: id,
+          assignable_type: 'contact'
+        })
+
+      if (deleteError) {
+        console.error('Error deleting existing assignments:', deleteError)
         return NextResponse.json(
-          { error: 'Invalid user assignment' },
-          { status: 400 }
+          { error: 'Failed to update assignment' },
+          { status: 500 }
         )
       }
 
-      // Create assignment in assignments table
+      // Create new assignment
       const { error: assignmentError } = await supabaseAdmin
         .from('assignments')
-        .upsert({
+        .insert({
           assignable_id: id,
           assignable_type: 'contact',
           assigned_to: contact.assigned_to,
-          assigned_to_type: contact.assigned_to_type,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'assignable_id,assignable_type,assigned_to,assigned_to_type'
+          assigned_to_type: contact.assigned_to_type
         })
 
       if (assignmentError) {
@@ -58,9 +76,26 @@ export async function PUT(
           { status: 500 }
         )
       }
+    } else {
+      // If no assignment is specified, remove any existing assignments
+      const { error: deleteError } = await supabaseAdmin
+        .from('assignments')
+        .delete()
+        .match({
+          assignable_id: id,
+          assignable_type: 'contact'
+        })
+
+      if (deleteError) {
+        console.error('Error deleting existing assignments:', deleteError)
+        return NextResponse.json(
+          { error: 'Failed to remove assignment' },
+          { status: 500 }
+        )
+      }
     }
 
-    // Update contact using service role - include updated_at
+    // Update contact
     const { data, error } = await supabaseAdmin
       .from('contacts')
       .update({
@@ -74,13 +109,15 @@ export async function PUT(
         address_line2: contact.address_line2,
         city: contact.city,
         region: contact.region,
-        postcode: contact.postal_code,
+        postcode: contact.postcode,
         country: contact.country,
         website: contact.website,
         linkedin: contact.linkedin,
         twitter: contact.twitter,
+        avatar_url: contact.avatar_url,
+        tags: contact.tags || [],
+        industry_id: contact.industry_id,
         department: contact.department,
-        notes: contact.notes,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
