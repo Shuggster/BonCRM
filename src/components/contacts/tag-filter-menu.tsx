@@ -11,13 +11,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Tags, Plus, BarChart2, Settings } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cn } from "@/lib/utils"
 
 interface Tag {
   id: string
   name: string
   color: string
   count?: number
+}
+
+interface TagRelation {
+  tag_id: string
+  count: number
 }
 
 interface TagFilterMenuProps {
@@ -32,37 +38,38 @@ interface TagFilterMenuProps {
 export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMenuProps>(
   ({ onTagSelect, onOpenTagStats, onManageTags, selectedTags = [], filterMode = 'OR', onFilterModeChange }, ref) => {
     const [tags, setTags] = useState<Tag[]>([])
+    const supabase = createClientComponentClient()
 
     const fetchTags = async () => {
       try {
-        // Get all tags
-        const { data: tags, error: tagsError } = await supabase
-          .from('tags')
+        // First fetch tags
+        const { data: tagsData, error: tagsError } = await supabase
+          .from('contact_tags')
           .select('id, name, color')
           .order('name')
 
-        if (tagsError) {
-          console.error('Error fetching tags:', tagsError.message)
-          setTags([])
-          return
-        }
+        if (tagsError) throw tagsError
 
-        // Get counts for each tag from contacts
-        const tagsWithCounts = await Promise.all(
-          (tags || []).map(async (tag) => {
-            const { count, error: countError } = await supabase
-              .from('contacts')
-              .select('id', { count: 'exact', head: true })
-              .contains('tags', [tag.id])
+        // Then fetch all relations to count manually
+        const { data: relationData, error: relationError } = await supabase
+          .from('contact_tag_relations')
+          .select('tag_id')
 
-            if (countError) {
-              console.error('Error getting count for tag:', tag.name, countError.message)
-              return { ...tag, count: 0 }
-            }
+        if (relationError) throw relationError
 
-            return { ...tag, count: count || 0 }
-          })
-        )
+        // Count tags manually
+        const tagCounts = relationData.reduce((acc: Record<string, number>, rel) => {
+          acc[rel.tag_id] = (acc[rel.tag_id] || 0) + 1
+          return acc
+        }, {})
+
+        // Combine the data
+        const tagsWithCounts = tagsData.map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          color: tag.color,
+          count: tagCounts[tag.id] || 0
+        }))
 
         setTags(tagsWithCounts)
       } catch (err) {
@@ -91,21 +98,27 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
         <DropdownMenuTrigger asChild>
           <Button 
             variant={selectedTags.length > 0 ? "default" : "outline"}
-            className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 duration-1000"
+            className={cn(
+              "flex items-center gap-2 h-10 px-4 animate-in fade-in slide-in-from-bottom-5 duration-1000",
+              selectedTags.length > 0 ? "bg-blue-600 hover:bg-blue-700" : "border-white/10 hover:bg-white/5"
+            )}
           >
             <Tags className="h-4 w-4" />
             {selectedTags.length > 0 ? `${selectedTags.length} Tags` : 'Filter by Tags'}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64 bg-[#0F1629] border border-white/10">
-          <DropdownMenuLabel className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+        <DropdownMenuContent 
+          align="start" 
+          className="w-64 bg-[#1C2333] border border-white/10 rounded-lg overflow-hidden"
+        >
+          <DropdownMenuLabel className="flex items-center justify-between px-3 py-2 border-b border-white/[0.03]">
             <span className="text-sm font-medium">Filter by Tags</span>
             {selectedTags.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onTagSelect([])}
-                className="h-auto py-0.5 px-2 text-xs hover:bg-white/5 text-blue-400 hover:text-blue-300"
+                className="h-7 px-2 text-xs hover:bg-white/5 text-blue-400 hover:text-blue-300"
               >
                 Clear
               </Button>
@@ -119,14 +132,14 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
                   e.preventDefault()
                   onFilterModeChange?.()
                 }}
-                className="flex items-center justify-between px-3 py-2 hover:bg-white/5"
+                className="flex items-center justify-between px-3 py-2 hover:bg-white/[0.02] cursor-pointer"
               >
-                <span className="text-sm text-gray-400">Filter Mode:</span>
-                <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+                <span className="text-sm text-white/60">Filter Mode</span>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#0F1629] text-blue-400 border border-white/[0.03]">
                   {filterMode}
                 </span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuSeparator className="bg-white/[0.03]" />
             </>
           )}
 
@@ -138,39 +151,42 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
                   e.preventDefault()
                   handleTagClick(tag.id)
                 }}
-                className="flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors"
+                className={cn(
+                  "flex items-center justify-between px-3 py-2 hover:bg-white/[0.02] cursor-pointer group",
+                  selectedTags.includes(tag.id) && "bg-white/[0.01]"
+                )}
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-2.5 h-2.5 rounded-full ring-2 ring-white/10"
+                    className="w-2.5 h-2.5 rounded-full ring-1 ring-white/[0.03]"
                     style={{ backgroundColor: tag.color }}
                   />
-                  <span className="text-sm text-gray-200">{tag.name}</span>
+                  <span className="text-sm text-white/90">{tag.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{tag.count}</span>
+                  <span className="text-xs text-white/40">{tag.count}</span>
                   {selectedTags.includes(tag.id) && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <div className="w-1 h-1 rounded-full bg-blue-500" />
                   )}
                 </div>
               </DropdownMenuItem>
             ))}
           </div>
 
-          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuSeparator className="bg-white/[0.03]" />
           <DropdownMenuItem 
             onSelect={() => onOpenTagStats()}
-            className="px-3 py-2 hover:bg-white/5"
+            className="px-3 py-2 hover:bg-white/[0.02] cursor-pointer"
           >
             <BarChart2 className="mr-2 h-4 w-4 text-blue-400" />
-            <span className="text-sm">Tag Statistics</span>
+            <span className="text-sm text-white/90">Tag Statistics</span>
           </DropdownMenuItem>
           <DropdownMenuItem 
             onSelect={() => onManageTags()}
-            className="px-3 py-2 hover:bg-white/5"
+            className="px-3 py-2 hover:bg-white/[0.02] cursor-pointer"
           >
             <Settings className="mr-2 h-4 w-4 text-blue-400" />
-            <span className="text-sm">Manage Tags</span>
+            <span className="text-sm text-white/90">Manage Tags</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

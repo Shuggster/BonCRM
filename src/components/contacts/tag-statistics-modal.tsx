@@ -38,18 +38,18 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
     try {
       // Get all tags
       const { data: tags, error: tagsError } = await supabase
-        .from('tags')
+        .from('contact_tags')
         .select('id, name, color')
         .order('name')
 
       if (tagsError) throw tagsError
 
-      // Get counts for each tag from contacts
+      // Get counts for each tag from contact_tag_relations
       const statsPromises = (tags || []).map(async (tag) => {
         const { count, error: countError } = await supabase
-          .from('contacts')
+          .from('contact_tag_relations')
           .select('id', { count: 'exact', head: true })
-          .contains('tags', [tag.id])
+          .eq('tag_id', tag.id)
 
         if (countError) {
           console.error('Error getting count for tag:', tag.name, countError.message)
@@ -78,12 +78,12 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] bg-[#0F1629] text-white border-white/10">
-        <DialogHeader className="px-8 py-6 border-b border-white/10">
-          <DialogTitle className="text-xl font-medium">Tag Statistics</DialogTitle>
+      <DialogContent className="sm:max-w-[500px] bg-black border border-white/10 p-0">
+        <DialogHeader className="px-6 py-4 border-b border-white/10">
+          <DialogTitle className="text-xl font-medium text-white/90">Tag Statistics</DialogTitle>
         </DialogHeader>
 
-        <div className="p-8">
+        <div className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
@@ -91,9 +91,9 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
           ) : error ? (
             <div className="text-red-400 text-center py-8">{error}</div>
           ) : statistics.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">No tags found</div>
+            <div className="text-center text-white/40 py-8">No tags found</div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {statistics.map((stat) => {
                 const percentage = Math.max(
                   5,
@@ -103,11 +103,11 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
                 return (
                   <div
                     key={stat.id}
-                    className="relative overflow-hidden p-4 rounded-lg bg-[#1C2333] border border-white/10 hover:border-white/20 transition-all group"
+                    className="relative overflow-hidden p-4 rounded-lg bg-black border border-white/10 hover:border-white/20 transition-all"
                   >
                     {/* Progress bar background */}
                     <div
-                      className="absolute inset-0 bg-white/5 transition-all duration-300 group-hover:bg-white/10"
+                      className="absolute inset-0 bg-white/5 transition-all duration-300"
                       style={{
                         width: `${percentage}%`
                       }}
@@ -116,13 +116,13 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-3 h-3 rounded-full ring-2 ring-white/10"
+                          className="w-2.5 h-2.5 rounded-full ring-1 ring-white/[0.03]"
                           style={{ backgroundColor: stat.color }}
                         />
                         <span
-                          className="px-3 py-1 rounded-full text-sm font-medium"
+                          className="px-2 py-0.5 rounded-full text-sm"
                           style={{
-                            backgroundColor: stat.color + '20',
+                            backgroundColor: stat.color + '10',
                             color: stat.color
                           }}
                         >
@@ -130,10 +130,10 @@ export function TagStatisticsModal({ isOpen, onClose }: TagStatisticsModalProps)
                         </span>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-white/40">
                           {stat.count} {stat.count === 1 ? 'contact' : 'contacts'}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-white/30">
                           {percentage}%
                         </span>
                       </div>

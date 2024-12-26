@@ -1,429 +1,773 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Users, CheckSquare, Target, BarChart3, MessageSquare, Clock, CircleDot, LayoutDashboard, Calendar } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
-import { Progress } from '@/components/ui/progress'
-import StickyNotes from '@/components/ui/sticky-note'
-import { supabase } from "@/lib/supabase"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { useSession } from "next-auth/react"
+import { useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
+import PageTransition from '@/components/animations/PageTransition'
 
-interface Contact {
+interface DashboardMetric {
   id: string
-  first_name: string
-  last_name: string
-  created_at: string
+  name: string
+  value: string
+  change: string
+  icon: any
+  className: string
 }
 
-interface Activity {
-  id: string
-  message: string
-  created_at: string
-}
-
-interface Task {
-  id: string
-  title: string
-  status: 'todo' | 'in-progress' | 'completed'
-  priority: 'low' | 'medium' | 'high'
-  due_date: string
-}
-
-interface Event {
-  id: string
-  title: string
-  date: string
-  event_type: string
-}
-
-interface WelcomeMessageProps {
-  name: string;
-  role: string;
-}
-
-const defaultMetrics = [
+const defaultMetrics: DashboardMetric[] = [
   {
+    id: '1',
     name: "Total Contacts",
     value: "...",
-    change: "Loading...",
+    change: "...",
     icon: Users,
     className: "card-contacts"
   },
   {
+    id: '2',
     name: "Tasks Completed",
     value: "...",
-    change: "Loading...",
+    change: "...",
     icon: CheckSquare,
     className: "card-tasks"
   },
   {
-    name: "Sales Target",
+    id: '3',
+    name: "Active Tasks",
     value: "...",
-    change: "Loading...",
+    change: "...",
     icon: Target,
     className: "card-sales"
   },
   {
-    name: "Revenue",
+    id: '4',
+    name: "Scheduled Activities",
     value: "...",
-    change: "Loading...",
+    change: "...",
     icon: BarChart3,
     className: "card-revenue"
   }
 ]
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28']
-
-function WelcomeMessage({ name, role }: WelcomeMessageProps) {
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 18) return 'Good afternoon'
-    return 'Good evening'
-  }
-
-  const firstName = name.split(' ')[0]
-
-  return (
-    <motion.div 
-      className="bg-primary/5 rounded-xl p-6 mb-8"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h2 className="text-2xl font-semibold mb-2">
-        {getGreeting()}, {firstName}
-      </h2>
-      <p className="text-muted-foreground">
-        Here's What's Happening Today
-      </p>
-    </motion.div>
-  )
+// Add notification type
+interface Notification {
+  id: string;
+  message: string;
+  description?: string;
+  type: 'success' | 'info';
+  icon?: React.ReactNode;
 }
 
 export default function DashboardPage() {
-  const [mounted, setMounted] = useState(false)
-  const [progress, setProgress] = useState(75)
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [recentActivity, setRecentActivity] = useState<Activity[]>([])
-  const [metrics, setMetrics] = useState(defaultMetrics)
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [events, setEvents] = useState<Event[]>([])
-  const [taskStats, setTaskStats] = useState<{ name: string; value: number }[]>([])
-  const [contactGrowth, setContactGrowth] = useState<{ date: string; count: number }[]>([])
   const { data: session } = useSession()
+  const [metrics, setMetrics] = useState<DashboardMetric[]>(defaultMetrics)
+  const [tasks, setTasks] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
+  const { setContent, show, hide } = useSplitViewStore()
+  const supabase = createClientComponentClient()
+  const [selectedMetric, setSelectedMetric] = useState<DashboardMetric | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [pendingMetricClick, setPendingMetricClick] = useState<string | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [isDataReady, setIsDataReady] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-    fetchDashboardData()
+  // Format date for activities
+  const formatDate = useCallback((dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }, [])
 
-  async function fetchDashboardData() {
+  const handleMetricClick = useCallback((metric: DashboardMetric) => {
+    // Reset state and hide current view
+    hide();
+    setSelectedMetric(metric);
+    
+    // Small delay to ensure hide animation completes
+    setTimeout(() => {
+      const topContent = (
+        <motion.div 
+          key={metric.id} // Add key to force remount
+          className="h-full bg-[#111111]"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "tween",
+              duration: 0.4,
+              ease: [0.4, 0, 0.2, 1]
+            }
+          }}
+        >
+          <div className="p-8">
+            <div className="flex items-start gap-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                <metric.icon className="w-8 h-8" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold">{metric.name}</h2>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl font-bold">{metric.value}</span>
+                  <span className="text-sm font-medium text-zinc-400">
+                    {metric.change}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )
+
+      const bottomContent = (
+        <motion.div 
+          key={`${metric.id}-bottom`} // Add key to force remount
+          className="h-full bg-[#111111]"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "tween",
+              duration: 0.4,
+              ease: [0.4, 0, 0.2, 1]
+            }
+          }}
+        >
+          <div className="p-8 pt-6 border-t border-white/[0.03]">
+            <div className="space-y-6">
+              {metric.name === "Total Contacts" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Recent Contacts</h3>
+                  {activities.map((activity, index) => (
+                    <motion.div 
+                      key={activity.id} 
+                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-pink-400 activity-dot" />
+                        <h3 className="font-medium flex-1">{activity.title}</h3>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-zinc-400">Added {formatDate(activity.scheduled_for)}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+              {metric.name === "Tasks Completed" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Completed Tasks</h3>
+                  {tasks.filter(t => t.status === 'completed').map((task, index) => (
+                    <motion.div 
+                      key={task.id} 
+                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
+                    >
+                      <h3 className="font-medium">{task.title}</h3>
+                      <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">completed</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+              {metric.name === "Active Tasks" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">In Progress Tasks</h3>
+                  {tasks.filter(t => t.status === 'in-progress').map((task, index) => (
+                    <motion.div 
+                      key={task.id} 
+                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
+                    >
+                      <h3 className="font-medium">{task.title}</h3>
+                      <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">in progress</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+              {metric.name === "Scheduled Activities" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Upcoming Activities</h3>
+                  {activities.map((activity, index) => (
+                    <motion.div 
+                      key={activity.id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                          <activity.icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">{activity.title}</p>
+                          <p className="text-sm text-zinc-400 mt-0.5">{activity.description}</p>
+                          <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.timestamp)}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )
+
+      setContent(topContent, bottomContent);
+      show();
+    }, 100); // Small delay for animation
+  }, [hide, show, setContent, activities, tasks, formatDate]);
+
+  // Handle notification clicks
+  const handleNotificationClick = useCallback((type: string, id: string) => {
+    setPendingMetricClick(type);
+  }, []);
+
+  // Effect to handle pending metric clicks
+  useEffect(() => {
+    if (pendingMetricClick) {
+      const metricToShow = pendingMetricClick === 'task' 
+        ? metrics.find(m => m.name === "Tasks Completed")
+        : pendingMetricClick === 'activity'
+        ? metrics.find(m => m.name === "Scheduled Activities")
+        : metrics.find(m => m.name === "Total Contacts");
+
+      if (metricToShow) {
+        handleMetricClick(metricToShow);
+      }
+      setPendingMetricClick(null);
+    }
+  }, [pendingMetricClick, metrics, handleMetricClick]);
+
+  // Add notification handler
+  const addNotification = useCallback((notification: Omit<Notification, 'id'>) => {
+    console.log('Adding notification:', notification);
+    const id = Math.random().toString(36).substring(7);
+    setNotifications(prev => {
+      console.log('Previous notifications:', prev);
+      const newNotifications = [...prev, { ...notification, id }];
+      console.log('New notifications:', newNotifications);
+      return newNotifications;
+    });
+    
+    // Remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  // Update fetchDashboardData to set data ready state
+  const fetchDashboardData = useCallback(async () => {
     try {
-      console.log('Fetching dashboard data...')
+      console.log('Fetching dashboard data...');
+      setIsLoading(true)
       
-      // Fetch contacts
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .select('*');
 
-      if (contactsError) throw contactsError
-
-      // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
+        .select('*');
+
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('scheduled_activities')
         .select('*')
-        .order('due_date', { ascending: true })
+        .order('scheduled_for', { ascending: true });
 
-      if (tasksError) throw tasksError
+      if (contactsError) throw contactsError;
+      if (tasksError) throw tasksError;
+      if (activitiesError) throw activitiesError;
 
-      // Fetch events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('events')
-        .select('*')
-        .gte('date', new Date().toISOString())
-        .order('date', { ascending: true })
-        .limit(5)
+      // Update all the data
+      setTasks(tasksData?.slice(0, 3) || []);
+      setActivities(activitiesData?.slice(0, 3).map(activity => ({
+        id: activity.id,
+        title: activity.title,
+        type: activity.type,
+        scheduled_for: activity.scheduled_for
+      })) || []);
 
-      if (eventsError) throw eventsError
-
-      // Process tasks stats
-      const taskStatusCount = tasksData?.reduce((acc: any, task: Task) => {
-        acc[task.status] = (acc[task.status] || 0) + 1
-        return acc
-      }, {})
-
-      const taskStatsData = Object.entries(taskStatusCount || {}).map(([name, value]) => ({
-        name,
-        value: value as number
-      }))
-
-      // Process contact growth
-      const contactsByDate = contactsData?.reduce((acc: any, contact: Contact) => {
-        const date = new Date(contact.created_at).toLocaleDateString()
-        acc[date] = (acc[date] || 0) + 1
-        return acc
-      }, {})
-
-      const contactGrowthData = Object.entries(contactsByDate || {})
-        .slice(-7)
-        .map(([date, count]) => ({
-          date,
-          count: count as number
-        }))
-
-      // Update all states
-      setContacts(contactsData || [])
-      setTasks(tasksData || [])
-      setEvents(eventsData || [])
-      setTaskStats(taskStatsData || [])
-      setContactGrowth(contactGrowthData || [])
-
-      // Update metrics
-      const totalContacts = contactsData?.length || 0
-      const completedTasks = tasksData?.filter((t: Task) => t.status === 'completed').length || 0
-      const totalTasks = tasksData?.length || 0
-
+      // Update metrics last
       setMetrics(prev => prev.map(metric => {
         if (metric.name === "Total Contacts") {
-          return { ...metric, value: totalContacts.toString() }
+          return {
+            ...metric,
+            value: contactsData?.length.toString() || '0',
+            change: '+0 this week'
+          };
         }
         if (metric.name === "Tasks Completed") {
-          return { ...metric, value: `${completedTasks}/${totalTasks}` }
+          const total = tasksData?.length || 0;
+          const completed = tasksData?.filter(t => t.status === 'completed').length || 0;
+          return {
+            ...metric,
+            value: `${completed}/${total}`,
+            change: `${Math.round((completed / total) * 100)}%`
+          };
         }
-        return metric
-      }))
+        if (metric.name === "Active Tasks") {
+          return {
+            ...metric,
+            value: tasksData?.filter(t => t.status === 'in-progress').length.toString() || '0',
+            change: `${tasksData?.filter(t => t.status === 'todo').length || 0} pending`
+          };
+        }
+        if (metric.name === "Scheduled Activities") {
+          return {
+            ...metric,
+            value: (activitiesData?.length || 0).toString(),
+            change: 'upcoming'
+          };
+        }
+        return metric;
+      }));
 
-    } catch (err: any) {
-      console.error('Error fetching dashboard data:', err.message)
+      setIsLoading(false)
+      // Only set data ready after everything is updated
+      setIsDataReady(true)
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setIsLoading(false)
+      setIsDataReady(true) // Still set ready to show error states
     }
-  }
+  }, [supabase]);
 
-  async function fetchUserTasks() {
-    const { data: userTeams } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', session.user.id);
+  // Update subscription handlers
+  useEffect(() => {
+    console.log('Setting up subscriptions - START');
+    
+    if (!session?.user?.id) {
+      console.log('No user session, skipping subscriptions');
+      return;
+    }
 
-    const teamIds = userTeams.map(t => t.team_id);
+    const supabase = createClientComponentClient()
+    console.log('Supabase client created');
 
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('*')
-      .or(`assigned_to->id.eq.${session.user.id},assigned_to->type.eq.team,assigned_to->id.in.(${teamIds})`);
+    // Fetch initial data
+    fetchDashboardData();
+    console.log('Initial data fetch triggered');
 
-    return tasks;
-  }
+    // Set up task subscription
+    const tasksChannel = supabase.channel('tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          console.log('Task change detected:', payload);
+          await fetchDashboardData();
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('New task inserted, showing notification');
+            addNotification({
+              message: 'New task created',
+              description: payload.new.title,
+              type: 'success',
+              icon: <CheckSquare className="w-4 h-4" />
+            });
+          }
+        }
+      )
 
-  if (!mounted) return null
+    // Set up activities subscription
+    const activitiesChannel = supabase.channel('activities-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scheduled_activities',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          console.log('Activity change detected:', payload);
+          await fetchDashboardData();
+          
+          if (payload.eventType === 'INSERT') {
+            addNotification({
+              message: 'New activity scheduled',
+              description: payload.new.title,
+              type: 'info',
+              icon: <Calendar className="w-4 h-4 text-blue-400" />
+            });
+          }
+        }
+      )
 
-  return (
-    <main className="flex-1 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto max-w-[1600px] p-8">
-        <PageHeader
-          title="Dashboard"
-          description="Overview of your CRM activities."
-          icon={<div className="icon-dashboard"><LayoutDashboard className="h-6 w-6" /></div>}
-        />
+    // Set up contacts subscription
+    const contactsChannel = supabase.channel('contacts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contacts',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          console.log('Contact change detected:', payload);
+          await fetchDashboardData();
+          
+          if (payload.eventType === 'INSERT') {
+            addNotification({
+              message: 'New contact added',
+              description: `${payload.new.first_name} ${payload.new.last_name}`,
+              type: 'success',
+              icon: <Users className="w-4 h-4 text-pink-400" />
+            });
+          }
+        }
+      )
 
-        {/* Add Welcome Message here */}
-        {session?.user && (
-          <WelcomeMessage 
-            name={session.user.name || 'User'} 
-            role={session.user.role || 'user'} 
-          />
-        )}
+    // Subscribe to all channels
+    Promise.all([
+      tasksChannel.subscribe(),
+      activitiesChannel.subscribe(),
+      contactsChannel.subscribe()
+    ]).then(() => {
+      console.log('All channels subscribed successfully');
+    }).catch((error) => {
+      console.error('Error subscribing to channels:', error);
+    });
 
-        {/* Metrics Cards - 12 column grid */}
+    // Cleanup function
+    return () => {
+      console.log('Cleaning up subscriptions');
+      supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(activitiesChannel);
+      supabase.removeChannel(contactsChannel);
+    };
+  }, [session?.user?.id, fetchDashboardData]); // Add fetchDashboardData to dependencies
+
+  // Set up initial split view content
+  useEffect(() => {
+    const setupInitialContent = () => {
+      const topContent = (
         <motion.div 
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 mt-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          className="h-full bg-[#111111]"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "tween",
+              duration: 0.8,
+              ease: [0.4, 0, 0.2, 1]
+            }
+          }}
         >
-          {metrics.map((metric, index) => (
-            <motion.div
-              key={metric.name}
-              className={`lg:col-span-3 dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              whileHover={{ y: -4 }}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 rounded-lg bg-white/5">
-                  <metric.icon className="h-5 w-5" />
-                </div>
-                <span className={`text-sm font-medium ${
-                  metric.change.startsWith('+') ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {metric.change}
-                </span>
+          <div className="p-8">
+            <div className="flex items-start gap-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                <MessageSquare className="w-8 h-8" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {metric.name}
-                </h3>
-                <div className="text-2xl font-bold text-primary">
-                  {metric.value}
-                </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold">Recent Updates</h2>
+                <p className="text-zinc-400 mt-1">Latest activity in your CRM</p>
               </div>
-            </motion.div>
-          ))}
+            </div>
+          </div>
         </motion.div>
+      )
 
-        {/* Tasks and Calendar Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-          {/* Tasks Overview */}
-          <motion.div
-            className="lg:col-span-6 dashboard-card rounded-xl p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <CheckSquare className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-semibold">Tasks Overview</h2>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={taskStats}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    paddingAngle={5}
-                    dataKey="value"
+      const bottomContent = (
+        <motion.div 
+          className="h-full bg-[#111111]"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "tween",
+              duration: 0.8,
+              ease: [0.4, 0, 0.2, 1]
+            }
+          }}
+        >
+          <div className="p-8">
+            {activities.length > 0 ? (
+              <div className="space-y-6">
+                {activities.map((activity, index) => (
+                  <motion.div 
+                    key={activity.id} 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
                   >
-                    {taskStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4">
-              <h3 className="font-medium mb-2">Upcoming Tasks</h3>
-              <div className="space-y-2">
-                {tasks.slice(0, 3).map(task => (
-                  <div key={task.id} className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                    <span>{task.title}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      task.priority === 'high' ? 'bg-red-500/20 text-red-500' :
-                      task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-500' :
-                      'bg-green-500/20 text-green-500'
-                    }`}>
-                      {task.priority}
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                        <activity.icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{activity.title}</p>
+                        <p className="text-sm text-zinc-400 mt-0.5">{activity.description}</p>
+                        <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.timestamp)}</p>
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <Calendar className="w-12 h-12 text-zinc-600 mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Recent Activity</h3>
+                <p className="text-zinc-400">Activities will appear here as you use the CRM</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )
+
+      setContent(topContent, bottomContent)
+      show()
+    }
+
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(setupInitialContent)
+
+    return () => {
+      hide()
+    }
+  }, [])
+
+  return (
+    <PageTransition>
+      <motion.div 
+        className="flex-1 flex flex-col"
+        initial={{ opacity: 0, x: "100%" }}
+        animate={isDataReady ? { opacity: 1, x: 0 } : { opacity: 0, x: "100%" }}
+        transition={{
+          duration: 1.2,
+          ease: [0.32, 0.72, 0, 1]
+        }}
+      >
+        <div className="p-8">
+          {/* Replace Toaster with custom notifications */}
+          <div className="fixed top-4 right-4 z-[9999] space-y-2">
+            <AnimatePresence>
+              {notifications.length > 0 && (
+                <>
+                  {console.log('Current notifications:', notifications)}
+                  {notifications.map(notification => (
+                    <motion.div
+                      key={notification.id}
+                      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className={`p-4 rounded-lg shadow-lg backdrop-blur-sm flex items-start gap-3 max-w-sm
+                        ${notification.type === 'success' ? 'bg-green-500/20 border-2 border-green-500' : 'bg-blue-500/20 border-2 border-blue-500'}`}
+                    >
+                      {notification.icon && (
+                        <div className="mt-1">{notification.icon}</div>
+                      )}
+                      <div>
+                        <div className="font-medium text-sm text-white">
+                          {notification.message}
+                        </div>
+                        {notification.description && (
+                          <div className="text-sm text-white/80 mt-1">
+                            {notification.description}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Welcome Message */}
+          <motion.div
+            className="mb-8"
+            initial={{ opacity: 0 }}
+            animate={isDataReady ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ 
+              duration: 0.3,
+              delay: 0.2
+            }}
+          >
+            <h1 className="text-4xl font-bold tracking-tight">
+              Welcome back, {session?.user?.name?.split(' ')[0] || 'User'}
+            </h1>
+            <p className="text-zinc-400 mt-2 text-lg">
+              Here's what's happening in your CRM today
+            </p>
           </motion.div>
 
-          {/* Calendar Preview */}
-          <motion.div
-            className="lg:col-span-6 dashboard-card rounded-xl p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+          {/* Metrics Grid */}
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+            initial="hidden"
+            animate={isDataReady ? "visible" : "hidden"}
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.05,
+                  delayChildren: 0.3
+                }
+              }
+            }}
           >
-            <div className="flex items-center gap-2 mb-6">
-              <Calendar className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-semibold">Upcoming Events</h2>
-            </div>
-            <div className="space-y-4">
-              {events.map(event => (
-                <div key={event.id} className="flex items-center gap-4 p-3 rounded-lg bg-background/50">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-primary" />
+            {metrics.map((metric) => (
+              <motion.div
+                key={metric.id}
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1 }
+                }}
+                transition={{
+                  duration: 0.5,
+                  ease: [0.32, 0.72, 0, 1]
+                }}
+                className={`dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className} cursor-pointer`}
+                onClick={() => handleMetricClick(metric)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 rounded-lg bg-white/5">
+                    <metric.icon className="h-5 w-5" />
                   </div>
-                  <div className="flex-grow">
-                    <h4 className="font-medium">{event.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span className="px-2 py-1 rounded-full text-xs bg-primary/20 text-primary">
-                    {event.event_type}
+                  <span className="text-sm font-medium text-zinc-400">
+                    {metric.change}
                   </span>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Contact Growth and Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-          {/* Contact Growth Chart */}
-          <motion.div
-            className="lg:col-span-8 dashboard-card rounded-xl p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <Users className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-semibold">Contact Growth</h2>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={contactGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="count" stroke="#8884d8" fill="#8884d8" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-
-          {/* Quick Actions */}
-          <motion.div
-            className="lg:col-span-4 dashboard-card rounded-xl p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <MessageSquare className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-semibold">Quick Actions</h2>
-            </div>
-            <div className="space-y-4">
-              {recentActivity.slice(0, 4).map(activity => (
-                <div key={activity.id} className="p-3 rounded-lg bg-background/50">
-                  <p className="text-sm">{activity.message}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {formatTimeAgo(activity.created_at)}
-                  </span>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-zinc-400">
+                    {metric.name}
+                  </h3>
+                  <div className="text-2xl font-bold">
+                    {metric.value}
+                  </div>
                 </div>
-              ))}
-            </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Two Column Layout */}
+          <motion.div 
+            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+            initial="hidden"
+            animate={isDataReady ? "visible" : "hidden"}
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.1,
+                  delayChildren: 0.4
+                }
+              }
+            }}
+          >
+            {/* Tasks Overview */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 }
+              }}
+              transition={{
+                duration: 0.5,
+                ease: [0.32, 0.72, 0, 1]
+              }}
+              className={`dashboard-card rounded-xl p-6 content-card`}
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <CheckSquare className="h-6 w-6" />
+                <h2 className="text-xl font-semibold">Recent Tasks</h2>
+              </div>
+              <div className="space-y-4">
+                {tasks.length > 0 ? tasks.map((task, index) => (
+                  <div 
+                    key={task.id} 
+                    className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
+                  >
+                    <h3 className="font-medium">{task.title}</h3>
+                    <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                        task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-orange-500/20 text-orange-400'
+                      }`}>
+                        {task.status}
+                      </span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-4 text-zinc-500">
+                    No tasks available
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Upcoming Activities */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 }
+              }}
+              transition={{
+                duration: 0.5,
+                ease: [0.32, 0.72, 0, 1]
+              }}
+              className={`dashboard-card rounded-xl p-6 content-card`}
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <Calendar className="h-6 w-6" />
+                <h2 className="text-xl font-semibold">Upcoming Activities</h2>
+              </div>
+              <div className="space-y-4">
+                {activities.length > 0 ? activities.map((activity, index) => (
+                  <div 
+                    key={activity.id} 
+                    className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
+                  >
+                    <h3 className="font-medium">{activity.title}</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-zinc-400">
+                        {formatDate(activity.scheduled_for)}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400`}>
+                        {activity.type}
+                      </span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-4 text-zinc-500">
+                    No upcoming activities
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         </div>
-      </div>
-    </main>
+      </motion.div>
+    </PageTransition>
   )
-}
-
-function formatTimeAgo(dateString: string) {
-  const date = new Date(dateString)
-  const now = new Date()
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-  
-  if (seconds < 60) return 'just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
 }

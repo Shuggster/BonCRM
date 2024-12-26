@@ -1,6 +1,78 @@
 export interface Database {
   public: {
     Tables: {
+      task_groups: {
+        Row: {
+          id: string
+          name: string
+          color: string
+          user_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          color: string
+          user_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          color?: string
+          user_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tasks: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          status: 'todo' | 'in-progress' | 'completed'
+          priority: 'low' | 'medium' | 'high'
+          due_date: string | null
+          task_group_id: string | null
+          user_id: string
+          assigned_to: string | null
+          created_at: string
+          updated_at: string
+          task_groups?: {
+            id: string
+            name: string
+            color: string
+          }
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          status?: 'todo' | 'in-progress' | 'completed'
+          priority?: 'low' | 'medium' | 'high'
+          due_date?: string | null
+          task_group_id?: string | null
+          user_id: string
+          assigned_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          status?: 'todo' | 'in-progress' | 'completed'
+          priority?: 'low' | 'medium' | 'high'
+          due_date?: string | null
+          task_group_id?: string | null
+          user_id?: string
+          assigned_to?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       calendar_events: {
         Row: {
           id: string

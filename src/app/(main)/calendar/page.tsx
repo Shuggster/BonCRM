@@ -6,7 +6,7 @@ import { toUserSession } from "@/types/session"
 
 export default async function CalendarPage() {
   const session = await getServerSession(authOptions)
-  
+
   if (!session?.user) {
     return redirect('/login')
   }

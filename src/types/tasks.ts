@@ -10,18 +10,28 @@ export interface TaskComment {
 export interface Task {
   id: string
   title: string
-  description: string
+  description: string | null
   status: 'todo' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
-  dueDate?: Date
-  taskGroupId?: string
-  assigned_to?: string | null
-  assigned_to_type?: 'user' | 'team' | null
-  department?: string | null
-  userId: string
-  createdAt: Date
-  updatedAt: Date
-  schedule_status?: ScheduleStatus | null
+  due_date: string | null
+  task_group_id: string | null
+  user_id: string
+  assigned_to: string | null
+  created_at: string
+  updated_at: string
+  task_groups?: {
+    id: string
+    name: string
+    color: string
+  }
+}
+
+export interface TaskGroup {
+  id: string
+  name: string
+  color: string
+  created_at: string
+  updated_at: string
 }
 
 export type ScheduleStatus = 'scheduled' | 'unscheduled' | 'pending'

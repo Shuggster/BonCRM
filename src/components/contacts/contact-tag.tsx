@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 interface ContactTagProps {
   tagId: string
+  className?: string
 }
 
 interface TagDetails {
@@ -11,7 +13,7 @@ interface TagDetails {
   color: string
 }
 
-export function ContactTag({ tagId }: ContactTagProps) {
+export function ContactTag({ tagId, className }: ContactTagProps) {
   const [tag, setTag] = useState<TagDetails | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -59,14 +61,12 @@ export function ContactTag({ tagId }: ContactTagProps) {
   }
 
   return (
-    <span
-      className="px-2 py-0.5 rounded-full text-xs font-medium transition-colors"
-      style={{
-        backgroundColor: `${tag.color}20`,
-        color: tag.color
-      }}
-    >
+    <div className={cn(
+      "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+      "bg-white/[0.05] text-zinc-300",
+      className
+    )}>
       {tag.name}
-    </span>
+    </div>
   )
 }

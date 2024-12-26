@@ -1,16 +1,15 @@
-import { Inter } from 'next/font/google'
-import { Providers } from '@/components/providers'
 import './globals.css'
+import { Inter } from 'next/font/google'
 import 'react-datepicker/dist/react-datepicker.css'
 import '@/styles/icons.css'
 import { cn } from '@/lib/utils'
-import { Toaster } from 'sonner'
+import { ClientLayout } from '@/components/layouts/ClientLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Bonnymans CRM',
-  description: 'A lovable CRM for Bonnymans',
+  title: 'Lovable CRM',
+  description: 'A lovable CRM application'
 }
 
 export default function RootLayout({
@@ -19,15 +18,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark h-full bg-zinc-950">
+    <html lang="en" className="dark h-full">
       <body className={cn(
         inter.className,
-        "h-full bg-zinc-950 text-white antialiased"
+        "h-full text-white antialiased overflow-hidden"
       )}>
-        <Providers>
+        <ClientLayout>
           {children}
-          <Toaster richColors />
-        </Providers>
+        </ClientLayout>
       </body>
     </html>
   )

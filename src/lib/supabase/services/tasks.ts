@@ -49,8 +49,8 @@ export const taskService = {
       .insert({
         title: task.title,
         description: task.description,
-        status: task.status,
-        priority: task.priority,
+        status: task.status || 'todo',
+        priority: task.priority || 'medium',
         due_date: task.dueDate?.toISOString(),
         task_group_id: task.taskGroupId,
         assigned_to: task.assigned_to,

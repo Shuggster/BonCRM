@@ -1,116 +1,48 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/(auth)/lib/auth-options'
+import { supabaseAdmin } from '@/app/(auth)/lib/supabase-admin'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { Database } from '@/lib/supabase/database.types'
 
-// Create admin client with service role key
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+type TaskInsert = Database['public']['Tables']['tasks']['Insert']
+type TaskRow = Database['public']['Tables']['tasks']['Row']
+type TaskGroupRow = Database['public']['Tables']['task_groups']['Row']
 
-// Helper to validate UUID format
-const isValidUUID = (uuid: string) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
+type TaskResponse = TaskRow & {
+  task_groups: TaskGroupRow | null
+}
 
 export async function POST(request: Request) {
   try {
-    // Verify session
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const taskData = await request.json()
+
+    // Get session from cookie - Tasks module REQUIRES auth
+    const supabase = createRouteHandlerClient({ cookies })
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get task data from request
-    const task = await request.json()
-
-    // Add more detailed logging
-    console.log('Task assignment details:', {
-      assigned_to: task.assigned_to,
-      assigned_to_type: task.assigned_to_type,
-      isUUID: isValidUUID(task.assigned_to),
-      fullData: task
-    })
-
-    // Different validation based on type
-    if (task.assigned_to) {
-      // First validate department
-      if (task.department) {
-        const validDepartments = ['management', 'sales', 'accounts', 'trade_shop'];
-        if (!validDepartments.includes(task.department)) {
-          return NextResponse.json(
-            { error: 'Invalid department assignment' },
-            { status: 400 }
-          )
-        }
-      }
-
-      // Then validate user/team assignment
-      if (task.assigned_to_type === 'user') {
-        // Check if user exists AND is in the correct department
-        const userExists = await supabaseAdmin
-          .from('users')
-          .select('id, department')
-          .eq('id', task.assigned_to)
-          .single()
-        
-        if (userExists.error || userExists.data.department !== task.department) {
-          return NextResponse.json(
-            { error: 'Invalid user assignment or department mismatch' },
-            { status: 400 }
-          )
-        }
-      } else if (task.assigned_to_type === 'team') {
-        // Single team check
-        const teamExists = await supabaseAdmin
-          .from('teams')
-          .select('id, department, name')
-          .eq('id', task.assigned_to)
-          .single()
-        
-        if (teamExists.error) {
-          return NextResponse.json(
-            { error: 'Invalid team assignment - team not found' },
-            { status: 400 }
-          )
-        }
-
-        // Verify team department if needed
-        if (task.department && teamExists.data.department !== task.department) {
-          return NextResponse.json(
-            { error: 'Team department does not match task department' },
-            { status: 400 }
-          )
-        }
-      }
+    // Prepare task data
+    const taskInsert: TaskInsert = {
+      title: taskData.title,
+      description: taskData.description || null,
+      status: 'todo', // Default status
+      priority: taskData.priority || 'medium',
+      due_date: taskData.dueDate || null,
+      task_group_id: taskData.taskGroupId || null,
+      user_id: session.user.id,
+      assigned_to: taskData.assigned_to || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
 
     // Insert task using service role
     const { data, error } = await supabaseAdmin
       .from('tasks')
-      .insert({
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        due_date: task.dueDate,
-        task_group_id: task.taskGroupId,
-        user_id: session.user.id,
-        assigned_to: task.assigned_to_type === 'user' 
-          ? task.assigned_to  // For users, use the ID directly
-          : null,            // For teams or no assignment, use null
-        assigned_to_type: task.assigned_to_type
-      })
-      .select(`
-        *,
-        task_groups (
-          id,
-          name,
-          color
-        )
-      `)
+      .insert(taskInsert)
+      .select('*, task_groups(*)')
       .single()
 
     if (error) {
@@ -118,16 +50,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Transform dates
-    const transformedTask = {
-      ...data,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      taskGroupId: data.task_group_id
+    if (!data) {
+      throw new Error('No data returned from insert')
     }
 
-    return NextResponse.json(transformedTask)
+    // Cast the response to our expected type
+    const response = data as unknown as TaskResponse
+
+    return NextResponse.json(response)
   } catch (error: any) {
     console.error('[API] Task creation failed:', error)
     return NextResponse.json(
@@ -139,9 +69,11 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    // Verify session
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    // Get session from cookie - Tasks module REQUIRES auth
+    const supabase = createRouteHandlerClient({ cookies })
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -204,14 +136,7 @@ export async function PUT(request: Request) {
         updated_at: new Date().toISOString()
       })
       .eq('id', taskId)
-      .select(`
-        *,
-        task_groups (
-          id,
-          name,
-          color
-        )
-      `)
+      .select('*, task_groups(*)')
       .single()
 
     if (error) {
@@ -219,16 +144,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Transform dates
-    const transformedTask = {
-      ...data,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      taskGroupId: data.task_group_id
-    }
+    // Cast the response to our expected type
+    const response = data as unknown as TaskResponse
 
-    return NextResponse.json(transformedTask)
+    return NextResponse.json(response)
   } catch (error: any) {
     console.error('[API] Task update failed:', error)
     return NextResponse.json(

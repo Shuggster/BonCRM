@@ -7,8 +7,9 @@ export type ConversionStatus = 'lead' | 'opportunity' | 'customer'
 export interface Contact {
   id: string
   created_at: string
+  updated_at: string
   first_name: string
-  last_name: string | null
+  last_name: string
   email: string
   phone: string | null
   company: string | null
@@ -23,21 +24,20 @@ export interface Contact {
   linkedin: string | null
   twitter: string | null
   avatar_url: string | null
-  assigned_to: string | null
-  assigned_to_type: 'user' | 'team' | null
-  department: string | null
-  updated_at: string
   tags: string[]
-  notes: string | null
   industry_id: string | null
+  department: string | null
   lead_status: LeadStatus | null
   lead_source: LeadSource | null
   lead_score: number | null
-  expected_value: number | null
-  probability: number | null
-  next_follow_up: string | null
   conversion_status: ConversionStatus | null
   first_contact_date: string | null
   last_contact_date: string | null
+  expected_value: number | null
+  probability: number | null
+  next_follow_up: string | null
+  assigned_to: string | null
+  assigned_to_type: string | null
   organization_id: string | null
+  pinned?: boolean
 } 

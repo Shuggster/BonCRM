@@ -1,32 +1,44 @@
-import { SidebarProvider } from '@/contexts/sidebar-context'
-import Sidebar from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../(auth)/lib/auth-options'
-import { redirect } from 'next/navigation'
+'use client'
 
-export default async function MainLayout({
-    children,
+import { Sidebar } from '@/components/navigation/Sidebar'
+import { SplitViewContainer, SplitViewPersistence } from '@/components/layouts/SplitViewContainer'
+import { motion, AnimatePresence } from 'framer-motion'
+import { usePathname } from 'next/navigation'
+import { pageVariants } from '@/lib/animations'
+
+export default function MainLayout({
+  children,
 }: {
-    children: React.ReactNode
+  children: React.ReactNode
 }) {
-    const session = await getServerSession(authOptions)
+  const pathname = usePathname()
 
-    if (!session) {
-        redirect('/login')
-    }
+  return (
+    <div className="flex h-screen bg-black">
+      {/* Navigation Column */}
+      <Sidebar />
+      
+      {/* Main Content Column */}
+      <div className="flex-1 h-full overflow-hidden relative">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.main
+            key={pathname}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="h-full overflow-auto"
+          >
+            {children}
+          </motion.main>
+        </AnimatePresence>
+      </div>
 
-    return (
-        <SidebarProvider>
-            <div className="relative flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1">
-                    <Header />
-                    <main>
-                        {children}
-                    </main>
-                </div>
-            </div>
-        </SidebarProvider>
-    )
+      {/* Split View Column - Fixed width, separate from main content */}
+      <div className="w-[800px] lg:w-[750px] xl:w-[800px] h-full relative">
+        <SplitViewContainer />
+        <SplitViewPersistence />
+      </div>
+    </div>
+  )
 }
