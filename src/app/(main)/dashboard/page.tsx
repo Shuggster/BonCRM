@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar } from 'lucide-react'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar, Phone, Mail, Video, ArrowRight } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
@@ -220,8 +220,8 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium">{activity.title}</p>
-                          <p className="text-sm text-zinc-400 mt-0.5">{activity.description}</p>
-                          <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.timestamp)}</p>
+                          <p className="text-sm text-zinc-400 mt-0.5">{activity.type}</p>
+                          <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.scheduled_for)}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -301,12 +301,30 @@ export default function DashboardPage() {
 
       // Update all the data
       setTasks(tasksData?.slice(0, 3) || []);
-      setActivities(activitiesData?.slice(0, 3).map(activity => ({
-        id: activity.id,
-        title: activity.title,
-        type: activity.type,
-        scheduled_for: activity.scheduled_for
-      })) || []);
+      setActivities(activitiesData?.slice(0, 3).map(activity => {
+        let icon;
+        switch (activity.type) {
+          case 'call':
+            icon = Phone;
+            break;
+          case 'email':
+            icon = Mail;
+            break;
+          case 'meeting':
+            icon = Video;
+            break;
+          default:
+            icon = ArrowRight;
+        }
+        
+        return {
+          id: activity.id,
+          title: activity.title,
+          type: activity.type,
+          scheduled_for: activity.scheduled_for,
+          icon
+        };
+      }) || []);
 
       // Update metrics last
       setMetrics(prev => prev.map(metric => {
@@ -525,8 +543,8 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium">{activity.title}</p>
-                        <p className="text-sm text-zinc-400 mt-0.5">{activity.description}</p>
-                        <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.timestamp)}</p>
+                        <p className="text-sm text-zinc-400 mt-0.5">{activity.type}</p>
+                        <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.scheduled_for)}</p>
                       </div>
                     </div>
                   </motion.div>

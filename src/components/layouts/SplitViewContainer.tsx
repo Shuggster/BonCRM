@@ -84,10 +84,9 @@ const topVariants = {
   animate: { 
     y: 0,
     transition: {
-      type: "tween",
-      duration: 0.8,
-      ease: [0.4, 0, 0.2, 1],
-      delay: 0.4
+      type: "spring",
+      stiffness: 50,
+      damping: 15
     }
   }
 }
@@ -97,10 +96,9 @@ const bottomVariants = {
   animate: { 
     y: 0,
     transition: {
-      type: "tween",
-      duration: 0.8,
-      ease: [0.4, 0, 0.2, 1],
-      delay: 0.4
+      type: "spring",
+      stiffness: 50,
+      damping: 15
     }
   }
 }
@@ -122,16 +120,9 @@ export function SplitViewContainer() {
             <div className="min-h-full">
               {/* Top Card */}
               <motion.div
-                initial={{ y: "-100%" }}
-                animate={{ 
-                  y: 0,
-                  transition: {
-                    type: "tween",
-                    duration: 0.8,
-                    ease: [0.4, 0, 0.2, 1],
-                    delay: 0.4
-                  }
-                }}
+                variants={topVariants}
+                initial="initial"
+                animate="animate"
                 className="h-[50%]"
               >
                 <div className="rounded-t-2xl bg-[#111111] border border-white/[0.05] border-b-0">
@@ -143,16 +134,9 @@ export function SplitViewContainer() {
 
               {/* Bottom Card */}
               <motion.div
-                initial={{ y: "100%" }}
-                animate={{ 
-                  y: 0,
-                  transition: {
-                    type: "tween",
-                    duration: 0.8,
-                    ease: [0.4, 0, 0.2, 1],
-                    delay: 0.4
-                  }
-                }}
+                variants={bottomVariants}
+                initial="initial"
+                animate="animate"
                 className="h-[50%]"
               >
                 <div className="rounded-b-2xl bg-[#111111] border border-white/[0.05] border-t-0">

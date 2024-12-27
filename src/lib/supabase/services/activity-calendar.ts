@@ -290,5 +290,28 @@ export const activityCalendarService = {
       console.error('Error in updateActivityStatus:', error)
       throw error
     }
+  },
+
+  async getActivitiesByContactId(contactId: string) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('scheduled_activities')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('scheduled_for', { ascending: true })
+
+      if (error) throw error
+
+      return {
+        data: data.map(activity => ({
+          ...activity,
+          calendar_event: null
+        })),
+        error: null
+      }
+    } catch (error) {
+      console.error('Error in getActivitiesByContactId:', error)
+      return { data: null, error }
+    }
   }
 } 

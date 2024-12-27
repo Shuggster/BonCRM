@@ -13,15 +13,16 @@ export interface CalendarEvent {
   start: Date
   end: Date
   category: string
-  recurrence?: {
-    frequency: 'daily' | 'weekly' | 'monthly'
-    interval?: number
-    endDate?: Date
-  }
+  contact_id?: string
   assigned_to?: string
   assigned_to_type?: 'user' | 'team'
   department?: string
-  user_id: string
+  recurrence?: {
+    frequency: string
+    interval: number
+    endDate?: Date
+  }
+  isRecurring?: boolean
   created_at?: Date
   updated_at?: Date
 }

@@ -181,9 +181,9 @@ export default function ContactsPage() {
           animate={{ 
             y: 0,
             transition: {
-              type: "tween",
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
+              type: "spring",
+              stiffness: 50,
+              damping: 15
             }
           }}
         >
@@ -218,9 +218,9 @@ export default function ContactsPage() {
           animate={{ 
             y: 0,
             transition: {
-              type: "tween",
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
+              type: "spring",
+              stiffness: 50,
+              damping: 15
             }
           }}
         >
@@ -265,9 +265,9 @@ export default function ContactsPage() {
           animate={{ 
             y: 0,
             transition: {
-              type: "tween",
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
+              type: "spring",
+              stiffness: 50,
+              damping: 15
             }
           }}
         >
@@ -288,9 +288,9 @@ export default function ContactsPage() {
           animate={{ 
             y: 0,
             transition: {
-              type: "tween",
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
+              type: "spring",
+              stiffness: 50,
+              damping: 15
             }
           }}
         >

@@ -35,7 +35,7 @@ export default function MainLayout({
       </div>
 
       {/* Split View Column - Fixed width, separate from main content */}
-      <div className="w-[800px] lg:w-[750px] xl:w-[800px] h-full relative">
+      <div className="w-[600px] h-full relative">
         <SplitViewContainer />
         <SplitViewPersistence />
       </div>
