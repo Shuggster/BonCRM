@@ -1,6 +1,13 @@
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'unqualified' | 'proposal'
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'unqualified' | 'proposal' | 'negotiation' | 'won' | 'lost'
 export type LeadSource = 'website' | 'referral' | 'social_media' | 'email' | 'other'
 export type ConversionStatus = 'lead' | 'opportunity' | 'customer' | 'lost'
+
+export interface Industry {
+  id: string
+  name: string
+  description: string | null
+  parent_id: string | null
+}
 
 export interface ContactTag {
   id: string
@@ -19,7 +26,7 @@ export interface Contact {
   created_at?: string
   updated_at?: string
   first_name: string
-  last_name: string
+  last_name: string | null
   email?: string | null
   phone?: string | null
   company?: string | null
@@ -39,6 +46,7 @@ export interface Contact {
   avatar_url?: string | null
   tags?: string[]
   industry_id?: string | null
+  industries?: Industry | null
   lead_status?: LeadStatus | null
   lead_source?: LeadSource | null
   lead_score?: number | null
@@ -53,4 +61,5 @@ export interface Contact {
   organization_id?: string | null
   pinned?: boolean
   contact_tag_relations?: ContactTagRelation[]
+  notes?: string | null
 } 

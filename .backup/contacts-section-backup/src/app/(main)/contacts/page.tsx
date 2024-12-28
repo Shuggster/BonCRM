@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useContext, useRef } from 'react'
-import { ContactFormProvider } from '@/components/contacts/ContactFormContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Plus, Search, Mail, Phone, Building2, X, MoreHorizontal } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -327,6 +326,7 @@ export default function ContactsPage() {
     }, 100);
   }, [setContent, show, hide, handleEditClick]);
 
+  // Add handleSubmit function before the effects
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const form = e.target as HTMLFormElement
@@ -359,191 +359,57 @@ export default function ContactsPage() {
     }
   }
 
-  const handleCreateContact = async (data: any) => {
-    try {
-      // Get default organization
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .select('id')
-        .limit(1)
-        .single()
-
-      if (orgError) {
-        console.error('Organization fetch error:', orgError)
-        throw new Error('Failed to fetch organization')
-      }
-
-      if (!org) {
-        console.error('No organization found')
-        throw new Error('No organization found')
-      }
-
-      // Format data for submission
-      const contactData = {
-        first_name: data.first_name.trim(),
-        last_name: data.last_name?.trim() || undefined,
-        email: data.email?.trim() || undefined,
-        phone: data.phone?.trim() || undefined,
-        company: data.company?.trim() || undefined,
-        job_title: data.job_title?.trim() || undefined,
-        department: data.department?.trim() || undefined,
-        industry_id: data.industry_id || undefined,
-        website: data.website?.trim() || undefined,
-        linkedin: data.linkedin?.trim() || undefined,
-        twitter: data.twitter?.trim() || undefined,
-        facebook: data.facebook?.trim() || undefined,
-        whatsapp: data.whatsapp?.trim() || undefined,
-        address_line1: data.address_line1?.trim() || undefined,
-        address_line2: data.address_line2?.trim() || undefined,
-        city: data.city?.trim() || undefined,
-        region: data.region?.trim() || undefined,
-        postcode: data.postcode?.trim() || undefined,
-        country: data.country?.trim() || undefined,
-        lead_status: data.lead_status || 'new',
-        lead_source: data.lead_source || 'website',
-        lead_score: data.lead_score || 0,
-        expected_value: data.expected_value || 0,
-        conversion_status: 'lead',
-        organization_id: org.id
-      }
-
-      console.log('Inserting contact:', contactData)
-      const { data: contact, error } = await supabase
-        .from('contacts')
-        .insert([contactData])
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Create tag relations if there are any tags
-      if (data.tags && data.tags.length > 0) {
-        const tagRelations = data.tags.map((tagId: string) => ({
-          contact_id: contact.id,
-          tag_id: tagId,
-          created_at: new Date().toISOString()
-        }))
-
-        console.log('Creating tag relations:', tagRelations)
-        const { error: tagError } = await supabase
-          .from('contact_tag_relations')
-          .insert(tagRelations)
-
-        if (tagError) {
-          console.error('Error creating tag relations:', tagError)
-          throw tagError
-        }
-      }
-
-      await fetchContacts()
-      
-      // Hide current content
-      hide()
-      
-      // Reset to QuickAddContact form with animation
-      setTimeout(() => {
-        const content = (
-          <ContactFormProvider>
-            <motion.div
-              key="add-contact-new"
-              className="h-full"
-              initial={{ y: "-100%" }}
-              animate={{ 
-                y: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 50,
-                  damping: 15
-                }
-              }}
-            >
-              <QuickAddContact 
-                onSuccess={handleCreateContact}
-                onCancel={hide}
-                section="upper"
-              />
-            </motion.div>
-
-            <motion.div
-              key="add-contact-bottom-new"
-              className="h-full"
-              initial={{ y: "100%" }}
-              animate={{ 
-                y: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 50,
-                  damping: 15
-                }
-              }}
-            >
-              <QuickAddContact 
-                onSuccess={handleCreateContact}
-                onCancel={hide}
-                section="lower"
-              />
-            </motion.div>
-          </ContactFormProvider>
-        )
-        setContent(content)
-        show()
-      }, 100)
-    } catch (error) {
-      console.error('Error creating contact:', error)
-      throw error // Re-throw to let QuickAddContact handle the error display
-    }
-  }
-
+  // Add this effect for initial setup
   useEffect(() => {
     if (!isMounted) return
 
     const setupInitialContent = () => {
-      const content = (
-        <ContactFormProvider>
-          <motion.div
-            key="add-contact"
-            className="h-full"
-            initial={{ y: "-100%" }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <QuickAddContact 
-              onSuccess={handleCreateContact}
-              onCancel={hide}
-              section="upper"
-            />
-          </motion.div>
+      const topContent = (
+        <motion.div
+          key="add-contact"
+          className="h-full"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <QuickAddContact 
+            onSuccess={handleCreateContact}
+            onCancel={hide}
+            section="upper"
+          />
+        </motion.div>
+      )
 
-          <motion.div
-            key="add-contact-bottom"
-            className="h-full"
-            initial={{ y: "100%" }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <QuickAddContact 
-              onSuccess={handleCreateContact}
-              onCancel={hide}
-              section="lower"
-            />
-          </motion.div>
-        </ContactFormProvider>
-      );
+      const bottomContent = (
+        <motion.div
+          key="add-contact-bottom"
+          className="h-full"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <QuickAddContact 
+            onSuccess={handleCreateContact}
+            onCancel={hide}
+            section="lower"
+          />
+        </motion.div>
+      )
 
-      setContent(content);
-      show();
+      setContent(topContent, bottomContent, 'add-contact')
+      show()
     }
 
     const persistedState = localStorage.getItem('splitViewState')
@@ -552,6 +418,7 @@ export default function ContactsPage() {
     }
   }, [setContent, show, isMounted])
 
+  // Modify the restore effect to only run when mounted
   useEffect(() => {
     if (!isMounted) return
 
@@ -594,6 +461,91 @@ export default function ContactsPage() {
 
   const { pinned, groups } = groupContactsByFirstLetter(filteredContacts, sortDirection)
 
+  const handleCreateContact = async (data: any) => {
+    try {
+      // Get default organization
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single()
+
+      if (orgError) {
+        console.error('Organization fetch error:', orgError)
+        throw new Error('Failed to fetch organization')
+      }
+
+      if (!org) {
+        console.error('No organization found')
+        throw new Error('No organization found')
+      }
+
+      // Format data for submission
+      const contactData = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name?.trim() || undefined,
+        email: data.email?.trim() || undefined,
+        phone: data.phone?.trim() || undefined,
+        company: data.company?.trim() || undefined,
+        job_title: data.job_title?.trim() || undefined,
+        department: data.department?.trim() || undefined,
+        industry_id: data.industry_id || undefined,
+        website: data.website?.trim() || undefined,
+        linkedin: data.linkedin?.trim() || undefined,
+        twitter: data.twitter?.trim() || undefined,
+        facebook: data.facebook?.trim() || undefined,
+        whatsapp: data.whatsapp?.trim() || undefined,
+        address_line1: data.address_line1?.trim() || undefined,
+        address_line2: data.address_line2?.trim() || undefined,
+        city: data.city?.trim() || undefined,
+        region: data.region?.trim() || undefined,
+        postcode: data.postcode?.trim() || undefined,
+        country: data.country?.trim() || undefined,
+        lead_status: data.lead_status || undefined,
+        lead_source: data.lead_source || undefined,
+        lead_score: data.lead_score || undefined,
+        expected_value: data.expected_value || undefined,
+        conversion_status: 'lead',
+        organization_id: org.id
+      }
+
+      console.log('Inserting contact:', contactData)
+      const { data: contact, error } = await supabase
+        .from('contacts')
+        .insert([contactData])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Create tag relations if there are any tags
+      if (data.tags && data.tags.length > 0) {
+        const tagRelations = data.tags.map((tagId: string) => ({
+          contact_id: contact.id,
+          tag_id: tagId,
+          created_at: new Date().toISOString()
+        }))
+
+        console.log('Creating tag relations:', tagRelations)
+        const { error: tagError } = await supabase
+          .from('contact_tag_relations')
+          .insert(tagRelations)
+
+        if (tagError) {
+          console.error('Error creating tag relations:', tagError)
+          throw tagError
+        }
+      }
+
+      await fetchContacts()
+      hide()
+    } catch (error) {
+      console.error('Error creating contact:', error)
+      throw error // Re-throw to let QuickAddContact handle the error display
+    }
+  }
+
+  // Add effect to refetch when sort direction changes
   useEffect(() => {
     fetchContacts()
   }, [sortDirection])
@@ -639,51 +591,51 @@ export default function ContactsPage() {
                   hide();
                   
                   setTimeout(() => {
-                    const content = (
-                      <ContactFormProvider>
-                        <motion.div
-                          key="add-contact"
-                          className="h-full"
-                          initial={{ y: "-100%" }}
-                          animate={{ 
-                            y: 0,
-                            transition: {
-                              type: "spring",
-                              stiffness: 50,
-                              damping: 15
-                            }
-                          }}
-                        >
-                          <QuickAddContact 
-                            onSuccess={handleCreateContact}
-                            onCancel={hide}
-                            section="upper"
-                          />
-                        </motion.div>
-
-                        <motion.div
-                          key="add-contact-bottom"
-                          className="h-full"
-                          initial={{ y: "100%" }}
-                          animate={{ 
-                            y: 0,
-                            transition: {
-                              type: "spring",
-                              stiffness: 50,
-                              damping: 15
-                            }
-                          }}
-                        >
-                          <QuickAddContact 
-                            onSuccess={handleCreateContact}
-                            onCancel={hide}
-                            section="lower"
-                          />
-                        </motion.div>
-                      </ContactFormProvider>
+                    const topContent = (
+                      <motion.div
+                        key="add-contact"
+                        className="h-full"
+                        initial={{ y: "-100%" }}
+                        animate={{ 
+                          y: 0,
+                          transition: {
+                            type: "spring",
+                            stiffness: 50,
+                            damping: 15
+                          }
+                        }}
+                      >
+                        <QuickAddContact 
+                          onSuccess={handleCreateContact}
+                          onCancel={hide}
+                          section="upper"
+                        />
+                      </motion.div>
                     );
 
-                    setContent(content);
+                    const bottomContent = (
+                      <motion.div
+                        key="add-contact-bottom"
+                        className="h-full"
+                        initial={{ y: "100%" }}
+                        animate={{ 
+                          y: 0,
+                          transition: {
+                            type: "spring",
+                            stiffness: 50,
+                            damping: 15
+                          }
+                        }}
+                      >
+                        <QuickAddContact 
+                          onSuccess={handleCreateContact}
+                          onCancel={hide}
+                          section="lower"
+                        />
+                      </motion.div>
+                    );
+
+                    setContent(topContent, bottomContent, 'add-contact');
                     show();
                   }, 100);
                 }}

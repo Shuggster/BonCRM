@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
+import { cn } from "@/lib/utils"
 
 interface Team {
   id: string
@@ -34,6 +35,7 @@ interface TeamSelectProps {
   disabled?: boolean
   currentDepartment?: string // Optional: to filter by department
   allowCrossDepartment?: boolean // Optional: to allow cross-department assignments
+  className?: string // Optional: to customize the trigger styling
 }
 
 export function TeamSelect({ 
@@ -42,7 +44,8 @@ export function TeamSelect({
   includeTeams = true,
   disabled = false,
   currentDepartment,
-  allowCrossDepartment = false
+  allowCrossDepartment = false,
+  className
 }: TeamSelectProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [users, setUsers] = useState<User[]>([])
@@ -132,24 +135,24 @@ export function TeamSelect({
       defaultValue={defaultValue ? `${defaultValue.type}-${defaultValue.id.toString()}` : undefined}
       disabled={disabled}
     >
-      <SelectTrigger className="w-full bg-[#1C2333] border-white/10 focus:border-blue-500 h-10">
+      <SelectTrigger className={cn("w-full bg-[#1C2333] border-white/10 focus:border-blue-500 h-10", className)}>
         <SelectValue placeholder="Assign to..." />
       </SelectTrigger>
       <SelectContent 
-        className="bg-[#0F1629] border-white/10 max-h-[300px]"
+        className="bg-black border-white/10 max-h-[300px]"
         position="popper"
       >
         {includeTeams && teams.length > 0 && (
           <>
             <SelectGroup>
-              <SelectLabel className="text-blue-400 sticky top-0 bg-[#0F1629] z-10">Teams</SelectLabel>
+              <SelectLabel className="text-blue-400 sticky top-0 bg-black z-10">Teams</SelectLabel>
               {teams.map(team => {
                 console.log('Team ID:', team.id);
                 return (
                   <SelectItem 
                     key={team.id} 
                     value={`team-${team.id.toString()}`}
-                    className="border-l-2 border-blue-500/30 pl-3 mt-1"
+                    className="border-l-2 border-blue-500/30 pl-3 mt-1 text-white/90 focus:bg-white/10 focus:text-white"
                   >
                     <div className="flex items-center justify-between w-full gap-2">
                       <span className="truncate">{team.name}</span>
@@ -165,13 +168,14 @@ export function TeamSelect({
         )}
         
         <SelectGroup>
-          <SelectLabel className="text-green-400 sticky top-0 bg-[#0F1629] z-10">Users</SelectLabel>
+          <SelectLabel className="text-green-400 sticky top-0 bg-black z-10">Users</SelectLabel>
           {users.map(user => {
             console.log('User ID:', user.id);
             return (
               <SelectItem 
                 key={user.id} 
                 value={`user-${user.id.toString()}`}
+                className="text-white/90 focus:bg-white/10 focus:text-white"
               >
                 <div className="flex items-center justify-between w-full gap-2">
                   <span className="truncate">{user.name}</span>

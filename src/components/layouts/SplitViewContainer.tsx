@@ -125,8 +125,8 @@ export function SplitViewContainer() {
                 animate="animate"
                 className="h-[50%]"
               >
-                <div className="rounded-t-2xl bg-[#111111] border border-white/[0.05] border-b-0">
-                  <div className="rounded-t-2xl overflow-hidden">
+                <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))' }}>
+                  <div className="relative z-10">
                     {topContent}
                   </div>
                 </div>
@@ -139,8 +139,8 @@ export function SplitViewContainer() {
                 animate="animate"
                 className="h-[50%]"
               >
-                <div className="rounded-b-2xl bg-[#111111] border border-white/[0.05] border-t-0">
-                  <div className="rounded-b-2xl overflow-hidden">
+                <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))' }}>
+                  <div className="relative z-10">
                     {bottomContent}
                   </div>
                 </div>

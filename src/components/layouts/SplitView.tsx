@@ -80,7 +80,7 @@ export function SplitView({ contentKey, topContent, bottomContent, isVisible = t
   }
 
   return (
-    <div className="relative h-full p-6">
+    <div className="relative h-full p-2 sm:p-4 md:p-6">
       <AnimatePresence mode="wait">
         {isVisible && (
           <motion.div
@@ -97,13 +97,13 @@ export function SplitView({ contentKey, topContent, bottomContent, isVisible = t
               initial="initial"
               animate="animate"
               exit="exit"
-              className="h-1/2"
+              className="h-[45%] md:h-1/2 min-h-0 relative"
             >
-              <div className="relative h-full rounded-t-2xl bg-[#141414] overflow-hidden">
+              <div className="absolute inset-0 rounded-t-lg md:rounded-t-2xl bg-[#141414] overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-[#1A1A1A] via-[#141414] to-[#111111]" />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1A1A1A]/10 via-[#141414]/30 to-[#111111]/50" />
-                <div className="relative h-full z-10">
+                <div className="relative h-full z-10 overflow-y-auto">
                   {topContent}
                 </div>
               </div>
@@ -115,13 +115,13 @@ export function SplitView({ contentKey, topContent, bottomContent, isVisible = t
               initial="initial"
               animate="animate"
               exit="exit"
-              className="h-1/2"
+              className="h-[55%] md:h-1/2 min-h-0 relative"
             >
-              <div className="relative h-full rounded-b-2xl bg-[#141414] overflow-hidden">
+              <div className="absolute inset-0 rounded-b-lg md:rounded-b-2xl bg-[#141414] overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111] via-[#141414] to-[#1A1A1A]" />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1A1A1A]/10 via-[#141414]/30 to-[#111111]/50" />
-                <div className="relative h-full z-10 overflow-y-auto no-scrollbar">
+                <div className="relative h-full z-10 overflow-y-auto">
                   {bottomContent}
                 </div>
               </div>

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useContactForm } from './ContactFormContext'
 import { Input } from '@/components/ui/input'
 import { motion } from 'framer-motion'
 import { 
@@ -580,6 +579,7 @@ function QuickAddContactSection({
                 disabled={!newTagName.trim()}
                 size="sm"
                 type="button"
+                className="h-8"
               >
                 Add
               </Button>
@@ -605,13 +605,42 @@ function QuickAddContactSection({
 
 export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: QuickAddContactProps) {
   const supabase = createClientComponentClient()
-  const { formData, updateField: onFieldUpdate, resetForm, isSubmitting, setIsSubmitting, error, setError } = useContactForm()
   const [industries, setIndustries] = useState<Industry[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showTagSelect, setShowTagSelect] = useState(false)
   const [showTagInput, setShowTagInput] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState('#3B82F6')
+  
+  const [formData, setFormData] = useState<ContactFormData>({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    company: '',
+    job_title: '',
+    department: '',
+    website: '',
+    linkedin: '',
+    twitter: '',
+    facebook: '',
+    whatsapp: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    region: '',
+    postcode: '',
+    country: '',
+    lead_status: '',
+    lead_source: '',
+    conversion_status: '',
+    lead_score: 0,
+    expected_value: 0,
+    industry_id: '',
+    tags: []
+  })
 
   useEffect(() => {
     fetchIndustries()
@@ -636,6 +665,11 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
     }
   }
 
+  const handleFieldUpdate = (field: keyof ContactFormData, value: any) => {
+    console.log('Field update:', field, value)
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
   const handleTagCreate = async () => {
     if (!newTagName.trim()) return
     try {
@@ -652,7 +686,7 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
 
       setTags([...tags, newTag])
       const updatedTags = [...formData.tags, newTag.id]
-      onFieldUpdate('tags', updatedTags)
+      handleFieldUpdate('tags', updatedTags)
       setShowTagInput(false)
       setNewTagName("")
     } catch (err) {
@@ -666,14 +700,9 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
     
     const trimmedFirstName = formData.first_name.trim()
     const trimmedEmail = formData.email.trim()
-
-    if (!trimmedFirstName) {
-      setError('First name is required')
-      return
-    }
-
-    if (!trimmedEmail) {
-      setError('Email is required')
+    
+    if (!trimmedFirstName || !trimmedEmail) {
+      setError('First name and email are required')
       return
     }
 
@@ -681,16 +710,17 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
     setError(null)
 
     try {
-      await onSuccess({
+      const dataToSubmit = {
         ...formData,
         first_name: trimmedFirstName,
         email: trimmedEmail,
         tags: formData.tags || []
-      })
-      resetForm()
-    } catch (err: any) {
+      }
+      console.log('Submitting with data:', dataToSubmit)
+      await onSuccess(dataToSubmit)
+    } catch (err) {
       console.error('Error submitting form:', err)
-      setError(err.message || 'An error occurred while submitting the form')
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsSubmitting(false)
     }
@@ -718,7 +748,7 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
                 <QuickAddContactSection
                   section={section}
                   formData={formData}
-                  onFieldUpdate={onFieldUpdate}
+                  onFieldUpdate={handleFieldUpdate}
                   industries={industries}
                   tags={tags}
                   showTagSelect={showTagSelect}
@@ -754,7 +784,7 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
                   <QuickAddContactSection
                     section={section}
                     formData={formData}
-                    onFieldUpdate={onFieldUpdate}
+                    onFieldUpdate={handleFieldUpdate}
                     industries={industries}
                     tags={tags}
                     showTagSelect={showTagSelect}

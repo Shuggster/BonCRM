@@ -85,8 +85,8 @@ export function Sidebar() {
                 align="end"
               >
                 <div className="px-3 py-2">
-                  <div className="font-medium">John Doe</div>
-                  <div className="text-sm text-zinc-400">john@example.com</div>
+                  <div className="text-sm font-medium text-white">John Doe</div>
+                  <div className="text-sm text-white/60">john@example.com</div>
                 </div>
                 <DropdownMenu.Separator className="h-px bg-white/[0.08] my-1" />
                 <DropdownMenu.Item
@@ -117,10 +117,10 @@ export function Sidebar() {
           {/* Main Navigation */}
           <Link href="/dashboard">
             <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 isActive('/dashboard')
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -132,10 +132,10 @@ export function Sidebar() {
 
           <Link href="/contacts">
             <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 isActive('/contacts')
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -147,10 +147,10 @@ export function Sidebar() {
 
           <Link href="/messages">
             <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 isActive('/messages')
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -162,10 +162,10 @@ export function Sidebar() {
 
           <Link href="/calendar">
             <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 isActive('/calendar')
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -177,10 +177,10 @@ export function Sidebar() {
 
           <Link href="/tasks">
             <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 isActive('/tasks')
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -192,10 +192,10 @@ export function Sidebar() {
 
           <Link href="/analytics">
             <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 isActive('/analytics')
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -209,15 +209,15 @@ export function Sidebar() {
           {isAdmin && (
             <div className="mt-6 pt-6 border-t border-white/[0.08]">
               <div className="px-4 mb-2">
-                <h3 className="text-xs font-medium text-zinc-500">Admin</h3>
+                <h3 className="text-xs font-medium text-white/40">Admin</h3>
               </div>
               <div className="space-y-1">
                 <Link href="/admin/users">
                   <motion.div
-                    className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+                    className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                       isActive('/admin/users')
                         ? 'bg-white/[0.08] text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                        : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
                     }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -229,10 +229,10 @@ export function Sidebar() {
 
                 <Link href="/admin/roles">
                   <motion.div
-                    className={`group flex items-center gap-3 px-4 py-2 text-sm rounded-xl transition-colors ${
+                    className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                       isActive('/admin/roles')
                         ? 'bg-white/[0.08] text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                        : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
                     }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -252,7 +252,7 @@ export function Sidebar() {
         <div className="space-y-1">
           <Link href="/settings">
             <motion.div
-              className="group flex items-center gap-3 px-4 py-2 text-sm text-zinc-400 rounded-xl hover:text-white hover:bg-white/[0.06] transition-colors"
+              className="group flex items-center gap-3 px-4 py-2 text-sm font-medium text-white/60 rounded-xl hover:text-white hover:bg-white/[0.06] transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -263,7 +263,7 @@ export function Sidebar() {
 
           <button className="w-full">
             <motion.div
-              className="group flex items-center gap-3 px-4 py-2 text-sm text-zinc-400 rounded-xl hover:text-white hover:bg-white/[0.06] transition-colors"
+              className="group flex items-center gap-3 px-4 py-2 text-sm font-medium text-white/60 rounded-xl hover:text-white hover:bg-white/[0.06] transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >

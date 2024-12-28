@@ -1,5 +1,24 @@
 # New Agent Guide - Lovable CRM
 
+## ⚠️ CRITICAL WARNING - LEGACY CODE
+
+**IMPORTANT:** This project has undergone a major UI overhaul. There are legacy files from the old implementation that should NOT be modified or referenced:
+
+- Any component files not following the new three-column layout pattern
+- Old form implementations that don't use the split-card animation pattern
+- Components that don't implement the latest UI standards
+
+When working on features:
+1. ALWAYS verify you are working with the newest implementation
+2. Check if a component follows the new split-card animation pattern
+3. If unsure, confirm the file is part of the new UI system before making any changes
+4. For new features (like Tasks), use the new templates and patterns ONLY
+
+Current Status:
+- Contacts section: Being updated to new UI (in progress)
+- Tasks section: Will be built from scratch using new patterns
+- Legacy files: Will be cleaned up after full migration
+
 ## 👋 Welcome to Lovable CRM!
 
 This guide will help you understand our project structure, current state, and implementation standards. Please read this document completely before starting any development work.

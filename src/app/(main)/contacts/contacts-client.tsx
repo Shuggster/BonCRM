@@ -1,9 +1,28 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, Fragment } from "react"
 import { Users, Plus, ChevronUp, ChevronDown, Download, Trash, Tags, Mail, Phone, Calendar, Building2, FolderOpen, FolderClosed, Search, Pencil, Trash2 } from "lucide-react"
+import { toast } from 'sonner'
+import { Session } from "next-auth"
+
+// Types
+import { UserSession } from "@/types/users"
+import type { Contact, ContactTag, ContactTagRelation, LeadStatus, LeadSource, ConversionStatus } from "@/types"
+
+// Utils
+import { cn } from "@/lib/utils"
+import { validateContact } from '@/lib/validation'
+import { convertNextAuthToUserSession } from "@/lib/session"
+
+// UI Components
 import { PageHeader } from "@/components/ui/page-header"
-import { CreateContactModal } from "@/components/contacts/create-contact-modal"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+
+// Contact Components
+import { QuickAddContact } from "@/components/contacts/QuickAddContact"
 import { EditContactModal } from "@/components/contacts/edit-contact-modal"
 import { DeleteContactModal } from "@/components/contacts/delete-contact-modal"
 import { ContactDetailsModal } from "@/components/contacts/contact-details-modal"
@@ -12,21 +31,13 @@ import { BulkTagModal } from "@/components/contacts/bulk-tag-modal"
 import { TagStatisticsModal } from "@/components/contacts/tag-statistics-modal"
 import { TagManagementModal } from "@/components/contacts/tag-management-modal"
 import { IndustryManagementModal } from "@/components/contacts/industry-management-modal"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { TagFilterMenu } from "@/components/contacts/tag-filter-menu"
-import { Button } from "@/components/ui/button"
-import { Fragment } from "react"
 import { ScheduleActivityModal } from "@/components/contacts/schedule-activity-modal"
-import { validateContact } from '@/lib/validation'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
-import { ContactTag } from "@/components/contacts/contact-tag"
-import { cn } from "@/lib/utils"
-import { UserSession } from "@/types/users"
-import type { Contact, LeadStatus } from "@/lib/supabase/services/contacts"
-import { Session } from "next-auth"
-import { convertNextAuthToUserSession } from "@/lib/session"
+import { TagFilterMenu } from "@/components/contacts/tag-filter-menu"
+import { LeadStatusFilter } from "@/components/contacts/lead-status-filter"
+import { ConversionStatusFilter } from "@/components/contacts/conversion-status-filter"
+import { LeadSourceFilter } from "@/components/contacts/lead-source-filter"
+import { IndustryFilter } from "@/components/contacts/industry-filter"
+import { ContactTag as ContactTagComponent } from "@/components/contacts/contact-tag"
 
 interface ContactsClientProps {
   session: Session | null
@@ -37,6 +48,14 @@ type SortDirection = 'asc' | 'desc'
 
 interface ContactWithName extends Contact {
   name: string
+  assigned_to?: string | null
+  assigned_to_type?: 'user' | 'team' | null
+  lead_status: LeadStatus | null
+  lead_source: LeadSource | null
+  lead_score?: number | null
+  conversion_status?: ConversionStatus | null
+  tags: string[]
+  expected_value?: number | null
 }
 
 function transformContactForSchedule(contact: ContactWithName | null) {
@@ -97,6 +116,11 @@ export function ContactsClient({ session }: ContactsClientProps) {
   const tagFilterMenuRef = useRef<any>(null)
   const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string; count: number }>>([])
   const [tagDetails, setTagDetails] = useState<{ [key: string]: { name: string; color: string } }>({})
+  const [selectedLeadStatus, setSelectedLeadStatus] = useState<LeadStatus | null>(null)
+  const [selectedConversionStatus, setSelectedConversionStatus] = useState<ConversionStatus | null>(null)
+  const [selectedLeadSource, setSelectedLeadSource] = useState<LeadSource | null>(null)
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
+  const [industries, setIndustries] = useState<Array<{ id: string; name: string }>>([])
 
   useEffect(() => {
     fetchContacts()
@@ -203,22 +227,52 @@ export function ContactsClient({ session }: ContactsClientProps) {
     )
   }
 
+  const getContactStatus = (contact: ContactWithName): LeadStatus => {
+    return contact.lead_status || 'new'
+  }
+
+  const getContactScore = (contact: ContactWithName): number => {
+    return contact.lead_score || 0
+  }
+
+  const getContactValue = (contact: ContactWithName): number => {
+    return contact.expected_value || 0
+  }
+
+  const getContactAssignedTo = (contact: ContactWithName): string | null => {
+    return contact.assigned_to || null
+  }
+
+  const getContactAssignedType = (contact: ContactWithName): 'user' | 'team' | null => {
+    return contact.assigned_to_type || null
+  }
+
   const filteredContacts = contacts.filter(contact => {
     const searchLower = searchQuery.toLowerCase()
     const matchesSearch = !searchQuery || 
-      (contact.name || '').toLowerCase().includes(searchLower) ||
+      `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(searchLower) ||
       (contact.email?.toLowerCase() || '').includes(searchLower) ||
       (contact.phone?.toLowerCase() || '').includes(searchLower) ||
-      (contact.company?.toLowerCase() || '').includes(searchLower) ||
-      (contact.job_title?.toLowerCase() || '').includes(searchLower)
+      (contact.company?.toLowerCase() || '').includes(searchLower)
 
     const matchesTags = selectedTagIds.length === 0 || (
-      tagFilterMode === 'AND'
-        ? selectedTagIds.every(tagId => contact.tags.includes(tagId))
-        : selectedTagIds.some(tagId => contact.tags.includes(tagId))
+      tagFilterMode === 'OR'
+        ? selectedTagIds.some(tagId => contact.tags?.includes(tagId))
+        : selectedTagIds.every(tagId => contact.tags?.includes(tagId))
     )
 
-    return matchesSearch && matchesTags
+    const currentLeadStatus = getContactStatus(contact)
+    const currentLeadScore = getContactScore(contact)
+    const currentAssignedTo = getContactAssignedTo(contact)
+    const currentAssignedType = getContactAssignedType(contact)
+
+    const matchesLeadStatus = !selectedLeadStatus || currentLeadStatus === selectedLeadStatus
+    const matchesLeadSource = !selectedLeadSource || contact.lead_source === selectedLeadSource
+    const matchesIndustry = !selectedIndustry || contact.industry_id === selectedIndustry
+    const matchesConversionStatus = !selectedConversionStatus || contact.conversion_status === selectedConversionStatus
+
+    return matchesSearch && matchesTags && matchesLeadStatus && matchesLeadSource && 
+           matchesIndustry && matchesConversionStatus
   })
 
   const groupedContacts = () => {
@@ -312,6 +366,27 @@ export function ContactsClient({ session }: ContactsClientProps) {
               selectedTags={selectedTagIds}
               filterMode={tagFilterMode}
               onFilterModeChange={() => setTagFilterMode(prev => prev === 'AND' ? 'OR' : 'AND')}
+            />
+
+            <LeadStatusFilter
+              selectedStatus={selectedLeadStatus}
+              onStatusChange={setSelectedLeadStatus}
+            />
+
+            <LeadSourceFilter
+              selectedSource={selectedLeadSource}
+              onSourceChange={setSelectedLeadSource}
+            />
+
+            <ConversionStatusFilter
+              selectedStatus={selectedConversionStatus}
+              onStatusChange={setSelectedConversionStatus}
+            />
+
+            <IndustryFilter
+              selectedIndustry={selectedIndustry}
+              onIndustryChange={setSelectedIndustry}
+              industries={industries}
             />
           </div>
         </div>
@@ -476,7 +551,7 @@ export function ContactsClient({ session }: ContactsClientProps) {
                       {contact.tags && contact.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-2">
                           {contact.tags.map((tagId: string) => (
-                            <ContactTag key={tagId} tagId={tagId} />
+                            <ContactTagComponent key={tagId} tagId={tagId} />
                           ))}
                         </div>
                       )}
@@ -538,48 +613,34 @@ export function ContactsClient({ session }: ContactsClientProps) {
         </div>
       </div>
 
-      <CreateContactModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onContactCreated={fetchContacts}
-      />
-
-      {selectedContact && (
-        <EditContactModal
-          contact={selectedContact}
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false)
-            setSelectedContact(null)
-          }}
-          onContactUpdated={fetchContacts}
-          session={userSession}
-        />
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-4xl">
+            <QuickAddContact
+              onSuccess={(data) => {
+                fetchContacts()
+                setIsCreateModalOpen(false)
+              }}
+              onCancel={() => setIsCreateModalOpen(false)}
+            />
+          </div>
+        </div>
       )}
 
-      <DeleteContactModal
-        contactId={selectedContact?.id || null}
-        contactName={selectedContact?.name || null}
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false)
-          setSelectedContact(null)
-        }}
-        onContactDeleted={fetchContacts}
-      />
-
-      <ContactDetailsModal
-        contact={selectedContact}
-        isOpen={isDetailsModalOpen}
-        onClose={() => {
-          setIsDetailsModalOpen(false)
-          setSelectedContact(null)
-        }}
-        onEdit={() => {
-          setIsDetailsModalOpen(false)
-          setIsEditModalOpen(true)
-        }}
-      />
+      {selectedContact && (
+        <ContactDetailsModal
+          contact={selectedContact}
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false)
+            setSelectedContact(null)
+          }}
+          onEdit={() => {
+            setIsDetailsModalOpen(false)
+            setIsEditModalOpen(true)
+          }}
+        />
+      )}
 
       <BulkDeleteModal
         isOpen={isBulkDeleteModalOpen}

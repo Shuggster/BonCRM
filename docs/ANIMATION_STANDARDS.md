@@ -27,25 +27,29 @@ Every page in the application follows a standardized entrance animation:
 ```
 
 ### Split View Animations
-Split views (like contact details or forms) use a synchronized two-part animation:
+Split views (like contact details or forms) use a synchronized two-part spring animation:
 
 1. **Container Animation**
    - Slides in from right (x: "100%" to 0)
    - Duration: 1.2 seconds
-   - Easing: [0.4, 0, 0.2, 1]
+   - Easing: [0.32, 0.72, 0, 1]
    - Matches page transition timing
 
 2. **Top Section**
    - Slides down from above (y: "-100%" to 0)
-   - Duration: 0.8 seconds
-   - Easing: [0.4, 0, 0.2, 1]
-   - Delay: 0.4 seconds after container
+   - Uses spring animation with stiffness: 50, damping: 15
+   - Synchronized with container animation
 
 3. **Bottom Section**
    - Slides up from below (y: "100%" to 0)
-   - Duration: 0.8 seconds
-   - Easing: [0.4, 0, 0.2, 1]
-   - Delay: 0.4 seconds after container
+   - Uses spring animation with stiffness: 50, damping: 15
+   - Synchronized with container animation
+
+4. **Visual Treatment**
+   - Use black backgrounds (`bg-black`) for form sections
+   - Maintain consistent rounded corners (`rounded-xl`)
+   - Use white/opacity borders for subtle separation
+   - Ensure proper z-indexing with `relative` and `z-10` on content containers
 
 ```tsx
 // Container animation
@@ -54,57 +58,102 @@ const containerVariants = {
   animate: { 
     x: 0,
     transition: {
-      type: "tween",
       duration: 1.2,
-      ease: [0.4, 0, 0.2, 1]
+      ease: [0.32, 0.72, 0, 1]
     }
   },
   exit: { 
     x: "100%",
     transition: {
-      type: "tween",
       duration: 1.2,
-      ease: [0.4, 0, 0.2, 1]
+      ease: [0.32, 0.72, 0, 1]
     }
   }
 }
 
-// Content animations
+// Content animations with spring physics
 const topContent = (
   <motion.div 
-    className="h-full bg-[#111111]"
+    className="h-full"
     initial={{ y: "-100%" }}
     animate={{ 
       y: 0,
       transition: {
-        type: "tween",
-        duration: 0.8,
-        ease: [0.4, 0, 0.2, 1],
-        delay: 0.4
+        type: "spring",
+        stiffness: 50,
+        damping: 15
       }
     }}
   >
-    {/* Top content */}
+    <div className="relative rounded-xl overflow-hidden bg-black border border-white/[0.08]">
+      <div className="relative z-10">
+        {/* Top content */}
+      </div>
+    </div>
   </motion.div>
 )
 
 const bottomContent = (
   <motion.div 
-    className="h-full bg-[#111111]"
+    className="h-full"
     initial={{ y: "100%" }}
     animate={{ 
       y: 0,
       transition: {
-        type: "tween",
-        duration: 0.8,
-        ease: [0.4, 0, 0.2, 1],
-        delay: 0.4
+        type: "spring",
+        stiffness: 50,
+        damping: 15
       }
     }}
   >
-    {/* Bottom content */}
+    <div className="relative rounded-xl overflow-hidden bg-black border border-white/[0.08]">
+      <div className="relative z-10">
+        {/* Bottom content */}
+      </div>
+    </div>
   </motion.div>
 )
+```
+
+### Expandable Sections
+Forms use expandable sections for better organization and visibility:
+
+1. **Section Animation**
+   - Smooth height animation using `AnimateHeight`
+   - Duration: 0.2 seconds
+   - Easing: ease-in-out
+
+2. **Section Structure**
+   - Header with toggle icon
+   - Collapsible content area
+   - Maintains form context when collapsed
+
+```tsx
+const ExpandableSection = ({ title, children, defaultExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  return (
+    <div className="border-b border-white/[0.08] last:border-none">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/[0.02]"
+      >
+        <span className="font-medium">{title}</span>
+        <ChevronDown 
+          className={cn(
+            "w-5 h-5 transition-transform",
+            isExpanded && "rotate-180"
+          )} 
+        />
+      </button>
+      <AnimateHeight duration={200} height={isExpanded ? "auto" : 0}>
+        <div className="px-6 pb-4">
+          {children}
+        </div>
+      </AnimateHeight>
+    </div>
+  );
+};
 ```
 
 ### State Persistence
@@ -198,13 +247,13 @@ Lists (like contacts, tasks, etc.) follow these animation patterns:
 
 1. **Timing Synchronization**
    - Page transitions and container: 1.2s
-   - Content animations: 0.8s with 0.4s delay
-   - All animations use the same easing curve
+   - Split view content: Spring animation (stiffness: 50, damping: 15)
+   - Expandable sections: 0.2s ease-in-out
 
 2. **Content Attachment**
    - Form content should be attached to its container animation
    - Never animate content separately from its container
-   - Avoid staggered animations unless specifically required
+   - Use expandable sections for form organization
 
 3. **Performance Considerations**
    - Use `transform` properties (x, y) instead of position properties
@@ -260,6 +309,48 @@ const handleClick = () => {
 - [ ] Always prepare new content first
 - [ ] Use `show()` only after content is ready
 - [ ] Test animations with both fast and slow clicks
+
+### Common Visual Issues and Fixes
+
+#### Grey Lines During Animation
+⚠️ CRITICAL: Grey lines can appear during split view animations when using borders.
+
+#### Common Problem
+Using borders or solid backgrounds can cause visual artifacts during animation:
+```tsx
+// ❌ WRONG - Creates grey lines during animation
+<div className="rounded-t-2xl bg-[#111111] border border-white/[0.05]">
+  {content}
+</div>
+```
+
+#### Quick Fix
+Use gradient backgrounds and backdrop blur instead:
+```tsx
+// ✅ CORRECT - Seamless animation
+<div 
+  className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" 
+  style={{ 
+    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))'
+  }}
+>
+  <div className="relative z-10">
+    {content}
+  </div>
+</div>
+```
+
+#### Why This Happens
+1. Borders and solid backgrounds can create hard edges that become visible during transform animations
+2. The animation system may render these edges at partial opacity during transitions
+3. Using gradients and blur effects creates softer edges that animate more smoothly
+
+#### Prevention Checklist
+- [ ] Avoid using borders for depth
+- [ ] Use gradient backgrounds instead of solid colors
+- [ ] Add backdrop blur for depth
+- [ ] Ensure proper z-indexing
+- [ ] Test animations at different speeds and screen sizes
 
 ## Page Transitions
 // ... rest of existing content ... 

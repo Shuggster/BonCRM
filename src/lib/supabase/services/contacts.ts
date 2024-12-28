@@ -88,4 +88,28 @@ export async function getContacts() {
   }
   
   return data
+}
+
+export async function updateContactIndustry(contactId: string, industryId: string) {
+  const supabase = createClientComponentClient()
+  
+  const { data, error } = await supabase
+    .from('contacts')
+    .update({ industry_id: industryId })
+    .eq('id', contactId)
+    .select(`
+      *,
+      industries!industry_id (
+        id,
+        name
+      )
+    `)
+    .single()
+  
+  if (error) {
+    console.error('Error updating contact industry:', error)
+    throw error
+  }
+  
+  return data
 } 

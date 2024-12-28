@@ -3,6 +3,13 @@
 ## 🎯 Project Vision
 Lovable CRM is a modern, user-friendly customer relationship management system designed to provide a seamless and enjoyable experience for managing customer relationships, tasks, and scheduling.
 
+## ⚠️ Important: UI Migration Status
+This project is currently undergoing a UI modernization:
+- New features must follow the three-column layout and split-card animation patterns
+- Legacy components are being migrated to the new UI system
+- When working on features, ensure you're using the new implementation patterns
+- **WARNING:** Some old implementation files still exist but should not be modified
+
 ## 🏗 Technical Stack
 - **Frontend**: Next.js 13+ with App Router
 - **Backend**: Supabase (PostgreSQL + Auth)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,8 +9,11 @@ import { Contact, LeadStatus, LeadSource, ConversionStatus } from '@/types'
 import {
   User, Mail, Phone, Building2, MapPin, Globe, 
   LinkedinIcon, TwitterIcon, Target, Briefcase,
-  Users, Calendar, DollarSign, Percent
+  Users, Calendar, DollarSign, Percent, Factory
 } from 'lucide-react'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { IndustryManagementModal } from '@/components/contacts/industry-management-modal'
+import { supabase } from '@/lib/supabase'
 
 interface ContactFormProps {
   contact?: Partial<Contact>
@@ -20,6 +23,24 @@ interface ContactFormProps {
 
 export function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
   const [formData, setFormData] = useState<Partial<Contact>>(contact || {})
+  const [industries, setIndustries] = useState<any[]>([])
+  const [showIndustryManagement, setShowIndustryManagement] = useState(false)
+
+  // Fetch industries
+  const fetchIndustries = async () => {
+    const { data, error } = await supabase
+      .from('industries')
+      .select('*')
+      .order('name')
+
+    if (!error && data) {
+      setIndustries(data)
+    }
+  }
+
+  useEffect(() => {
+    fetchIndustries()
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,14 +126,46 @@ export function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Input
-              id="department"
-              value={formData.department || ''}
-              onChange={e => handleChange('department', e.target.value)}
-              placeholder="Department"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                value={formData.department || ''}
+                onChange={e => handleChange('department', e.target.value)}
+                placeholder="Department"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center justify-between">
+                <span>Industry</span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-blue-500"
+                  onClick={() => setShowIndustryManagement(true)}
+                >
+                  Manage Industries
+                </Button>
+              </Label>
+              <Select
+                value={formData.industry_id || ''}
+                onValueChange={(value) => handleChange('industry_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {industries.map((industry) => (
+                    <SelectItem key={industry.id} value={industry.id}>
+                      {industry.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </TabsContent>
 
@@ -295,20 +348,22 @@ export function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end gap-4 pt-4 border-t border-white/[0.08]">
+      <div className="flex justify-end gap-3">
         {onCancel && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onCancel}
-          >
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         )}
-        <Button type="submit">
-          Save Contact
-        </Button>
+        <Button type="submit">Save Contact</Button>
       </div>
+
+      <IndustryManagementModal 
+        isOpen={showIndustryManagement}
+        onClose={() => setShowIndustryManagement(false)}
+        onIndustriesUpdated={() => {
+          fetchIndustries()
+        }}
+      />
     </form>
   )
 } 

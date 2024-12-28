@@ -30,30 +30,53 @@ export default function SomePage() {
 ```
 
 2. **Split Views**
-   - Follow the split view animation pattern for forms and details
-   - Ensure content is attached to container animations
-   - Use synchronized timing (0.8s duration)
+   - Follow the split view animation pattern with spring physics
+   - Use synchronized animations for top and bottom content
+   - Implement expandable sections for form organization
 
-3. **Lists and Collections**
-   - Implement list container and item animations
-   - Match page transition timing (1.2s)
-   - Use consistent easing curves
+3. **Form Structure**
+   - Use expandable sections for logical grouping
+   - Maintain consistent black backgrounds
+   - Follow the standard visual hierarchy
+
+## Expandable Sections Pattern
+
+Forms should be organized using expandable sections:
+
+```tsx
+function SomeForm() {
+  return (
+    <div className="space-y-1">
+      <ExpandableSection title="Personal Information" defaultExpanded>
+        {/* Personal info fields */}
+      </ExpandableSection>
+      
+      <ExpandableSection title="Work Information">
+        {/* Work-related fields */}
+      </ExpandableSection>
+      
+      <ExpandableSection title="Additional Details">
+        {/* Other fields */}
+      </ExpandableSection>
+    </div>
+  )
+}
+```
 
 ## Reference Implementation
 The contacts page (`src/app/(main)/contacts/page.tsx`) serves as the canonical example of:
 - Page transitions
-- Split view animations
-- List animations
-- Content attachment
-- Timing synchronization
+- Split view animations with spring physics
+- Expandable sections pattern
+- Content organization
+- Visual hierarchy
 
 ## Key Points
 1. Never implement custom animations without consulting ANIMATION_STANDARDS.md
 2. Always use the standard components and patterns
 3. Maintain consistent timing and easing across the application
-4. Test animations across different devices and screen sizes
-
-For detailed animation specifications and examples, refer to ANIMATION_STANDARDS.md 
+4. Use expandable sections for form organization
+5. Follow the black background standard for forms
 
 ## Split View Implementation
 
@@ -97,61 +120,77 @@ export default function MainLayout({
 }
 ```
 
-### State Persistence
-The split view uses a combination of Zustand store and localStorage for state persistence:
-
-1. **Store Structure**
-```typescript
-interface SplitViewState {
-  isVisible: boolean
-  topContent: React.ReactNode | null
-  bottomContent: React.ReactNode | null
-  selectedId: string | null
-  setContent: (top: React.ReactNode | null, bottom: React.ReactNode | null, id?: string | null) => void
-  show: () => void
-  hide: () => void
-  reset: () => void
-}
-```
-
-2. **Persistence Handling**
-- Store initialization with default values
-- Client-side persistence via `SplitViewPersistence` component
-- Hydration-safe localStorage access
-
 ### Animation Sequence
 ⚠️ **CRITICAL WARNING**: When implementing split views, always follow this sequence:
 
-1. Prepare new content first
-2. Update state (selected item, etc.)
-3. Set content
+1. Hide previous content (if any)
+2. Prepare new content with proper sections
+3. Set up spring animations
 4. Show the view
 
 ```typescript
 // Template for split view click handlers
 const handleItemClick = (item: Item) => {
-  // 1. Prepare content first
-  const newContent = {
-    top: <TopContent item={item} />,
-    bottom: <BottomContent item={item} />
-  };
+  // 1. Hide previous content
+  hide();
+  
+  setTimeout(() => {
+    // 2. Prepare content with proper sections
+    const topContent = (
+      <motion.div
+        key={item.id}
+        className="h-full"
+        initial={{ y: "-100%" }}
+        animate={{ 
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 50,
+            damping: 15
+          }
+        }}
+      >
+        <ItemView 
+          item={item}
+          section="upper"
+        />
+      </motion.div>
+    );
 
-  // 2. Update state
-  setSelectedItem(item);
+    const bottomContent = (
+      <motion.div
+        key={`${item.id}-bottom`}
+        className="h-full"
+        initial={{ y: "100%" }}
+        animate={{ 
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 50,
+            damping: 15
+          }
+        }}
+      >
+        <ItemView 
+          item={item}
+          section="lower"
+        />
+      </motion.div>
+    );
 
-  // 3. Set content
-  setContent(newContent.top, newContent.bottom, item.id);
-
-  // 4. Show the view
-  show();
+    // 3. Set content with spring animations
+    setContent(topContent, bottomContent, item.id);
+    
+    // 4. Show the view
+    show();
+  }, 100);
 };
 ```
 
 Common mistakes to avoid:
-- Don't call `hide()` before preparing new content
-- Don't use `requestAnimationFrame` unless specifically needed
-- Don't mix animation sequences
-- Don't render `SplitViewContainer` multiple times in the layout
-- Don't access localStorage during server-side rendering
+- Don't skip the hide/show sequence
+- Don't mix animation types (stick to spring for split views)
+- Don't forget to use expandable sections in forms
+- Don't use gradient backgrounds (stick to black)
 
-See `docs/ANIMATION_STANDARDS.md` for detailed animation guidelines. 
+For detailed animation specifications and examples, refer to ANIMATION_STANDARDS.md 

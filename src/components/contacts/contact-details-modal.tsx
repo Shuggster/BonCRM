@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import type { Contact } from "@/lib/supabase/services/contacts"
+import { Contact, LeadStatus, LeadSource, ConversionStatus } from "@/types"
 import { toast } from "sonner"
 
 interface ContactDetailsModalProps {
@@ -22,8 +22,24 @@ interface ContactDetailsModalProps {
   onEdit: () => void
 }
 
-interface ContactWithName extends Contact {
+interface ContactWithName {
+  id: string
   name: string
+  first_name: string
+  last_name: string | null
+  email?: string | null
+  phone?: string | null
+  company?: string | null
+  job_title?: string | null
+  lead_status: LeadStatus | null
+  lead_source: LeadSource | null
+  conversion_status: ConversionStatus | null
+  lead_score?: number | null
+  expected_value?: number | null
+  probability?: number | null
+  first_contact_date?: string | null
+  last_contact_date?: string | null
+  next_follow_up?: string | null
 }
 
 interface AssignedUser {
@@ -87,7 +103,13 @@ export function ContactDetailsModal({
     if (initialContact) {
       setContact({
         ...initialContact,
-        name: `${initialContact.first_name} ${initialContact.last_name || ''}`.trim()
+        name: `${initialContact.first_name} ${initialContact.last_name || ''}`.trim(),
+        lead_status: initialContact.lead_status || null,
+        lead_source: initialContact.lead_source || null,
+        conversion_status: initialContact.conversion_status || null,
+        lead_score: initialContact.lead_score || null,
+        expected_value: initialContact.expected_value || null,
+        probability: initialContact.probability || null
       })
     }
   }, [initialContact])
@@ -172,22 +194,48 @@ export function ContactDetailsModal({
               {/* Lead Management */}
               <Section title="Lead Management">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "px-2 py-1 rounded text-xs font-medium",
-                        contact.lead_status === 'new' && "bg-blue-500/20 text-blue-400",
-                        contact.lead_status === 'contacted' && "bg-yellow-500/20 text-yellow-400",
-                        contact.lead_status === 'qualified' && "bg-green-500/20 text-green-400",
-                        contact.lead_status === 'proposal' && "bg-purple-500/20 text-purple-400",
-                        contact.lead_status === 'negotiation' && "bg-orange-500/20 text-orange-400",
-                        contact.lead_status === 'won' && "bg-emerald-500/20 text-emerald-400",
-                        contact.lead_status === 'lost' && "bg-red-500/20 text-red-400"
-                      )}>
-                        {contact.lead_status.charAt(0).toUpperCase() + contact.lead_status.slice(1)}
-                      </div>
+                  {/* Status Section */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {contact.lead_status && (
+                        <div className={cn(
+                          "px-2 py-1 rounded text-xs font-medium",
+                          contact.lead_status === 'new' && "bg-blue-500/20 text-blue-400",
+                          contact.lead_status === 'contacted' && "bg-yellow-500/20 text-yellow-400",
+                          contact.lead_status === 'qualified' && "bg-green-500/20 text-green-400",
+                          contact.lead_status === 'proposal' && "bg-purple-500/20 text-purple-400",
+                          contact.lead_status === 'negotiation' && "bg-orange-500/20 text-orange-400",
+                          contact.lead_status === 'won' && "bg-emerald-500/20 text-emerald-400",
+                          contact.lead_status === 'lost' && "bg-red-500/20 text-red-400"
+                        )}>
+                          Lead Status: {contact.lead_status.charAt(0).toUpperCase() + contact.lead_status.slice(1)}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
+                  </div>
+
+                  {/* Conversion Status Section */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">Conversion</h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {contact.conversion_status && (
+                        <div className={cn(
+                          "px-2 py-1 rounded text-xs font-medium",
+                          contact.conversion_status === 'lead' && "bg-purple-500/20 text-purple-400",
+                          contact.conversion_status === 'opportunity' && "bg-orange-500/20 text-orange-400",
+                          contact.conversion_status === 'customer' && "bg-emerald-500/20 text-emerald-400",
+                          contact.conversion_status === 'lost' && "bg-red-500/20 text-red-400"
+                        )}>
+                          {contact.conversion_status.charAt(0).toUpperCase() + contact.conversion_status.slice(1)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Score Section */}
+                  <div className="flex items-center gap-2">
+                    {contact.lead_score !== null && contact.lead_score !== undefined && (
                       <div className={cn(
                         "px-2 py-1 rounded text-xs font-medium",
                         contact.lead_score >= 80 && "bg-green-500/20 text-green-400",
@@ -196,68 +244,21 @@ export function ContactDetailsModal({
                       )}>
                         Score: {contact.lead_score}
                       </div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-medium mb-1">Lead Score Factors:</p>
-                            <pre className="text-xs whitespace-pre-wrap">
-                              {getScoreTooltipContent(contact.lead_score)}
-                            </pre>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium mb-1">Lead Score Factors:</p>
+                          <pre className="text-xs whitespace-pre-wrap">
+                            {getScoreTooltipContent(contact.lead_score || 0)}
+                          </pre>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-
-                  {contact.lead_source && (
-                    <InfoItem 
-                      icon={ArrowUpRight} 
-                      label="Lead Source" 
-                      value={contact.lead_source.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
-                    />
-                  )}
-
-                  {contact.first_contact_date && (
-                    <InfoItem 
-                      icon={Calendar} 
-                      label="First Contact" 
-                      value={new Date(contact.first_contact_date).toLocaleDateString()} 
-                    />
-                  )}
-
-                  {contact.last_contact_date && (
-                    <InfoItem 
-                      icon={Calendar} 
-                      label="Last Contact" 
-                      value={new Date(contact.last_contact_date).toLocaleDateString()} 
-                    />
-                  )}
-
-                  {contact.expected_value && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Expected Value:</span>
-                      <span>£{contact.expected_value.toLocaleString()}</span>
-                    </div>
-                  )}
-
-                  {contact.probability !== null && (
-                    <InfoItem 
-                      icon={Percent} 
-                      label="Probability" 
-                      value={`${contact.probability}%`} 
-                    />
-                  )}
-
-                  {contact.next_follow_up && (
-                    <InfoItem 
-                      icon={CalendarClock} 
-                      label="Next Follow-up" 
-                      value={new Date(contact.next_follow_up).toLocaleDateString()} 
-                    />
-                  )}
                 </div>
               </Section>
 
@@ -312,43 +313,30 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </div>
 )
 
-const InfoItem = ({ icon: Icon, label, value, href, isEmail, isPhone }: {
+function InfoItem({ icon: Icon, label, value, isEmail, isPhone }: {
   icon: any
   label: string
-  value: string | null | JSX.Element
-  href?: string
+  value: string | null | undefined
   isEmail?: boolean
   isPhone?: boolean
-}) => {
+}) {
   if (!value) return null
 
-  const finalHref = isEmail ? `mailto:${value}` : isPhone ? `tel:${value}` : href
-
-  const content = (
-    <div className={cn(
-      "flex items-center gap-3 p-3 rounded-lg bg-muted/50",
-      finalHref && "hover:bg-muted/80 cursor-pointer"
-    )}>
-      <Icon className="w-5 h-5 text-primary" />
-      <div className="flex-grow min-w-0">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        {typeof value === 'string' ? (
-          <p className="text-sm truncate">{value}</p>
-        ) : (
-          value
-        )}
-      </div>
-      {finalHref && <ExternalLink className="w-4 h-4 text-muted-foreground" />}
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <Icon className="w-4 h-4 text-muted-foreground" />
+      <span className="text-muted-foreground">{label}:</span>
+      {isEmail ? (
+        <a href={`mailto:${value}`} className="text-blue-400 hover:text-blue-300">
+          {value}
+        </a>
+      ) : isPhone ? (
+        <a href={`tel:${value}`} className="text-blue-400 hover:text-blue-300">
+          {value}
+        </a>
+      ) : (
+        <span>{value}</span>
+      )}
     </div>
   )
-
-  if (finalHref) {
-    return (
-      <a href={finalHref} target={isEmail || isPhone ? undefined : "_blank"} rel="noopener noreferrer">
-        {content}
-      </a>
-    )
-  }
-
-  return content
 }

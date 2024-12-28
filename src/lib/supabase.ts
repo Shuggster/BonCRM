@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 console.log('Initializing Supabase client with URL:', supabaseUrl)
 
-// Create client with no schema cache
+// Create client with better error handling
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -20,6 +20,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     schema: 'public'
   },
   global: {
-    headers: { 'x-my-custom-header': 'my-app-name' }
+    headers: { 'x-my-custom-header': 'lovable-crm' }
   }
 })
