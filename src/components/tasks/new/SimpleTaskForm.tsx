@@ -1,12 +1,12 @@
 'use client'
 
-import { Calendar, CheckSquare, Clock, Tag, AlertCircle, Loader2, Plus } from 'lucide-react'
+import { Calendar, CheckSquare, Clock, Tag, AlertCircle, Loader2, Plus, Save } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { useTaskForm, TaskFormData } from './TaskFormContext'
 import { FormCard, FormCardSection, formInputStyles } from '@/components/ui/form-card'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { X, Save } from 'lucide-react'
+import { X } from 'lucide-react'
 import { MiniCalendar } from '@/components/calendar/mini-calendar'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import {
@@ -124,7 +124,9 @@ export function SimpleTaskForm({ onSubmit, onCancel, initialData }: TaskFormProp
             <div className="relative z-10">
               {/* Header */}
               <div className="p-6 pb-0">
-                <h2 className="text-2xl font-semibold text-white">Add Task</h2>
+                <h2 className="text-2xl font-semibold text-white">
+                  {initialData ? 'Edit Task' : 'Add Task'}
+                </h2>
               </div>
 
               <FormCardSection
@@ -343,8 +345,17 @@ export function SimpleTaskForm({ onSubmit, onCancel, initialData }: TaskFormProp
           type="button"
           className="bg-[#1a1a1a] hover:bg-[#222] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" />
-          {isSubmitting ? 'Creating...' : 'Create Task'}
+          {initialData ? (
+            <>
+              <Save className="w-4 h-4" />
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              {isSubmitting ? 'Creating...' : 'Create Task'}
+            </>
+          )}
         </Button>
       </div>
 

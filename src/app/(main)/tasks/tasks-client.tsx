@@ -55,7 +55,7 @@ export function TasksClient() {
       }))
 
       const topContent = (
-        <div className="h-full bg-[#111111]">
+        <div className="h-full bg-black">
           <motion.div 
             className="h-full"
             initial={{ y: "-100%" }}
@@ -87,7 +87,7 @@ export function TasksClient() {
 
                   {/* Task Metrics Grid */}
                   <div className="grid grid-cols-2 gap-4 mt-8">
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-orange-400" />
                         <h3 className="text-sm font-medium text-zinc-400">Due Today</h3>
@@ -97,11 +97,14 @@ export function TasksClient() {
                           <div className="w-6 h-6 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
                         </div>
                       ) : (
-                        <div className="mt-1 text-2xl font-bold">{dueTodayCount}</div>
+                        <div className="mt-1">
+                          <div className="text-2xl font-bold">{dueTodayCount}</div>
+                          <div className="text-sm text-zinc-500">tasks</div>
+                        </div>
                       )}
                     </div>
 
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors">
                       <div className="flex items-center gap-2">
                         <CheckSquare className="w-4 h-4 text-green-400" />
                         <h3 className="text-sm font-medium text-zinc-400">Completed</h3>
@@ -111,47 +114,48 @@ export function TasksClient() {
                           <div className="w-6 h-6 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
                         </div>
                       ) : (
-                        <div className="mt-1 text-2xl font-bold">{completedCount}</div>
+                        <div className="mt-1">
+                          <div className="text-2xl font-bold">{completedCount}</div>
+                          <div className="text-sm text-zinc-500">
+                            {((completedCount / tasks.length) * 100).toFixed(0)}% of total
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
 
                   {/* Charts Section */}
-                  <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="grid grid-cols-2 gap-6 mt-8">
                     {/* Priority Distribution */}
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
-                      <h3 className="text-sm font-medium text-zinc-400 mb-4">Priority Distribution</h3>
-                      {isLoading ? (
-                        <div className="flex items-center justify-center h-[200px]">
-                          <div className="w-6 h-6 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
-                        </div>
-                      ) : (
-                        <ResponsiveContainer width="100%" height={200}>
+                    <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+                      <h3 className="text-sm font-medium text-zinc-400 mb-6">Priority Distribution</h3>
+                      <div className="aspect-square relative">
+                        <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
                               data={priorityDistribution}
+                              dataKey="value"
+                              nameKey="name"
                               cx="50%"
                               cy="50%"
-                              innerRadius={60}
-                              outerRadius={80}
-                              paddingAngle={5}
-                              dataKey="value"
-                              label={({ name, value, percent }) => `${value} (${(percent * 100).toFixed(0)}%)`}
-                              labelLine={false}
+                              innerRadius={35}
+                              outerRadius={50}
                             >
                               {priorityDistribution.map((entry, index) => (
                                 <Cell 
                                   key={`cell-${index}`} 
-                                  fill={PRIORITY_COLORS[entry.name as keyof typeof PRIORITY_COLORS]} 
+                                  fill={PRIORITY_COLORS[entry.name as keyof typeof PRIORITY_COLORS]}
+                                  strokeWidth={0}
                                 />
                               ))}
                             </Pie>
                             <Tooltip
+                              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                               content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                   const data = payload[0].payload;
                                   return (
-                                    <div className="p-2 rounded-lg bg-black/90 border border-white/[0.1] backdrop-blur-xl">
+                                    <div className="p-2 rounded-lg bg-[#111111] border border-white/[0.1] backdrop-blur-xl">
                                       <p className="text-sm font-medium capitalize">{data.name}</p>
                                       <p className="text-xs text-zinc-400 mt-1">
                                         {data.value} tasks ({((data.value / tasks.length) * 100).toFixed(0)}%)
@@ -164,26 +168,35 @@ export function TasksClient() {
                             />
                           </PieChart>
                         </ResponsiveContainer>
-                      )}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold">
+                              {priorityDistribution.find(d => d.name === 'high')?.value || 0}
+                            </div>
+                            <div className="text-xs text-zinc-400">High Priority</div>
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex justify-center gap-4 mt-4">
-                        {Object.entries(PRIORITY_COLORS).map(([priority, color]) => (
-                          <div key={priority} className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                            <span className="text-xs text-zinc-400 capitalize">{priority}</span>
+                        {priorityDistribution.map((entry) => (
+                          <div key={entry.name} className="flex items-center gap-2">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: PRIORITY_COLORS[entry.name as keyof typeof PRIORITY_COLORS] }}
+                            />
+                            <span className="text-xs text-zinc-400 capitalize">
+                              {entry.name} ({((entry.value / tasks.length) * 100).toFixed(0)}%)
+                            </span>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     {/* Status Distribution */}
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
-                      <h3 className="text-sm font-medium text-zinc-400 mb-4">Status Distribution</h3>
-                      {isLoading ? (
-                        <div className="flex items-center justify-center h-[200px]">
-                          <div className="w-6 h-6 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
-                        </div>
-                      ) : (
-                        <ResponsiveContainer width="100%" height={200}>
+                    <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+                      <h3 className="text-sm font-medium text-zinc-400 mb-6">Status Distribution</h3>
+                      <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={statusDistribution}>
                             <XAxis 
                               dataKey="name" 
@@ -192,11 +205,12 @@ export function TasksClient() {
                               tick={{ fill: '#71717a', fontSize: 12 }}
                             />
                             <Tooltip
+                              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                               content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                   const data = payload[0].payload;
                                   return (
-                                    <div className="p-2 rounded-lg bg-black/90 border border-white/[0.1] backdrop-blur-xl">
+                                    <div className="p-2 rounded-lg bg-[#111111] border border-white/[0.1] backdrop-blur-xl">
                                       <p className="text-sm font-medium capitalize">{data.name}</p>
                                       <p className="text-xs text-zinc-400 mt-1">
                                         {data.value} tasks ({((data.value / tasks.length) * 100).toFixed(0)}%)
@@ -212,15 +226,6 @@ export function TasksClient() {
                               radius={[4, 4, 0, 0]}
                               minPointSize={2}
                               maxBarSize={40}
-                              label={{
-                                position: 'top',
-                                content: (props: any) => {
-                                  const value = typeof props.value === 'number' ? props.value : 0;
-                                  return value > 0 ? value : null;
-                                },
-                                fill: '#71717a',
-                                fontSize: 12
-                              }}
                             >
                               {statusDistribution.map((entry, index) => (
                                 <Cell 
@@ -231,12 +236,17 @@ export function TasksClient() {
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
-                      )}
+                      </div>
                       <div className="flex justify-center gap-4 mt-4">
-                        {Object.entries(STATUS_COLORS).map(([status, color]) => (
-                          <div key={status} className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                            <span className="text-xs text-zinc-400 capitalize">{status.replace('-', ' ')}</span>
+                        {statusDistribution.map((entry) => (
+                          <div key={entry.name} className="flex items-center gap-2">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: STATUS_COLORS[entry.name.replace(' ', '-') as keyof typeof STATUS_COLORS] }}
+                            />
+                            <span className="text-xs text-zinc-400 capitalize">
+                              {entry.name} ({((entry.value / tasks.length) * 100).toFixed(0)}%)
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -415,6 +425,7 @@ export function TasksClient() {
       isLoading={isLoading}
       onCreateTask={handleCreateTask}
       onUpdateTask={handleUpdateTask}
+      currentUserId={session?.user?.id || ''}
     />
   )
 } 

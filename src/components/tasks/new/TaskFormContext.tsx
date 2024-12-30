@@ -7,6 +7,7 @@ export interface TaskGroup {
   id: string
   name: string
   color: string
+  description?: string | null
 }
 
 export interface TaskFormData {
@@ -76,10 +77,12 @@ export function TaskFormProvider({ children, onSubmit, initialData, onClose }: T
 
   useEffect(() => {
     console.log('TaskFormProvider mounted')
-    resetForm()
+    if (!initialData?.title) {
+      resetForm()
+    }
     fetchTaskGroups()
     fetchUsers()
-  }, [resetForm])
+  }, [resetForm, initialData?.title])
 
   useEffect(() => {
     console.log('Users state updated:', users)
@@ -88,7 +91,7 @@ export function TaskFormProvider({ children, onSubmit, initialData, onClose }: T
   const fetchTaskGroups = async () => {
     const { data, error } = await supabase
       .from('task_groups')
-      .select('id, name, color')
+      .select('id, name, color, description')
       .order('name')
     
     if (!error && data) {

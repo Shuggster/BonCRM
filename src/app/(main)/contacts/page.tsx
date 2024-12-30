@@ -321,7 +321,7 @@ export default function ContactsPage() {
                                   unique.push(tag);
                                 }
                                 return unique;
-                              }, [])
+  }, [])
                               .slice(0, 5)
                               .map((tag: any) => (
                                 <span
@@ -832,21 +832,21 @@ export default function ContactsPage() {
       setTimeout(() => {
         const topContent = (
           <ContactFormProvider>
-            <QuickAddContact 
-              onSuccess={handleCreateContact}
-              onCancel={hide}
-              section="upper"
-            />
+              <QuickAddContact 
+                onSuccess={handleCreateContact}
+                onCancel={hide}
+                section="upper"
+              />
           </ContactFormProvider>
         );
         
         const bottomContent = (
           <ContactFormProvider>
-            <QuickAddContact 
-              onSuccess={handleCreateContact}
-              onCancel={hide}
-              section="lower"
-            />
+              <QuickAddContact 
+                onSuccess={handleCreateContact}
+                onCancel={hide}
+                section="lower"
+              />
           </ContactFormProvider>
         );
         

@@ -263,7 +263,7 @@ export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
                       variant="ghost"
                       size="icon"
                       className="text-white/70 hover:text-white hover:bg-white/10"
-                      onClick={() => setIsEditing(true)}
+                      onClick={() => onEdit(task)}
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>

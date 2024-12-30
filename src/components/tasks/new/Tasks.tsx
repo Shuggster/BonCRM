@@ -1,15 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TaskList } from './TaskList'
 import { Button } from '@/components/ui/button'
-import { Plus, Filter, Search } from 'lucide-react'
+import { Plus, Filter, Search, FolderKanban, X } from 'lucide-react'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
-import type { Task } from '@/types/tasks'
+import type { Task, TaskGroup } from '@/types/tasks'
 import { TaskFormProvider, type TaskFormData } from './TaskFormContext'
 import { SimpleTaskForm } from './SimpleTaskForm'
 import { TaskView } from './TaskView'
+import { TaskFilters } from './TaskFilters'
+import type { DueDateOption } from './DueDateFilter'
+import type { AssignedToOption } from './AssignedToFilter'
+import { getUsers } from '@/app/actions/users'
+import { TaskGroupsManager } from './TaskGroupsManager'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface SplitFormProps {
   onSubmit: (data: TaskFormData) => Promise<void>
@@ -28,14 +34,83 @@ function SplitForm({ onSubmit, onCancel, initialData }: SplitFormProps) {
 interface TasksProps {
   tasks: Task[]
   isLoading: boolean
-  onCreateTask: (data: any) => Promise<void>
-  onUpdateTask?: (task: Task) => Promise<void>
+  onCreateTask: (data: any) => Promise<any>
+  onUpdateTask: (task: Task) => Promise<any>
+  onDeleteTask: (taskId: string) => Promise<void>
+  currentUserId: string
+  onViewTask: (task: Task) => void
+  onEditTask: (task: Task) => void
 }
 
-export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksProps) {
+export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask, onDeleteTask, currentUserId, onViewTask, onEditTask }: TasksProps) {
   const { setContent, show, hide } = useSplitViewStore()
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([])
+  const [filters, setFilters] = useState<{
+    priority: 'high' | 'medium' | 'low' | null
+    status: 'todo' | 'in-progress' | 'completed' | null
+    dueDate: DueDateOption | null
+    assignedTo: AssignedToOption | null
+    group: string | null
+  }>({
+    priority: null,
+    status: null,
+    dueDate: null,
+    assignedTo: null,
+    group: null
+  })
+  const [showGroupsManager, setShowGroupsManager] = useState(false)
+  const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([])
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const userList = await getUsers()
+        setUsers(userList)
+      } catch (error) {
+        console.error('Error fetching users:', error)
+      }
+    }
+    fetchUsers()
+  }, [])
+
+  useEffect(() => {
+    const fetchTaskGroups = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('task_groups')
+          .select('*')
+          .order('name')
+
+        if (error) throw error
+        setTaskGroups(data || [])
+      } catch (error) {
+        console.error('Error fetching task groups:', error)
+      }
+    }
+
+    fetchTaskGroups()
+  }, [])
+
+  const handleTaskGroupsChange = () => {
+    const fetchTaskGroups = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('task_groups')
+          .select('*')
+          .order('name')
+
+        if (error) throw error
+        setTaskGroups(data || [])
+      } catch (error) {
+        console.error('Error fetching task groups:', error)
+      }
+    }
+
+    fetchTaskGroups()
+  }
 
   const handleEditTask = (task: Task) => {
     if (onUpdateTask) {
@@ -52,40 +127,72 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksPro
       }
 
       setTimeout(() => {
-        setContent(
-          <SplitForm
-            onSubmit={async (formData) => {
-              await onUpdateTask({
-                id: task.id,
-                title: formData.title,
-                description: formData.description,
-                priority: formData.priority,
-                due_date: formData.due_date,
-                status: formData.status || task.status,
-                task_group_id: formData.task_group_id || task.task_group_id,
-                user_id: task.user_id,
-                assigned_to: formData.assigned_to || task.assigned_to,
-                created_at: task.created_at,
-                updated_at: new Date().toISOString()
-              })
-              hide()
-              setSelectedTask(null)
+        const topContent = (
+          <motion.div
+            key={`${task.id}-edit-form`}
+            className="h-full"
+            initial={{ y: "-100%" }}
+            animate={{ 
+              y: 0,
+              transition: {
+                type: "spring",
+                stiffness: 50,
+                damping: 15
+              }
             }}
-            onCancel={() => {
-              hide()
-              setSelectedTask(null)
-            }}
-            initialData={initialFormData}
-          />,
-          <TaskView 
-            task={task}
-            section="lower"
-            onClose={() => {
-              hide()
-              setSelectedTask(null)
-            }}
-          />
+          >
+            <SplitForm
+              onSubmit={async (formData) => {
+                await onUpdateTask({
+                  id: task.id,
+                  title: formData.title,
+                  description: formData.description,
+                  priority: formData.priority,
+                  due_date: formData.due_date,
+                  status: formData.status || task.status,
+                  task_group_id: formData.task_group_id || task.task_group_id,
+                  user_id: task.user_id,
+                  assigned_to: formData.assigned_to || task.assigned_to,
+                  created_at: task.created_at,
+                  updated_at: new Date().toISOString()
+                })
+                hide()
+                setSelectedTask(null)
+              }}
+              onCancel={() => {
+                handleViewTask(task)
+              }}
+              initialData={initialFormData}
+            />
+          </motion.div>
         )
+
+        const bottomContent = (
+          <motion.div
+            key={`${task.id}-bottom`}
+            className="h-full"
+            initial={{ y: "100%" }}
+            animate={{ 
+              y: 0,
+              transition: {
+                type: "spring",
+                stiffness: 50,
+                damping: 15
+              }
+            }}
+          >
+            <TaskView 
+              task={task}
+              section="lower"
+              onClose={() => {
+                hide()
+                setSelectedTask(null)
+              }}
+            />
+          </motion.div>
+        )
+
+        setContent(topContent, bottomContent, `${task.id}-edit`)
         show()
       }, 100)
     }
@@ -95,34 +202,67 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksPro
     hide()
     
     setTimeout(() => {
-      setContent(
-        <TaskView 
-          task={task}
-          section="upper"
-          onClose={() => {
-            hide()
-            setSelectedTask(null)
-          }}
-          onEdit={async (updatedTask) => {
-            if (onUpdateTask) {
-              await onUpdateTask({
-                ...updatedTask,
-                updated_at: new Date().toISOString()
-              })
-              // Update the view with the latest task data
-              handleViewTask(updatedTask)
+      const topContent = (
+        <motion.div
+          key={task.id}
+          className="h-full"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
             }
           }}
-        />,
-        <TaskView 
-          task={task}
-          section="lower"
-          onClose={() => {
-            hide()
-            setSelectedTask(null)
-          }}
-        />
+        >
+          <TaskView 
+            task={task}
+            section="upper"
+            onClose={() => {
+              hide()
+              setSelectedTask(null)
+            }}
+            onEdit={async (updatedTask) => {
+              if (onUpdateTask) {
+                await onUpdateTask({
+                  ...updatedTask,
+                  updated_at: new Date().toISOString()
+                })
+                // Update the view with the latest task data
+                handleViewTask(updatedTask)
+              }
+            }}
+          />
+        </motion.div>
       )
+
+      const bottomContent = (
+        <motion.div
+          key={`${task.id}-bottom`}
+          className="h-full"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <TaskView 
+            task={task}
+            section="lower"
+            onClose={() => {
+              hide()
+              setSelectedTask(null)
+            }}
+          />
+        </motion.div>
+      )
+
+      setContent(topContent, bottomContent, task.id)
       show()
     }, 100)
   }
@@ -131,24 +271,105 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksPro
     hide()
     
     setTimeout(() => {
-      setContent(
-        <SplitForm
-          onSubmit={async (formData) => {
-            await onCreateTask(formData)
-            hide()
+      const topContent = (
+        <motion.div
+          key="create-task"
+          className="h-full"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
           }}
-          onCancel={() => hide()}
-        />,
-        null
+        >
+          <SplitForm
+            onSubmit={async (formData) => {
+              await onCreateTask(formData)
+              hide()
+            }}
+            onCancel={() => hide()}
+          />
+        </motion.div>
       )
+
+      setContent(topContent, null, 'create-task')
       show()
     }, 100)
   }
 
-  const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredTasks = tasks.filter(task => {
+    // Text search filter
+    const matchesSearch = 
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    // Priority filter
+    const matchesPriority = !filters.priority || task.priority === filters.priority
+
+    // Status filter
+    const matchesStatus = !filters.status || task.status === filters.status
+
+    // Due date filter
+    const matchesDueDate = !filters.dueDate || (() => {
+      if (!task.due_date) return filters.dueDate === 'no-date'
+      
+      const dueDate = new Date(task.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
+      const weekEnd = new Date(today)
+      weekEnd.setDate(weekEnd.getDate() + (7 - weekEnd.getDay()))
+      
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
+      switch (filters.dueDate) {
+        case 'today':
+          return dueDate >= today && dueDate < tomorrow
+        case 'this-week':
+          return dueDate >= today && dueDate <= weekEnd
+        case 'this-month':
+          return dueDate >= today && dueDate <= monthEnd
+        case 'overdue':
+          return dueDate < today
+        case 'no-date':
+          return false
+        default:
+          return true
+      }
+    })()
+
+    // Assigned to filter
+    const matchesAssignedTo = !filters.assignedTo || (() => {
+      switch (filters.assignedTo) {
+        case 'me':
+          return task.assigned_to === currentUserId
+        case 'unassigned':
+          return !task.assigned_to
+        default:
+          return task.assigned_to === filters.assignedTo
+      }
+    })()
+
+    // Group filter
+    const matchesGroup = !filters.group || task.task_group_id === filters.group
+
+    return matchesSearch && matchesPriority && matchesStatus && matchesDueDate && matchesAssignedTo && matchesGroup
+  })
+
+  const handleTaskDeleted = async (taskId: string) => {
+    if (onDeleteTask) {
+      await onDeleteTask(taskId)
+    } else {
+      // Fallback to page refresh if no callback provided
+      window.location.reload()
+    }
+  }
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-black/20">
@@ -167,17 +388,17 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksPro
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-64 h-10 bg-[#1a1a1a] text-white rounded-lg pl-10 pr-4 border border-white/[0.08] focus:outline-none focus:ring-2 focus:ring-white/[0.08] placeholder-zinc-400"
               placeholder="Search tasks..."
-              className="w-64 px-4 py-2 pl-10 bg-[#111111] border border-white/[0.08] rounded-lg text-white placeholder:text-white/40 focus:border-white/20"
             />
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
-          <Button 
-            onClick={() => {}}
-            className="bg-[#111111] hover:bg-[#1a1a1a] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
+          <Button
+            onClick={() => setShowGroupsManager(true)}
+            className="bg-[#1a1a1a] hover:bg-[#222] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
           >
-            <Filter className="w-4 h-4 text-blue-500" />
-            Filter
+            <FolderKanban className="w-4 h-4" />
+            Manage Groups
           </Button>
           <Button 
             onClick={handleCreateClick}
@@ -188,6 +409,35 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksPro
           </Button>
         </div>
       </div>
+
+      <TaskFilters
+        onFiltersChange={setFilters}
+        currentUserId={currentUserId}
+        users={users}
+      />
+
+      {showGroupsManager && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-[#1a1a1a] rounded-xl border border-white/[0.08] w-[800px] max-h-[80vh] overflow-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">Manage Task Groups</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowGroupsManager(false)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <TaskGroupsManager
+                taskGroups={taskGroups}
+                onGroupsChange={handleTaskGroupsChange}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto no-scrollbar">
         <AnimatePresence mode="wait">
@@ -212,7 +462,9 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask }: TasksPro
             ) : (
               <TaskList
                 tasks={filteredTasks}
-                onEditClick={handleViewTask}
+                onViewClick={handleViewTask}
+                onEditClick={handleEditTask}
+                onTaskDeleted={handleTaskDeleted}
               />
             )}
           </motion.div>

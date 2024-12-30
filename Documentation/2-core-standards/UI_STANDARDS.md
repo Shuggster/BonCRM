@@ -582,4 +582,110 @@ Split form animations use these spring configurations:
 - Section dividers: `border-white/[0.08]`
 - Rounded corners: `rounded-2xl` for containers, `rounded-lg` for inputs and buttons
 
+## Filter Button Standards
+
+### 1. Filter Button Pattern
+Each filter consists of two parts:
+```typescript
+// 1. Main Filter Button (Always Visible)
+<Button variant="outline" size="sm">
+  <Filter className="w-4 h-4 mr-2" />
+  Filter Name
+</Button>
+
+// 2. Active Filter Pill (Shows when filter is active)
+<Button 
+  size="sm"
+  className="bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30 hover:text-blue-400 hover:border-blue-500/30"
+  onClick={() => clearFilter()}
+>
+  Filter Name: Selected Value
+  <X className="w-4 h-4 ml-2" />
+</Button>
+```
+
+### 2. Filter Container Structure
+```typescript
+// Filter Container Component
+export function FilterName({ selected, onChange }) {
+  return (
+    <div className="flex items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Filter className="w-4 h-4 mr-2" />
+            Filter Name
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56 bg-black border border-white/10">
+          <div className="px-2 py-1.5 text-xs font-medium text-white/50">
+            Filter by Name
+          </div>
+          {/* Filter options */}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {selected && (
+        <Button 
+          size="sm"
+          className="bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30 hover:text-blue-400 hover:border-blue-500/30"
+          onClick={() => onChange(null)}
+        >
+          Filter Name: {selected}
+          <X className="w-4 h-4 ml-2" />
+        </Button>
+      )}
+    </div>
+  )
+}
+```
+
+### 3. Filter Row Layout
+```typescript
+<div className="flex items-center gap-2 px-6 py-3 border-b border-white/[0.08]">
+  <FilterOne />
+  <FilterTwo />
+  <FilterThree />
+</div>
+```
+
+### 4. Filter Styling Guidelines
+- Main Filter Button:
+  - Use `variant="outline" size="sm"`
+  - Always include Filter icon
+  - Maintain consistent height
+  - Dark theme styling
+
+- Active Filter Pill:
+  - Blue theme with transparency
+  - Include X icon for removal
+  - Show selected value
+  - Proper hover states
+
+### 5. Filter Dropdown Standards
+```typescript
+<DropdownMenuContent align="start" className="w-56 bg-black border border-white/10">
+  {/* Header */}
+  <div className="px-2 py-1.5 text-xs font-medium text-white/50">
+    Filter by Category
+  </div>
+  
+  {/* Options */}
+  <DropdownMenuItem
+    className="text-white/70 hover:bg-white/10 hover:text-white"
+    onClick={() => selectOption(value)}
+  >
+    Option Name
+  </DropdownMenuItem>
+</DropdownMenuContent>
+```
+
+Key characteristics:
+- Width: 56 units (w-56)
+- Black background
+- White border with 10% opacity
+- Consistent padding
+- Header text in muted white
+- Hover states on options
+
 // ... existing code ... 
