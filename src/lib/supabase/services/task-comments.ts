@@ -1,9 +1,9 @@
 import { supabase } from '../client'
-import { Session } from '@supabase/supabase-js'
+import { UserSession } from '@/types/users'
 import { TaskComment } from '@/types/comments'
 
 export const taskCommentsService = {
-  async getComments(taskId: string, session: Session) {
+  async getComments(taskId: string, session: UserSession) {
     const { data, error } = await supabase
       .from('task_comments')
       .select('*')
@@ -22,7 +22,7 @@ export const taskCommentsService = {
     })) as TaskComment[]
   },
 
-  async createComment(comment: { taskId: string, content: string }, session: Session) {
+  async createComment(comment: { taskId: string, content: string }, session: UserSession) {
     const { data, error } = await supabase
       .from('task_comments')
       .insert({
@@ -45,7 +45,7 @@ export const taskCommentsService = {
     } as TaskComment
   },
 
-  async updateComment(comment: TaskComment, session: Session) {
+  async updateComment(comment: TaskComment, session: UserSession) {
     const { data, error } = await supabase
       .from('task_comments')
       .update({
@@ -68,7 +68,7 @@ export const taskCommentsService = {
     } as TaskComment
   },
 
-  async deleteComment(commentId: string, session: Session) {
+  async deleteComment(commentId: string, session: UserSession) {
     const { error } = await supabase
       .from('task_comments')
       .delete()

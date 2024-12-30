@@ -104,32 +104,29 @@ const bottomVariants = {
 }
 
 export function SplitViewContainer() {
-  const { isVisible, topContent, bottomContent } = useSplitViewStore()
+  const { isVisible, topContent, bottomContent, selectedId } = useSplitViewStore()
 
   return (
     <AnimatePresence mode="wait">
       {isVisible && (
         <motion.div 
-          className="absolute inset-0 flex items-center bg-black"
+          key={selectedId || 'container'}
+          className="fixed right-0 top-0 bottom-0 w-[600px] flex items-center bg-black/80 pointer-events-auto"
           variants={containerVariants}
           initial="initial"
           animate="animate"
           exit="exit"
         >
-          <div className="w-full max-w-[600px] h-[calc(100%-8rem)] mx-auto relative overflow-y-auto">
-            <div className="min-h-full">
+          <div className="w-full h-[calc(100%-8rem)] relative overflow-y-auto pointer-events-auto">
+            <div className="min-h-full pointer-events-auto">
               {/* Top Card */}
               <motion.div
                 variants={topVariants}
                 initial="initial"
                 animate="animate"
-                className="h-[50%]"
+                className="h-[50%] pointer-events-auto"
               >
-                <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))' }}>
-                  <div className="relative z-10">
-                    {topContent}
-                  </div>
-                </div>
+                {topContent}
               </motion.div>
 
               {/* Bottom Card */}
@@ -137,13 +134,9 @@ export function SplitViewContainer() {
                 variants={bottomVariants}
                 initial="initial"
                 animate="animate"
-                className="h-[50%]"
+                className="h-[50%] pointer-events-auto"
               >
-                <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))' }}>
-                  <div className="relative z-10">
-                    {bottomContent}
-                  </div>
-                </div>
+                {bottomContent}
               </motion.div>
             </div>
           </div>

@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Contact, ContactTag, LeadStatus, LeadSource, ConversionStatus } from "@/types"
 import { cn } from "@/lib/utils"
 import { 
   Phone, Mail, Building2, Briefcase, 
   Calendar, Tags, ChevronDown,
-  LineChart, FileText, Users,
+  LineChart, FileText, Users, User,
   Globe, Linkedin, Twitter, MapPin,
   Video, Tag, X, Factory, Check,
   Save, Plus, Trash2, Edit2,
@@ -22,6 +22,7 @@ import { useSession } from "next-auth/react"
 import { AssignTagsModal } from "./AssignTagsModal"
 import { activityCalendarService } from "@/lib/supabase/services/activity-calendar"
 import { UserSession } from "@/types/users"
+import { LucideIcon } from 'lucide-react'
 
 interface Industry {
   id: string
@@ -66,7 +67,7 @@ const expandConfig = {
 
 interface ExpandableSectionProps {
   title: string
-  icon: React.ElementType
+  icon: LucideIcon
   children: React.ReactNode
 }
 
@@ -74,7 +75,7 @@ function ExpandableSection({ title, icon: Icon, children }: ExpandableSectionPro
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
-    <div className="border-b border-white/10">
+    <div className="last:border-b-0">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02]"
@@ -85,27 +86,29 @@ function ExpandableSection({ title, icon: Icon, children }: ExpandableSectionPro
         </div>
         <ChevronDown 
           className={cn(
-            "w-4 h-4 text-white/40 transition-transform",
+            "w-4 h-4 text-zinc-400 transition-transform",
             isExpanded && "rotate-180"
           )} 
         />
       </button>
 
-      <motion.div
-        initial="initial"
-        animate={isExpanded ? "animate" : "initial"}
-        exit="exit"
-        variants={expandConfig}
-        className="relative overflow-visible"
-      >
+      <AnimatePresence>
         {isExpanded && (
-          <div className="px-4 sm:px-6 py-4">
-            <div className="space-y-4">
-              {children}
+          <motion.div
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={expandConfig}
+            className="relative overflow-visible"
+          >
+            <div className="px-4 sm:px-6 py-4">
+              <div className="space-y-4">
+                {children}
+              </div>
             </div>
-          </div>
+          </motion.div>
         )}
-      </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
@@ -320,30 +323,71 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
   // Upper section content
   if (section === 'upper') {
     return (
-      <div className="flex flex-col">
-        {/* Header with Avatar */}
+      <div className="rounded-t-2xl bg-[#111111] border-b border-white/[0.08]">
+        {/* Main Contact Info */}
         <div className="p-6 border-b border-white/10">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             {/* Contact Info */}
             <div className="flex flex-col sm:flex-row items-start gap-4">
               {/* Avatar/Initials */}
               <div className={cn(
-                "w-16 h-16 rounded-full flex items-center justify-center text-xl font-semibold text-white",
+                "w-24 h-24 rounded-full flex items-center justify-center text-xl font-semibold text-white bg-gradient-to-br border border-white/10 overflow-hidden",
                 colors[colorIndex]
               )}>
-                {initials}
-              </div>
-              
-              <div className="space-y-4 flex-1">
-                <div className="space-y-1">
-                  <h2 className="text-xl font-semibold text-white">
-                    {contact.first_name} {contact.last_name}
-                  </h2>
-                  {contact.job_title && (
-                    <p className="text-sm text-zinc-400">{contact.job_title}</p>
-                  )}
+                <div className="flex items-center justify-center w-full h-full">
+                  {initials}
                 </div>
               </div>
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={contact.first_name}
+                    onChange={(e) => onFieldUpdate('first_name', e.target.value)}
+                    className="bg-[#111111] border-white/10 focus:border-white/20 text-xl font-semibold w-[140px]"
+                    placeholder="First Name"
+                  />
+                  <Input
+                    value={contact.last_name}
+                    onChange={(e) => onFieldUpdate('last_name', e.target.value)}
+                    className="bg-[#111111] border-white/10 focus:border-white/20 text-xl font-semibold w-[140px]"
+                    placeholder="Last Name"
+                  />
+                </div>
+                <Input
+                  value={contact.job_title || ''}
+                  onChange={(e) => onFieldUpdate('job_title', e.target.value)}
+                  className="bg-[#111111] border-white/10 focus:border-white/20 text-sm text-white/60 w-[280px]"
+                  placeholder="Job Title"
+                />
+              </div>
+            </div>
+
+            {/* Quick Action Icons */}
+            <div className="flex gap-2 sm:self-start">
+              <a 
+                href={`tel:${contact.phone}`}
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                title="Call"
+              >
+                <Phone className="w-5 h-5 text-emerald-500 group-hover:text-emerald-400" />
+              </a>
+              <a 
+                href={`https://meet.google.com/new`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                title="Start video call"
+              >
+                <Video className="w-5 h-5 text-purple-500 group-hover:text-purple-400" />
+              </a>
+              <a 
+                href={`mailto:${contact.email}`}
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                title="Send email"
+              >
+                <Mail className="w-5 h-5 text-blue-500 group-hover:text-blue-400" />
+              </a>
             </div>
           </div>
         </div>
@@ -351,33 +395,217 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
         {/* Basic Information */}
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <Label className="text-sm text-zinc-400">Phone</Label>
-              <Input
-                value={contact.phone || ''}
-                onChange={(e) => onFieldUpdate('phone', e.target.value)}
-                className="w-full px-4 py-2 bg-black border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-white/20"
-                placeholder="Enter phone number"
-              />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+              <Phone className="w-5 h-5 text-blue-500" />
+              <div className="flex-1">
+                <div className="text-sm text-zinc-400">Phone</div>
+                <Input
+                  value={contact.phone || ''}
+                  onChange={(e) => onFieldUpdate('phone', e.target.value)}
+                  className="bg-[#111111] border-none focus:border-none text-white"
+                  placeholder="Enter phone number"
+                />
+              </div>
             </div>
-            <div className="space-y-3">
-              <Label className="text-sm text-zinc-400">Email</Label>
-              <Input
-                type="email"
-                value={contact.email || ''}
-                onChange={(e) => onFieldUpdate('email', e.target.value)}
-                className="w-full px-4 py-2 bg-black border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-white/20"
-                placeholder="Enter email address"
-              />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+              <Mail className="w-5 h-5 text-blue-500" />
+              <div className="flex-1">
+                <div className="text-sm text-zinc-400">Email</div>
+                <Input
+                  value={contact.email || ''}
+                  onChange={(e) => onFieldUpdate('email', e.target.value)}
+                  className="bg-[#111111] border-none focus:border-none text-white"
+                  placeholder="Enter email address"
+                  type="email"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {error && (
-          <div className="px-6 py-2">
-            <div className="text-red-400 text-sm">{error}</div>
-          </div>
-        )}
+        {/* Expandable sections */}
+        <div className="divide-y divide-white/[0.08]">
+          <ExpandableSection 
+            title="Contact Details" 
+            icon={User}
+          >
+            {/* Company Information */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                <Building2 className="w-5 h-5 text-blue-500" />
+                <div className="flex-1">
+                  <div className="text-sm text-zinc-400">Company</div>
+                  <Input
+                    value={contact.company || ''}
+                    onChange={(e) => onFieldUpdate('company', e.target.value)}
+                    className="bg-[#111111] border-none focus:border-none text-white"
+                    placeholder="Enter company name"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                <Briefcase className="w-5 h-5 text-blue-500" />
+                <div className="flex-1">
+                  <div className="text-sm text-zinc-400">Department</div>
+                  <Input
+                    value={contact.department || ''}
+                    onChange={(e) => onFieldUpdate('department', e.target.value)}
+                    className="bg-[#111111] border-none focus:border-none text-white"
+                    placeholder="Enter department"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                <Factory className="w-5 h-5 text-blue-500" />
+                <div className="flex-1">
+                  <div className="text-sm text-zinc-400">Industry</div>
+                  <Select
+                    value={contact.industry_id?.toString() || ''}
+                    onValueChange={(value) => onFieldUpdate('industry_id', value)}
+                  >
+                    <SelectTrigger className="bg-[#111111] border-none">
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {industries?.map((industry) => (
+                        <SelectItem key={industry.id} value={industry.id}>
+                          {industry.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Media & Web Links */}
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-white/90 mb-4">Social & Web</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <Globe className="w-5 h-5 text-[#2196F3]" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Website</div>
+                    <Input
+                      value={contact.website || ''}
+                      onChange={(e) => onFieldUpdate('website', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter website URL"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <Linkedin className="w-5 h-5 text-[#0A66C2]" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">LinkedIn</div>
+                    <Input
+                      value={contact.linkedin || ''}
+                      onChange={(e) => onFieldUpdate('linkedin', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter LinkedIn URL"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <Twitter className="w-5 h-5 text-[#1DA1F2]" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Twitter</div>
+                    <Input
+                      value={contact.twitter || ''}
+                      onChange={(e) => onFieldUpdate('twitter', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter Twitter handle"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ExpandableSection>
+          
+          <ExpandableSection 
+            title="Address Information" 
+            icon={MapPin}
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Address Line 1</div>
+                    <Input
+                      value={contact.address_line1 || ''}
+                      onChange={(e) => onFieldUpdate('address_line1', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter address line 1"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Address Line 2</div>
+                    <Input
+                      value={contact.address_line2 || ''}
+                      onChange={(e) => onFieldUpdate('address_line2', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter address line 2"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">City</div>
+                    <Input
+                      value={contact.city || ''}
+                      onChange={(e) => onFieldUpdate('city', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter city"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Region/State</div>
+                    <Input
+                      value={contact.region || ''}
+                      onChange={(e) => onFieldUpdate('region', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter region/state"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Postal Code</div>
+                    <Input
+                      value={contact.postcode || ''}
+                      onChange={(e) => onFieldUpdate('postcode', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter postal code"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-400">Country</div>
+                    <Input
+                      value={contact.country || ''}
+                      onChange={(e) => onFieldUpdate('country', e.target.value)}
+                      className="bg-[#111111] border-none focus:border-none text-white"
+                      placeholder="Enter country"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ExpandableSection>
+        </div>
       </div>
     )
   }
@@ -413,8 +641,8 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
                 Industry
               </Label>
               <Select
-                value={contact.industry_id || '_none'}
-                onValueChange={(value) => onFieldUpdate('industry_id', value === '_none' ? null : value)}
+                value={contact.industry_id?.toString() || ''}
+                onValueChange={(value) => onFieldUpdate('industry_id', value)}
               >
                 <SelectTrigger className="w-full px-4 py-2 bg-black border border-white/10 rounded-lg text-white focus:border-white/20">
                   <SelectValue placeholder="Select industry" className="text-white/40" />

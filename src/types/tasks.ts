@@ -24,6 +24,12 @@ export interface Task {
     name: string
     color: string
   }
+  assigned_user?: {
+    id: string
+    name: string | null
+    email: string
+  }
+  comments_count?: number
 }
 
 export interface TaskGroup {

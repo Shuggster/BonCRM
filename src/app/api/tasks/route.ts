@@ -12,6 +12,38 @@ type TaskResponse = TaskRow & {
   task_groups: TaskGroupRow | null
 }
 
+export async function GET() {
+  try {
+    // Get session from cookie
+    const supabase = createRouteHandlerClient({ cookies })
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Fetch tasks using service role to bypass RLS
+    const { data, error } = await supabaseAdmin
+      .from('tasks')
+      .select('*, task_groups(*)')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('[API] Fetch tasks error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  } catch (error: any) {
+    console.error('[API] Task fetch failed:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch tasks' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const taskData = await request.json()

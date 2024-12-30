@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar, Phone, Mail, Video, ArrowRight } from 'lucide-react'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar, Phone, Mail, Video, ArrowRight, ListTodo } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
@@ -24,7 +24,7 @@ const defaultMetrics: DashboardMetric[] = [
     value: "...",
     change: "...",
     icon: Users,
-    className: "card-contacts"
+    className: "bg-gradient-to-br from-pink-500/30 to-pink-500/10 hover:from-pink-500/40 hover:to-pink-500/20 transition-all"
   },
   {
     id: '2',
@@ -32,7 +32,7 @@ const defaultMetrics: DashboardMetric[] = [
     value: "...",
     change: "...",
     icon: CheckSquare,
-    className: "card-tasks"
+    className: "bg-gradient-to-br from-emerald-500/30 to-emerald-500/10 hover:from-emerald-500/40 hover:to-emerald-500/20 transition-all"
   },
   {
     id: '3',
@@ -40,7 +40,7 @@ const defaultMetrics: DashboardMetric[] = [
     value: "...",
     change: "...",
     icon: Target,
-    className: "card-sales"
+    className: "bg-gradient-to-br from-blue-500/30 to-blue-500/10 hover:from-blue-500/40 hover:to-blue-500/20 transition-all"
   },
   {
     id: '4',
@@ -48,7 +48,7 @@ const defaultMetrics: DashboardMetric[] = [
     value: "...",
     change: "...",
     icon: BarChart3,
-    className: "card-revenue"
+    className: "bg-gradient-to-br from-violet-500/30 to-violet-500/10 hover:from-violet-500/40 hover:to-violet-500/20 transition-all"
   }
 ]
 
@@ -86,16 +86,14 @@ export default function DashboardPage() {
   }, [])
 
   const handleMetricClick = useCallback((metric: DashboardMetric) => {
-    // Reset state and hide current view
     hide();
     setSelectedMetric(metric);
     
-    // Small delay to ensure hide animation completes
     setTimeout(() => {
       const topContent = (
         <motion.div 
-          key={metric.id} // Add key to force remount
-          className="h-full bg-[#111111]"
+          key={metric.id}
+          className="h-full bg-[#111111] rounded-t-2xl"
           initial={{ y: "-100%" }}
           animate={{ 
             y: 0,
@@ -127,8 +125,8 @@ export default function DashboardPage() {
 
       const bottomContent = (
         <motion.div 
-          key={`${metric.id}-bottom`} // Add key to force remount
-          className="h-full bg-[#111111]"
+          key={`${metric.id}-bottom`}
+          className="h-full bg-[#111111] rounded-b-2xl"
           initial={{ y: "100%" }}
           animate={{ 
             y: 0,
@@ -139,7 +137,7 @@ export default function DashboardPage() {
             }
           }}
         >
-          <div className="p-8 pt-6 border-t border-white/[0.03]">
+          <div className="p-8 border-t border-white/[0.03]">
             <div className="space-y-6">
               {metric.name === "Total Contacts" && (
                 <div className="space-y-4">
@@ -486,9 +484,9 @@ export default function DashboardPage() {
   // Set up initial split view content
   useEffect(() => {
     const setupInitialContent = () => {
-      const topContent = (
+      const initialTopContent = (
         <motion.div 
-          className="h-full bg-[#111111]"
+          className="h-full bg-[#111111] rounded-t-2xl"
           initial={{ y: "-100%" }}
           animate={{ 
             y: 0,
@@ -513,9 +511,9 @@ export default function DashboardPage() {
         </motion.div>
       )
 
-      const bottomContent = (
+      const initialBottomContent = (
         <motion.div 
-          className="h-full bg-[#111111]"
+          className="h-full bg-[#111111] rounded-b-2xl"
           initial={{ y: "100%" }}
           animate={{ 
             y: 0,
@@ -526,7 +524,7 @@ export default function DashboardPage() {
             }
           }}
         >
-          <div className="p-8">
+          <div className="p-8 border-t border-white/[0.03]">
             {activities.length > 0 ? (
               <div className="space-y-6">
                 {activities.map((activity, index) => (
@@ -561,11 +559,10 @@ export default function DashboardPage() {
         </motion.div>
       )
 
-      setContent(topContent, bottomContent)
+      setContent(initialTopContent, initialBottomContent)
       show()
     }
 
-    // Use requestAnimationFrame to ensure DOM is ready
     requestAnimationFrame(setupInitialContent)
 
     return () => {
@@ -663,7 +660,9 @@ export default function DashboardPage() {
                   duration: 0.5,
                   ease: [0.32, 0.72, 0, 1]
                 }}
-                className={`dashboard-card relative overflow-hidden rounded-xl p-6 ${metric.className} cursor-pointer`}
+                className={`dashboard-card relative overflow-hidden rounded-xl p-6 bg-[#111111] border border-white/10 cursor-pointer ${metric.className}
+                  before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/[0.03] before:to-transparent before:pointer-events-none
+                  after:absolute after:inset-0 after:bg-gradient-to-br after:from-white/[0.06] after:to-transparent after:opacity-0 after:transition-opacity after:duration-500 hover:after:opacity-100`}
                 onClick={() => handleMetricClick(metric)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -712,35 +711,44 @@ export default function DashboardPage() {
                 duration: 0.5,
                 ease: [0.32, 0.72, 0, 1]
               }}
-              className={`dashboard-card rounded-xl p-6 content-card`}
+              className="space-y-4"
             >
-              <div className="flex items-center gap-2 mb-6">
-                <CheckSquare className="h-6 w-6" />
-                <h2 className="text-xl font-semibold">Recent Tasks</h2>
-              </div>
-              <div className="space-y-4">
-                {tasks.length > 0 ? tasks.map((task, index) => (
-                  <div 
-                    key={task.id} 
-                    className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
-                  >
-                    <h3 className="font-medium">{task.title}</h3>
-                    <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                        task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-orange-500/20 text-orange-400'
-                      }`}>
-                        {task.status}
-                      </span>
+              <div className="bg-[#111111] rounded-2xl">
+                <div className="p-8">
+                  <div className="flex items-start gap-6">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                      <ListTodo className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-semibold">Recent Tasks</h2>
+                      <p className="text-zinc-400 mt-1">Your latest tasks and to-dos</p>
                     </div>
                   </div>
-                )) : (
-                  <div className="text-center py-4 text-zinc-500">
-                    No tasks available
+                  <div className="mt-8 space-y-4">
+                    {tasks.length > 0 ? tasks.map((task, index) => (
+                      <div 
+                        key={task.id} 
+                        className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
+                      >
+                        <h3 className="font-medium">{task.title}</h3>
+                        <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                            task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-orange-500/20 text-orange-400'
+                          }`}>
+                            {task.status}
+                          </span>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-4 text-zinc-500">
+                        No tasks available
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </motion.div>
 
@@ -754,33 +762,45 @@ export default function DashboardPage() {
                 duration: 0.5,
                 ease: [0.32, 0.72, 0, 1]
               }}
-              className={`dashboard-card rounded-xl p-6 content-card`}
+              className="space-y-4"
             >
-              <div className="flex items-center gap-2 mb-6">
-                <Calendar className="h-6 w-6" />
-                <h2 className="text-xl font-semibold">Upcoming Activities</h2>
-              </div>
-              <div className="space-y-4">
-                {activities.length > 0 ? activities.map((activity, index) => (
-                  <div 
-                    key={activity.id} 
-                    className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
-                  >
-                    <h3 className="font-medium">{activity.title}</h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-zinc-400">
-                        {formatDate(activity.scheduled_for)}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400`}>
-                        {activity.type}
-                      </span>
+              <div className="bg-[#111111] rounded-2xl">
+                <div className="p-8">
+                  <div className="flex items-start gap-6">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                      <Calendar className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-semibold">Upcoming Activities</h2>
+                      <p className="text-zinc-400 mt-1">Your scheduled meetings and calls</p>
                     </div>
                   </div>
-                )) : (
-                  <div className="text-center py-4 text-zinc-500">
-                    No upcoming activities
+                  <div className="mt-8 space-y-4">
+                    {activities.length > 0 ? activities.map((activity, index) => (
+                      <div 
+                        key={activity.id} 
+                        className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                            {activity.type === 'call' && <Phone className="w-5 h-5" />}
+                            {activity.type === 'email' && <Mail className="w-5 h-5" />}
+                            {activity.type === 'meeting' && <Video className="w-5 h-5" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium truncate">{activity.title}</h3>
+                            <p className="text-sm text-zinc-400 mt-1">{activity.description}</p>
+                            <p className="text-xs text-zinc-500 mt-2">{formatDate(activity.scheduled_for)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-4 text-zinc-500">
+                        No upcoming activities
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </motion.div>
           </motion.div>

@@ -10,13 +10,78 @@ This project is currently undergoing a UI modernization:
 - When working on features, ensure you're using the new implementation patterns
 - **WARNING:** Some old implementation files still exist but should not be modified
 
-## 🏗 Technical Stack
-- **Frontend**: Next.js 13+ with App Router
-- **Backend**: Supabase (PostgreSQL + Auth)
-- **Styling**: TailwindCSS
-- **Animations**: Framer Motion
-- **State Management**: React Hooks + Context
-- **Forms**: React Hook Form + Zod
+## 🏗 Technical Stack & Requirements
+
+### Core Dependencies
+- **Node.js**: ^18.0.0
+- **Next.js**: ^13.4.0 (with App Router)
+- **React**: ^18.2.0
+- **TypeScript**: ^5.0.0
+
+### Key Dependencies
+- **Database**: Supabase ^2.39.0
+- **Styling**: TailwindCSS ^3.3.0
+- **Animations**: Framer Motion ^10.16.0
+- **Forms**: React Hook Form ^7.45.0 + Zod ^3.22.0
+- **UI Components**: shadcn/ui ^0.4.0
+- **Icons**: Lucide React ^0.294.0
+
+### State Management
+We use a hybrid approach to state management:
+1. **Local State**: For component-specific state
+2. **React Context**: For shared state within feature boundaries
+3. **Supabase Realtime**: For real-time data synchronization
+4. **URL State**: For shareable/bookmarkable states
+
+Example Context Usage:
+```typescript
+// contexts/ContactContext.tsx
+export const ContactContext = createContext<ContactContextType | undefined>(undefined)
+
+export function ContactProvider({ children }: { children: React.ReactNode }) {
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  
+  // Realtime subscription setup
+  useEffect(() => {
+    const subscription = supabase
+      .channel('contacts')
+      .on('*', handleRealtimeUpdate)
+      .subscribe()
+    
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  return (
+    <ContactContext.Provider value={{
+      contacts,
+      selectedContact,
+      setSelectedContact
+    }}>
+      {children}
+    </ContactContext.Provider>
+  )
+}
+```
+
+## 📱 Responsive Design
+The three-column layout adapts across breakpoints:
+
+- **Desktop** (1024px+):
+  - All three columns visible
+  - Full functionality
+
+- **Tablet** (768px - 1023px):
+  - Navigation collapses to icons
+  - Two columns visible
+  - Split view as modal
+
+- **Mobile** (< 768px):
+  - Single column view
+  - Navigation as bottom bar
+  - Modal for details/forms
 
 ## 📦 Core Features
 
@@ -64,12 +129,6 @@ Every page follows our standard three-column layout:
    - Detail view
    - Quick actions
 
-### Animation System
-- Page transitions
-- Split view animations
-- List item animations
-- Micro-interactions
-
 ## 🔧 Development Standards
 
 ### 1. Code Organization
@@ -77,95 +136,56 @@ Every page follows our standard three-column layout:
 src/
   ├── app/              # Next.js app router pages
   ├── components/       # Reusable components
+  │   ├── ui/          # Base UI components
+  │   ├── forms/       # Form components
+  │   ├── layouts/     # Layout components
+  │   └── features/    # Feature-specific components
   ├── lib/             # Utilities and helpers
   ├── hooks/           # Custom React hooks
+  ├── contexts/        # React Context providers
   ├── types/           # TypeScript definitions
   └── styles/          # Global styles
 ```
 
-### 2. Component Pattern
+### 2. Testing Requirements
+- Unit tests for utilities (Jest)
+- Component tests (React Testing Library)
+- E2E tests for critical paths (Playwright)
+- Accessibility testing (axe-core)
+- Performance testing (Lighthouse)
+
+### 3. Error Handling
 ```typescript
-// Standard component structure
-export function ComponentName({
-  prop1,
-  prop2
-}: ComponentProps) {
-  // 1. Hooks
-  const [state, setState] = useState()
-  
-  // 2. Derived state
-  const computed = useMemo(() => {}, [])
-  
-  // 3. Effects
-  useEffect(() => {}, [])
-  
-  // 4. Event handlers
-  const handleEvent = () => {}
-  
-  // 5. Render
+// Standard error boundary
+export function ErrorBoundary({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      {/* Component JSX */}
-    </div>
+    <ErrorBoundaryComponent
+      fallback={({ error }) => (
+        <div className="p-8 bg-red-500/10 rounded-xl border border-red-500/20">
+          <h3 className="text-lg font-semibold text-red-400">
+            Something went wrong
+          </h3>
+          <p className="mt-2 text-sm text-red-300">
+            {error.message}
+          </p>
+        </div>
+      )}
+    >
+      {children}
+    </ErrorBoundaryComponent>
   )
 }
-```
 
-### 3. Database Schema
-```sql
--- Core tables
-contacts (
-  id uuid PRIMARY KEY,
-  name text,
-  email text,
-  created_at timestamptz DEFAULT now()
-)
-
-tasks (
-  id uuid PRIMARY KEY,
-  title text,
-  status text,
-  created_at timestamptz DEFAULT now()
-)
-
-calendar_events (
-  id uuid PRIMARY KEY,
-  title text,
-  start_time timestamptz,
-  created_at timestamptz DEFAULT now()
-)
-```
-
-## 🚀 Getting Started
-
-### 1. Environment Setup
-```bash
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env.local
-
-# Start development server
-npm run dev
-```
-
-### 2. Key URLs
-- Development: http://localhost:3000
-- API Documentation: http://localhost:3000/api-docs
-- Storybook: http://localhost:6006
-
-### 3. Essential Commands
-```bash
-# Development
-npm run dev         # Start development server
-npm run build      # Build production version
-npm run lint       # Run linter
-npm run test       # Run tests
-
-# Database
-npm run db:migrate  # Run migrations
-npm run db:seed    # Seed database
+// API error handling
+async function handleApiError(error: unknown) {
+  if (error instanceof ApiError) {
+    toast.error(error.message)
+    return
+  }
+  
+  console.error(error)
+  toast.error('An unexpected error occurred')
+}
 ```
 
 ## 📚 Documentation Structure
@@ -173,9 +193,19 @@ npm run db:seed    # Seed database
 ```
 Documentation/
   ├── 1-getting-started/    # Setup and overview
+  │   ├── NEW_AGENT_GUIDE.md
+  │   └── PROJECT_OVERVIEW.md
   ├── 2-core-standards/     # UI and code standards
+  │   ├── UI_STANDARDS.md
+  │   ├── TESTING_STANDARDS.md
+  │   └── STATE_MANAGEMENT.md
   ├── 3-implementation/     # Feature guides
+  │   ├── CONTACTS.md
+  │   ├── TASKS.md
+  │   └── CALENDAR.md
   └── 4-maintenance/        # Troubleshooting
+      ├── DEPLOYMENT.md
+      └── MONITORING.md
 ```
 
 ## 🔄 Development Workflow
@@ -193,13 +223,6 @@ Documentation/
 - Ensure accessibility
 - Test performance
 - Update documentation
-
-### 3. Testing Requirements
-- Unit tests for utilities
-- Component tests
-- Animation testing
-- Performance testing
-- Accessibility testing
 
 ## 🎯 Current Focus
 - Implementing new UI patterns

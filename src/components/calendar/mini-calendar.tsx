@@ -33,24 +33,24 @@ export function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) 
   const days = getDaysInMonth(currentMonth)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-[#111111] rounded-lg border border-white/10 p-3">
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="hover:bg-white/5"
+          className="h-7 w-7 bg-[#111111] border-white/10 p-0 hover:bg-white/5 hover:text-white"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-white">
           {format(currentMonth, 'MMMM yyyy')}
         </span>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          className="hover:bg-white/5"
+          className="h-7 w-7 bg-[#111111] border-white/10 p-0 hover:bg-white/5 hover:text-white"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -58,7 +58,7 @@ export function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) 
 
       <div className="grid grid-cols-7 gap-1 text-center">
         {WEEKDAYS.map(({ key, label }) => (
-          <div key={key} className="text-xs text-muted-foreground">
+          <div key={key} className="text-xs text-white/60">
             {label}
           </div>
         ))}
@@ -68,10 +68,10 @@ export function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) 
             variant="ghost"
             size="sm"
             className={cn(
-              "h-8 w-8 p-0 hover:bg-white/10",
-              !isSameMonth(day, currentMonth) && "text-muted-foreground/50",
-              isSameDay(day, selectedDate) && "bg-purple-500/20 text-purple-500",
-              isSameDay(day, new Date()) && "ring-1 ring-purple-500/20"
+              "h-8 w-8 p-0 font-normal text-white/90 hover:bg-white/5",
+              !isSameMonth(day, currentMonth) && "text-white/40 opacity-50",
+              isSameDay(day, selectedDate) && "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 font-medium",
+              isSameDay(day, new Date()) && "ring-1 ring-blue-500/20"
             )}
             onClick={() => onDateSelect(day)}
           >

@@ -19,490 +19,404 @@ The application follows a consistent three-column layout pattern across all page
    - Default state shows two cards that merge into one
    - Each page has a designated default view
 
-## Card Standards (Based on ViewContact)
+## Card Standards
 
 ### 1. Card Structure
+Cards follow a consistent pattern with rounded corners on the first and last cards in a stack:
+
 ```typescript
-// Split card pattern
+// Single Card Pattern
+<div className="bg-[#111111] rounded-2xl">
+  <div className="p-8">
+    <div className="flex items-start gap-6">
+      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+        <Icon className="w-8 h-8" />
+      </div>
+      <div className="flex-1">
+        <h2 className="text-2xl font-semibold">Card Title</h2>
+        <p className="text-zinc-400 mt-1">Card description</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+// Split Card Pattern (for split views)
 <div className="relative">
   {/* Upper Card */}
-  <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" 
-    style={{ 
-      background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01))', 
-      borderBottom: '1px solid rgba(255, 255, 255, 0.08)' 
-    }}>
-    {/* Card content */}
+  <div className="h-full bg-[#111111] rounded-t-2xl">
+    <div className="p-8">
+      {/* Card content */}
+    </div>
   </div>
 
   {/* Lower Card */}
-  <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" 
-    style={{ 
-      background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01))', 
-      borderTop: '1px solid rgba(255, 255, 255, 0.08)' 
-    }}>
-    {/* Card content */}
+  <div className="h-full bg-[#111111] rounded-b-2xl">
+    <div className="p-8 border-t border-white/[0.03]">
+      {/* Card content */}
+    </div>
   </div>
 </div>
 ```
 
 ### 2. Typography Standards
-- Headers: text-xl font-semibold text-white
+- Headers: text-2xl font-semibold text-white
 - Subheaders: text-lg font-medium text-white
 - Labels: text-sm text-white/70
 - Body text: text-sm text-white/90
 - Secondary text: text-sm text-white/60
 - Placeholder text: text-white/40
 
-### 3. Input Fields & Forms
-```typescript
-// Standard form container
-<div className="space-y-6 bg-black rounded-xl p-4">
-  {/* Form sections */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-    {/* Form field groups */}
-    <div className="space-y-3">
-      <Label className="text-sm text-white/70">Field Label</Label>
-      <Input
-        className="w-full px-4 py-2 bg-black border border-white/10 rounded-md text-white placeholder:text-white/40 focus:border-white/20"
-        placeholder="Enter value"
-      />
-    </div>
-  </div>
-</div>
+## Form Creation Standards
 
-// Select field with consistent styling
-<div className="space-y-3">
-  <Label className="text-sm text-white/70">Select Label</Label>
-  <Select>
-    <SelectTrigger className="bg-black border-white/10 focus:border-white/20 px-4 py-2">
-      <SelectValue placeholder="Select option" className="text-white/40" />
-    </SelectTrigger>
-    <SelectContent className="bg-black border-white/10">
-      <SelectItem className="text-white hover:bg-white/10" />
-    </SelectContent>
-  </Select>
-</div>
-
-// Textarea field
-<div className="space-y-3">
-  <Label className="text-sm text-white/70">Textarea Label</Label>
-  <textarea
-    className="min-h-[100px] w-full rounded-md border bg-black px-4 py-3 text-sm shadow-sm placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 border-white/10 focus:border-white/20"
-    placeholder="Enter text..."
-  />
-</div>
-
-// Button group (e.g., for activity types)
-<div className="space-y-3">
-  <Label className="text-sm text-white/70">Button Group Label</Label>
-  <div className="grid grid-cols-2 gap-3">
-    <button
-      className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors bg-black border-white/10 hover:border-white/20 text-white/60 hover:text-white/90"
-    >
-      <Icon className="w-4 h-4" />
-      <span>Button Text</span>
-    </button>
-    {/* Selected state */}
-    <button
-      className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors bg-blue-500/20 border-blue-500/30 text-blue-400"
-    >
-      <Icon className="w-4 h-4" />
-      <span>Selected Button</span>
-    </button>
-  </div>
-</div>
-```
-
-### Form Layout Standards
-
-1. **Spacing**
-- Container padding: `p-4`
-- Vertical spacing between sections: `space-y-6`
-- Vertical spacing between label and input: `space-y-3`
-- Grid gap between columns: `gap-6`
-- Button group gaps: `gap-3`
-
-2. **Grid Layout**
-- Default to single column on mobile: `grid-cols-1`
-- Two columns on larger screens: `sm:grid-cols-2`
-- Full-width inputs within their columns
-- Button groups use appropriate grid columns based on content (e.g., `grid-cols-2` for activity types, `grid-cols-3` for durations)
-
-3. **Input Styling**
-- Background: `bg-black`
-- Border: `border-white/10`
-- Focus border: `focus:border-white/20`
-- Text color: `text-white`
-- Placeholder: `placeholder:text-white/40`
-- Padding: `px-4 py-2`
-- Border radius: `rounded-md`
-
-4. **Label Styling**
-- Size: `text-sm`
-- Color: `text-white/70`
-- Spacing below: Part of parent's `space-y-3`
-
-5. **Button States**
-- Default: `bg-black border-white/10 text-white/60`
-- Hover: `hover:border-white/20 hover:text-white/90`
-- Selected: `bg-{color}-500/20 border-{color}-500/30 text-{color}-400`
-- Disabled: `disabled:cursor-not-allowed disabled:opacity-50`
-
-6. **Form Section Organization**
-```typescript
-<ExpandableSection title="Section Title" icon={Icon}>
-  <div className="space-y-6 bg-black rounded-xl p-4">
-    {/* Primary content groups */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {/* Form fields */}
-    </div>
-    
-    {/* Full-width elements */}
-    <div className="space-y-3">
-      {/* Textarea or full-width inputs */}
-    </div>
-    
-    {/* Action buttons */}
-    <div className="flex justify-end">
-      <Button className="bg-black border-white/10 hover:bg-white/5">
-        Action
-      </Button>
-    </div>
-  </div>
-</ExpandableSection>
-```
-
-7. **Form Error Handling**
-```typescript
-// Error message display
-<div className="px-6 py-4">
-  <div className="text-red-400 text-sm">{error}</div>
-</div>
-
-// Input with error state
-<Input
-  className={cn(
-    inputClassName,
-    error && "border-red-500/50 focus:border-red-500/70"
-  )}
-/>
-```
-
-8. **Loading States**
-```typescript
-// Loading spinner for buttons
-<Button disabled={loading}>
-  {loading ? (
-    <div className="flex items-center gap-2">
-      <div className="w-4 h-4 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
-      Loading...
-    </div>
-  ) : (
-    <>
-      <Icon className="w-4 h-4" />
-      Action
-    </>
-  )}
-</Button>
-
-// Loading state for form sections
-<div className="text-sm text-white/60">Loading...</div>
-```
-
-9. **Empty States**
-```typescript
-// Empty state for lists or sections
-<div className="text-sm text-white/60 py-4 text-center">
-  No items to display
-</div>
-```
-
-10. **Form Actions**
-```typescript
-// Standard action buttons container
-<div className="flex justify-end gap-3 mt-6">
-  <Button
-    variant="ghost"
-    onClick={onCancel}
-    className="text-white/70 hover:text-white/90"
-  >
-    Cancel
-  </Button>
-  <Button
-    type="submit"
-    disabled={saving || !isValid}
-    className="bg-black border-white/10 hover:bg-white/5"
-  >
-    {saving ? 'Saving...' : 'Save Changes'}
-  </Button>
-</div>
-
-// Add new item button
-<Button
-  onClick={onAdd}
-  variant="outline"
-  className="w-full border-dashed bg-black border-white/10 hover:border-white/20"
->
-  <Plus className="h-4 w-4 mr-2" />
-  Add Item
-</Button>
-```
-
-11. **Nested Form Sections**
-```typescript
-// Form within a form section
-<div className="space-y-4 p-4 rounded-lg bg-black border border-white/10">
-  <div className="space-y-3">
-    <Input className={inputClassName} />
-  </div>
-  <div className="flex justify-end">
-    <Button className="bg-black border-white/10 hover:bg-white/5">
-      Action
-    </Button>
-  </div>
-</div>
-```
-
-12. **Form Field Variants**
-```typescript
-// Required field label
-<Label className="text-sm text-white/70 flex items-center gap-2">
-  Field Label
-  <span className="text-red-400">*</span>
-</Label>
-
-// Field with helper text
-<div className="space-y-2">
-  <Label className="text-sm text-white/70">Field Label</Label>
-  <Input className={inputClassName} />
-  <p className="text-xs text-white/40">Helper text provides additional context</p>
-</div>
-
-// Field with icon
-<div className="relative">
-  <Input
-    className={cn(inputClassName, "pl-10")}
-    placeholder="Search..."
-  />
-  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-</div>
-```
-
-### Common Patterns
-
-1. **Date & Time Fields**
-```typescript
-// Date input with consistent styling
-<Input
-  type="date"
-  className={cn(inputClassName, "px-4 py-2")}
-  value={date}
-  onChange={(e) => setDate(e.target.value)}
-/>
-
-// DateTime input
-<Input
-  type="datetime-local"
-  className={cn(inputClassName, "px-4 py-2")}
-  value={datetime?.toISOString().slice(0, 16) || ''}
-  onChange={(e) => setDatetime(new Date(e.target.value))}
-/>
-```
-
-2. **Number Fields**
-```typescript
-// Number input with constraints
-<Input
-  type="number"
-  min="0"
-  max="100"
-  className={cn(inputClassName, "px-4 py-2")}
-  value={value}
-  onChange={(e) => setValue(parseInt(e.target.value))}
-/>
-```
-
-3. **Conditional Rendering**
-```typescript
-// Toggle between view/edit modes
-{isEditing ? (
-  <Input
-    value={value}
-    onChange={(e) => setValue(e.target.value)}
-    className={inputClassName}
-  />
-) : (
-  <div className="text-sm text-white/90">{value || 'Not set'}</div>
-)}
-
-// Optional fields
-{optionalField && (
-  <div className="space-y-3">
-    <Label className="text-sm text-white/70">Optional Field</Label>
-    <Input className={inputClassName} />
-  </div>
-)}
-```
-
-### Form State Management Standards
-
-### 1. Context-Based Form State
-For forms that span multiple sections or components, use the ContactFormContext pattern:
+### 1. Form Component Structure
+Forms should be created using our standardized form component structure. Each form follows a three-card pattern with consistent styling:
 
 ```typescript
-// 1. Create a form context (e.g., ContactFormContext.tsx)
-interface FormData {
-  // Define your form fields
-  field1: string;
-  field2: string;
-  // ...
-}
-
-const FormContext = createContext<{
-  formData: FormData;
-  updateField: (field: keyof FormData, value: any) => void;
-  resetForm: () => void;
-  isSubmitting: boolean;
-  setIsSubmitting: (value: boolean) => void;
-  error: string | null;
-  setError: (error: string | null) => void;
-} | undefined>(undefined);
-
-// 2. Wrap your form sections with the provider
-<FormProvider>
-  <motion.div className="h-full">
-    <FormSection section="upper" />
-  </motion.div>
-  <motion.div className="h-full">
-    <FormSection section="lower" />
-  </motion.div>
-</FormProvider>
-
-// 3. Use the context in your form components
-function FormSection() {
-  const { 
-    formData, 
-    updateField, 
-    isSubmitting,
-    setIsSubmitting,
-    error,
-    setError 
-  } = useFormContext();
+// Form Container Component (e.g., NewContactForm.tsx)
+export default function NewContactForm() {
+  // Form state management
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
-  // Your form logic here
-}
-```
+  // Form validation setup
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      jobTitle: '',
+      email: '',
+      phone: '',
+      notes: ''
+    },
+    resolver: zodResolver(formSchema)
+  })
 
-### 2. Form Validation Standards
-```typescript
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  
-  // 1. Field validation
-  const trimmedValues = {
-    field1: formData.field1.trim(),
-    field2: formData.field2.trim(),
-  };
-  
-  // 2. Required field checks
-  if (!trimmedValues.field1) {
-    setError('Field 1 is required');
-    return;
-  }
-  
-  // 3. Submission state management
-  setIsSubmitting(true);
-  try {
-    await onSubmit(trimmedValues);
-    resetForm();
-  } catch (err: any) {
-    setError(err.message || 'An error occurred');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-```
-
-### 3. Form Animation Standards
-For split-view forms, use consistent animation patterns:
-```typescript
-<motion.div
-  key="form-section"
-  className="h-full"
-  initial={{ y: section === 'upper' ? "-100%" : "100%" }}
-  animate={{ 
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 50,
-      damping: 15
+  // Form submission handler
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      // Form submission logic
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsSubmitting(false)
     }
-  }}
->
-  <FormSection />
-</motion.div>
-```
+  }
 
-### 4. Form Error Handling
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Basic Information Card */}
+      <div className="bg-[#111111] rounded-t-2xl">
+        <div className="p-8">
+          <div className="flex items-start gap-6">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+              <Icon className="w-8 h-8" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold">Basic Information</h2>
+              <p className="text-zinc-400 mt-1">Enter the contact's details</p>
+            </div>
+          </div>
+          
+          <div className="mt-8 space-y-6">
+            {/* Name Fields */}
+            <div className="grid grid-cols-2 gap-6">
+              <Input
+                label="First Name"
+                {...register('firstName')}
+                error={errors.firstName?.message}
+                placeholder="Enter first name"
+                className="bg-[#111111]"
+              />
+              <Input
+                label="Last Name"
+                {...register('lastName')}
+                error={errors.lastName?.message}
+                placeholder="Enter last name"
+                className="bg-[#111111]"
+              />
+            </div>
+            
+            {/* Job Title */}
+            <Input
+              label="Job Title"
+              {...register('jobTitle')}
+              error={errors.jobTitle?.message}
+              placeholder="Enter job title"
+              className="bg-[#111111]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Information Card */}
+      <div className="bg-[#111111]">
+        <div className="p-8">
+          <div className="space-y-6">
+            {/* Contact Information */}
+            <div className="grid grid-cols-2 gap-6">
+              <Input
+                label="Email"
+                {...register('email')}
+                error={errors.email?.message}
+                type="email"
+                icon={<Mail className="w-4 h-4" />}
+                placeholder="Enter email"
+                className="bg-[#111111]"
+              />
+              <Input
+                label="Phone"
+                {...register('phone')}
+                error={errors.phone?.message}
+                type="tel"
+                icon={<Phone className="w-4 h-4" />}
+                placeholder="Enter phone"
+                className="bg-[#111111]"
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-3">
+              <Label>Notes</Label>
+              <textarea
+                {...register('notes')}
+                className="w-full min-h-[100px] bg-[#111111] rounded-lg border border-white/10 p-4 text-sm text-white placeholder:text-white/40"
+                placeholder="Add any additional notes..."
+              />
+              {errors.notes?.message && (
+                <p className="text-sm text-red-400">{errors.notes.message}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form Actions Card */}
+      <div className="bg-[#111111] rounded-b-2xl">
+        <div className="p-8">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+          
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => {/* Handle cancel */}}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="bg-[#111111] hover:bg-white/5"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Contact'
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </form>
+  )
+}
+
+// Form validation schema
+const formSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  jobTitle: z.string().optional(),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  notes: z.string().optional()
+})
+
+### 2. Input Field Standards
+All input fields should use our custom Input component with consistent styling:
+
 ```typescript
-// 1. Error display component
-<div className="rounded-md bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
-  {error}
-</div>
-
-// 2. Field-level error states
+// Standard Input Field
 <Input
-  className={cn(
-    "w-full px-4 py-2 bg-black border rounded-md text-white",
-    "placeholder:text-white/40 focus:border-white/20",
-    error && "border-red-500/50 focus:border-red-500/70"
-  )}
-  aria-invalid={error ? "true" : "false"}
+  label="Field Label"
+  {...register('fieldName')}
+  error={errors.fieldName?.message}
+  placeholder="Enter value"
+  className="bg-[#111111]"
 />
 
-// 3. Loading states
-<Button disabled={isSubmitting}>
-  {isSubmitting ? (
-    <>
-      <LoadingSpinner className="w-4 h-4 mr-2" />
-      Saving...
-    </>
-  ) : 'Save'}
+// Input with Icon
+<Input
+  label="Email"
+  {...register('email')}
+  error={errors.email?.message}
+  type="email"
+  icon={<Mail className="w-4 h-4" />}
+  placeholder="Enter email"
+  className="bg-[#111111]"
+/>
+
+// Textarea Field
+<div className="space-y-3">
+  <Label>Notes</Label>
+  <textarea
+    {...register('notes')}
+    className="w-full min-h-[100px] bg-[#111111] rounded-lg border border-white/10 p-4 text-sm text-white placeholder:text-white/40"
+    placeholder="Add any additional notes..."
+  />
+  {errors.notes?.message && (
+    <p className="text-sm text-red-400">{errors.notes.message}</p>
+  )}
+</div>
+```
+
+### 3. Form Layout Guidelines
+- Use grid layout for multiple fields: `grid grid-cols-2 gap-6`
+- Consistent spacing between sections: `space-y-6`
+- Consistent padding inside cards: `p-8`
+- Icon containers: `w-16 h-16 rounded-xl`
+- Form field spacing: `mt-8 space-y-6`
+- Error message spacing: `mb-6`
+- Button spacing: `gap-4`
+
+### 4. Form Validation and State Management
+Forms should implement consistent validation and state management:
+
+```typescript
+// Form validation setup
+const { register, handleSubmit, formState: { errors } } = useForm({
+  defaultValues: {
+    // Define default values
+  },
+  resolver: zodResolver(formSchema)
+})
+
+// Form state management
+const [isSubmitting, setIsSubmitting] = useState(false)
+const [error, setError] = useState<string | null>(null)
+
+// Form submission handler
+const onSubmit = async (data: FormData) => {
+  setIsSubmitting(true)
+  setError(null)
+  try {
+    // Form submission logic
+  } catch (err) {
+    setError(err.message)
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
+// Form validation schema
+const formSchema = z.object({
+  // Define validation rules
+  fieldName: z.string().min(1, 'Field is required'),
+  email: z.string().email('Invalid email address'),
+  // ...
+})
+```
+
+## Color System
+
+### Backgrounds
+- Card background: `bg-[#111111]`
+- Input fields: `bg-[#111111]`
+- Hover states: `hover:bg-white/5`
+
+### Gradients
+Dashboard metric cards use consistent gradient patterns:
+```typescript
+const gradientClasses = {
+  pink: "from-pink-500/30 to-pink-500/10 hover:from-pink-500/40 hover:to-pink-500/20",
+  emerald: "from-emerald-500/30 to-emerald-500/10 hover:from-emerald-500/40 hover:to-emerald-500/20",
+  blue: "from-blue-500/30 to-blue-500/10 hover:from-blue-500/40 hover:to-blue-500/20",
+  violet: "from-violet-500/30 to-violet-500/10 hover:from-violet-500/40 hover:to-violet-500/20"
+}
+```
+
+### Borders
+- Primary border: `border-white/10`
+- Dividers: `border-white/[0.03]`
+- Focus states: `border-white/20`
+
+### Text Colors
+- Primary text: `text-white`
+- Secondary text: `text-white/60`
+- Tertiary text: `text-white/40`
+- Labels: `text-zinc-400`
+
+## Button Standards
+
+### 1. Primary Action Button
+The standard dark button style used across the application:
+```typescript
+<Button
+  className="bg-[#1a1a1a] hover:bg-[#222] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
+>
+  <Plus className="w-4 h-4" />
+  Button Text
 </Button>
 ```
 
-### 5. Form Field Organization
-Group related fields together and maintain consistent spacing:
-```typescript
-<div className="space-y-6">
-  {/* Personal Information */}
-  <fieldset className="space-y-4">
-    <legend className="text-lg font-medium text-white mb-4">
-      Personal Information
-    </legend>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Input name="first_name" label="First Name" required />
-      <Input name="last_name" label="Last Name" />
-    </div>
-  </fieldset>
+Key characteristics:
+- Dark background (`bg-[#1a1a1a]`)
+- Subtle hover state (`hover:bg-[#222]`)
+- White border with low opacity (`border border-white/[0.08]`)
+- Icon + Text layout with consistent spacing
+- Fixed height of 40px (`h-10`)
+- Medium font weight
+- Rounded corners (`rounded-lg`)
 
-  {/* Contact Information */}
-  <fieldset className="space-y-4">
-    <legend className="text-lg font-medium text-white mb-4">
-      Contact Information
-    </legend>
-    <div className="grid grid-cols-1 gap-4">
-      <Input name="email" type="email" label="Email" required />
-      <Input name="phone" type="tel" label="Phone" />
-    </div>
-  </fieldset>
-</div>
+### 2. Ghost Button (Secondary Actions)
+Used for secondary actions like Cancel:
+```typescript
+<Button
+  variant="ghost"
+  className="text-white/70 hover:text-white hover:bg-white/10"
+>
+  <X className="w-4 h-4 mr-2" />
+  Cancel
+</Button>
+```
+
+### 3. Loading State
+When buttons are in a loading state:
+```typescript
+<Button
+  disabled
+  className="bg-[#1a1a1a] hover:bg-[#222] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
+>
+  <Loader2 className="w-4 h-4 animate-spin" />
+  Loading...
+</Button>
+```
+
+### 4. Icon-Only Button
+For compact UI elements:
+```typescript
+<Button
+  variant="ghost"
+  size="icon"
+  className="text-white/70 hover:text-white hover:bg-white/10"
+>
+  <Pencil className="w-4 h-4" />
+</Button>
 ```
 
 ## Animation Standards
 
-### 1. Split View Transitions
+### Split View Transitions
 ```typescript
 // Upper section
 <motion.div
@@ -510,9 +424,9 @@ Group related fields together and maintain consistent spacing:
   animate={{ 
     y: 0,
     transition: {
-      type: "spring",
-      stiffness: 50,
-      damping: 15
+      type: "tween",
+      duration: 0.8,
+      ease: [0.4, 0, 0.2, 1]
     }
   }}
 >
@@ -525,9 +439,9 @@ Group related fields together and maintain consistent spacing:
   animate={{ 
     y: 0,
     transition: {
-      type: "spring",
-      stiffness: 50,
-      damping: 15
+      type: "tween",
+      duration: 0.8,
+      ease: [0.4, 0, 0.2, 1]
     }
   }}
 >
@@ -535,92 +449,137 @@ Group related fields together and maintain consistent spacing:
 </motion.div>
 ```
 
-### 2. Expandable Section Animation
-```typescript
-<AnimatePresence>
-  {isExpanded && (
-    <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ 
-        height: "auto", 
-        opacity: 1,
-        transition: {
-          height: {
-            type: "spring",
-            stiffness: 50,
-            damping: 15
-          },
-          opacity: { duration: 0.2 }
-        }
-      }}
-      exit={{ 
-        height: 0, 
-        opacity: 0,
-        transition: {
-          height: {
-            type: "spring",
-            stiffness: 50,
-            damping: 15
-          },
-          opacity: { duration: 0.2 }
-        }
-      }}
-    >
-      {/* Content */}
-    </motion.div>
-  )}
-</AnimatePresence>
-```
-
-## Color System
-
-### Backgrounds
-- Card background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01))
-- Input fields: bg-black
-- Hover states: bg-white/[0.02]
-
-### Borders
-- Primary border: border-white/10
-- Dividers: border-white/[0.08]
-- Focus states: border-white/20
-
-### Text Colors
-- Primary text: text-white
-- Secondary text: text-white/60
-- Tertiary text: text-white/40
-- Labels: text-zinc-400
-- Icons: text-blue-500
-
-## Button Standards
-
-### Primary Button
-```typescript
-<Button
-  variant="default"
-  size="sm"
-  className="bg-[#111111] hover:bg-[#1a1a1a] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
->
-  <Icon className="w-4 h-4" />
-  Button Text
-</Button>
-```
-
-### Secondary Button
-```typescript
-<Button
-  variant="outline"
-  size="sm"
-  className="text-white/70 border-white/10 hover:bg-white/5"
->
-  <Icon className="w-4 h-4 mr-2" />
-  Button Text
-</Button>
-```
-
 ## Accessibility Standards
 
 - All interactive elements must have hover/focus states
-- Proper ARIA labels for expandable sections
+- Proper ARIA labels for form fields and buttons
 - Keyboard navigation support
 - Color contrast ratios meeting WCAG guidelines
 - Screen reader friendly content structure 
+
+## Form Components
+
+### Split Form Structure
+Forms that use the split animation pattern should follow this exact structure:
+
+```tsx
+<div className="h-full flex flex-col rounded-b-2xl">
+  <div className="flex-1 flex flex-col min-h-0">
+    {/* Upper Section */}
+    <motion.div
+      key="upper"
+      className="flex-none"
+      initial={{ y: "-100%" }}
+      animate={{ 
+        y: 0,
+        transition: {
+          type: "spring",
+          stiffness: 50,
+          damping: 15
+        }
+      }}
+    >
+      <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" 
+           style={{ 
+             background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', 
+             borderBottom: '1px solid rgba(255, 255, 255, 0.1)' 
+           }}>
+        <div className="relative z-10">
+          {/* Form content */}
+        </div>
+      </div>
+    </motion.div>
+
+    {/* Lower Section */}
+    <motion.div
+      key="lower"
+      className="flex-1 min-h-0"
+      initial={{ y: "100%" }}
+      animate={{ 
+        y: 0,
+        transition: {
+          type: "spring",
+          stiffness: 50,
+          damping: 15
+        }
+      }}
+    >
+      <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" 
+           style={{ 
+             background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', 
+             borderTop: '1px solid rgba(255, 255, 255, 0.1)' 
+           }}>
+        <div className="relative z-10">
+          {/* Form content */}
+        </div>
+      </div>
+    </motion.div>
+  </div>
+
+  {/* Fixed Save Button */}
+  <div className="fixed bottom-0 left-0 right-0 px-8 py-6 bg-[#111111] border-t border-white/10 flex justify-between items-center z-50 rounded-b-2xl">
+    {/* Action buttons */}
+  </div>
+</div>
+```
+
+Key points:
+1. The main container uses `h-full flex flex-col` to ensure proper height distribution
+2. The content wrapper uses `flex-1 flex flex-col min-h-0` to prevent overflow
+3. Upper section uses `flex-none` while lower section uses `flex-1 min-h-0`
+4. Each section has its own gradient background and backdrop blur
+5. The fixed save button container sits at the bottom with proper z-index
+
+### Form Sections
+Form sections should use the `FormCardSection` component:
+
+```tsx
+<FormCardSection
+  title="Section Title"
+  icon={<Icon className="w-5 h-5 text-blue-500" />}
+>
+  <div className="space-y-6">
+    {/* Form fields */}
+  </div>
+</FormCardSection>
+```
+
+### Form Inputs
+Form inputs should use the `FormInput` wrapper and `formInputStyles`:
+
+```tsx
+<FormInput label="Field Label">
+  <Input
+    value={value}
+    onChange={onChange}
+    className={formInputStyles}
+    placeholder="Enter value..."
+  />
+</FormInput>
+```
+
+The `formInputStyles` constant provides consistent styling:
+```tsx
+export const formInputStyles = "bg-[#111111] border-white/10 focus:border-white/20"
+```
+
+### Animation Standards
+Split form animations use these spring configurations:
+- Stiffness: 50
+- Damping: 15
+- Initial states: `y: "-100%"` for upper, `y: "100%"` for lower
+- No delay between animations
+
+### Background Colors
+- Main form background: `bg-[#111111]`
+- Section backgrounds: Linear gradient from `rgba(255, 255, 255, 0.05)` to `rgba(255, 255, 255, 0.02)`
+- Input backgrounds: `bg-[#111111]`
+- Button backgrounds: `bg-[#111111]` with hover state `bg-[#1a1a1a]`
+
+### Border Standards
+- Main borders: `border-white/10`
+- Focus borders: `border-white/20`
+- Section dividers: `border-white/[0.08]`
+- Rounded corners: `rounded-2xl` for containers, `rounded-lg` for inputs and buttons
+
+// ... existing code ... 

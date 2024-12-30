@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useContext, useRef } from 'react'
 import { ContactFormProvider } from '@/components/contacts/ContactFormContext'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Plus, Search, Mail, Phone, Building2, X, MoreHorizontal } from 'lucide-react'
+import { Plus, Search, Mail, Phone, X, MoreHorizontal, BarChart3, Users, Building2, ArrowUpRight } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
 import PageTransition from '@/components/animations/PageTransition'
@@ -16,7 +16,7 @@ import { ContactTag as ContactTagComponent } from '@/components/contacts/contact
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { seedTestContacts } from '@/lib/supabase/services/contacts'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/label'
 import {
   DropdownMenu,
@@ -40,6 +40,10 @@ import { SortMenu } from "@/components/contacts/sort-menu"
 import { FilterMenu } from "@/components/contacts/filter-menu"
 import { LeadFilter } from "@/components/contacts/lead-filter"
 import { CompanyFilter } from "@/components/contacts/company-filter"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip, RadialBarChart, RadialBar } from 'recharts'
+
+// Add ConversionStatus type before any usage
+export type ConversionStatus = 'lead' | 'opportunity' | 'customer' | 'lost';
 
 interface ContactAvatarProps {
   contact: Contact
@@ -113,6 +117,23 @@ function groupContactsByFirstLetter(contacts: Contact[], sortDirection: 'asc' | 
 
 interface ContactWithTags extends Contact {}
 
+// Add color constants
+const LEAD_STATUS_COLORS = {
+  'new': '#3b82f6',      // blue
+  'contacted': '#f97316', // orange
+  'qualified': '#8b5cf6', // purple
+  'proposal': '#06b6d4',  // cyan
+  'negotiation': '#f59e0b', // amber
+  'won': '#22c55e',      // green
+  'lost': '#ef4444'      // red
+}
+
+const CONVERSION_COLORS = {
+  'lead': '#f97316',      // orange
+  'opportunity': '#3b82f6', // blue
+  'customer': '#22c55e'    // green
+}
+
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
@@ -131,29 +152,435 @@ export default function ContactsPage() {
   const [selectedLeadSource, setSelectedLeadSource] = useState<LeadSource | null>(null)
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
   const [industries, setIndustries] = useState<Array<{ id: string; name: string }>>([])
-  const [selectedConversionStatus, setSelectedConversionStatus] = useState<'lead' | 'opportunity' | 'customer' | null>(null)
+  const [selectedConversionStatus, setSelectedConversionStatus] = useState<ConversionStatus | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
 
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
+    setIsMounted(true);
+  }, []);
 
-  useEffect(() => {
-    fetchContacts()
-    fetchIndustries()
-  }, [])
+  // Define setupInitialContent first
+  const setupInitialContent = useCallback(() => {
+    // Calculate contact metrics
+    const totalContacts = contacts.length;
+    const newContactsThisWeek = contacts.filter(contact => {
+      if (!contact.created_at) return false;
+      const createdAt = new Date(contact.created_at);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return createdAt >= weekAgo;
+    }).length;
 
+    // Calculate lead status distribution for radial chart
+    const leadStatusDistribution = Object.entries(LEAD_STATUS_COLORS).map(([status, color]) => ({
+      name: status,
+      value: contacts.filter(contact => contact.lead_status === status).length,
+      fill: color
+    })).sort((a, b) => b.value - a.value);
+
+    // Calculate conversion status distribution for bar chart
+    const conversionDistribution = ['lead', 'opportunity', 'customer'].map(status => ({
+      name: status,
+      value: contacts.filter(contact => contact.conversion_status === status).length
+    }))
+
+    const topContent = (
+      <div className="h-full bg-black">
+        <motion.div 
+          className="h-full"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" 
+            style={{ 
+              background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))'
+            }}
+          >
+            <div className="relative z-10">
+              <div className="p-6">
+                <div className="flex items-start gap-6">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                    <Users className="w-8 h-8" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-semibold">Contact Overview</h2>
+                    <p className="text-zinc-400 mt-1">Your network at a glance</p>
+                  </div>
+                </div>
+
+                {/* Contact Metrics Grid */}
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-blue-400" />
+                      <h3 className="text-sm font-medium text-zinc-400">Total Contacts</h3>
+                    </div>
+                    {loading ? (
+                      <div className="mt-1 flex items-center">
+                        <div className="w-6 h-6 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-2xl font-bold">{totalContacts}</div>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpRight className="w-4 h-4 text-green-400" />
+                      <h3 className="text-sm font-medium text-zinc-400">New This Week</h3>
+                    </div>
+                    {loading ? (
+                      <div className="mt-1 flex items-center">
+                        <div className="w-6 h-6 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-2xl font-bold">{newContactsThisWeek}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Charts Section */}
+                <div className="grid grid-cols-2 gap-6 p-6">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Lead Status Overview */}
+                    <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+                      <h3 className="text-sm font-medium text-zinc-400 mb-6">Lead Status Overview</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {Object.entries(LEAD_STATUS_COLORS).map(([status, color]) => {
+                          const count = contacts.filter(c => c.lead_status === status).length;
+                          const percentage = ((count / totalContacts) * 100).toFixed(0);
+                          return (
+                            <button
+                              key={status}
+                              onClick={() => {
+                                setSelectedLeadStatus(status as LeadStatus);
+                                hide();
+                              }}
+                              className="p-4 rounded-lg bg-black/20 hover:bg-black/40 transition-colors border border-white/[0.05] group flex flex-col"
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                <div className="flex items-baseline gap-2 w-full">
+                                  <span className="text-2xl font-bold">{count}</span>
+                                  <span className="text-xs text-zinc-500">({percentage}%)</span>
+                                </div>
+                              </div>
+                              <span className="text-sm font-medium text-zinc-400 capitalize">{status}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Contact Insights */}
+                    <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+                      <h3 className="text-sm font-medium text-zinc-400 mb-6">Contact Insights</h3>
+                      <div className="space-y-4">
+                        {/* Top Industries */}
+                        <div className="p-4 rounded-lg bg-black/20 border border-white/[0.05]">
+                          <h4 className="text-xs font-medium text-zinc-400 mb-3">Top Industries</h4>
+                          <div className="space-y-2">
+                            {Object.entries(
+                              contacts.reduce((acc, contact) => {
+                                const industry = contact.industries?.name || 'Uncategorized';
+                                acc[industry] = (acc[industry] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>)
+                            )
+                              .sort(([, a], [, b]) => b - a)
+                              .slice(0, 3)
+                              .map(([industry, count]) => (
+                                <div key={industry} className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-300">{industry}</span>
+                                  <span className="text-sm text-zinc-500">{count}</span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* Active Tags */}
+                        <div className="p-4 rounded-lg bg-black/20 border border-white/[0.05]">
+                          <h4 className="text-xs font-medium text-zinc-400 mb-3">Active Tags</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {contacts
+                              .flatMap(contact => (contact as any).contact_tag_relations || [])
+                              .filter((rel: any) => rel.contact_tags)
+                              .map((rel: any) => rel.contact_tags)
+                              .reduce((unique: any[], tag: any) => {
+                                if (!unique.find(t => t.id === tag.id)) {
+                                  unique.push(tag);
+                                }
+                                return unique;
+                              }, [])
+                              .slice(0, 5)
+                              .map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  className="px-2 py-1 rounded-full text-xs"
+                                  style={{ 
+                                    backgroundColor: `${tag.color}15`,
+                                    color: tag.color 
+                                  }}
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Conversion Status */}
+                    <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+                      <h3 className="text-sm font-medium text-zinc-400 mb-6">Conversion Status</h3>
+                      <div className="space-y-6">
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={conversionDistribution}>
+                            <XAxis 
+                              dataKey="name" 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: '#71717a', fontSize: 12 }}
+                            />
+                            <Tooltip
+                              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="p-2 rounded-lg bg-[#111111] border border-white/[0.1] backdrop-blur-xl">
+                                      <p className="text-sm font-medium capitalize">{data.name}</p>
+                                      <p className="text-xs text-zinc-400 mt-1">
+                                        {data.value} contacts ({((data.value / totalContacts) * 100).toFixed(0)}%)
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Bar 
+                              dataKey="value" 
+                              radius={[4, 4, 0, 0]}
+                              minPointSize={2}
+                              maxBarSize={40}
+                              label={{
+                                position: 'top',
+                                content: (props: any) => {
+                                  const value = typeof props.value === 'number' ? props.value : 0;
+                                  return value > 0 ? value : null;
+                                },
+                                fill: '#71717a',
+                                fontSize: 12
+                              }}
+                            >
+                              {conversionDistribution.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`}
+                                  fill={CONVERSION_COLORS[entry.name as keyof typeof CONVERSION_COLORS]}
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+
+                        <div className="flex justify-center gap-6">
+                          {Object.entries(CONVERSION_COLORS).map(([status, color]) => (
+                            <div key={status} className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                              <span className="text-sm text-zinc-400 capitalize">{status}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Conversion Metrics */}
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                          <div className="p-4 rounded-lg bg-black/20 border border-white/[0.05]">
+                            <h4 className="text-xs font-medium text-zinc-400 mb-2">Conversion Rate</h4>
+                            <div className="flex flex-col">
+                              <span className="text-2xl font-bold">
+                                {totalContacts > 0 
+                                  ? ((contacts.filter(c => c.conversion_status === 'customer').length / totalContacts) * 100).toFixed(1)
+                                  : '0'}%
+                              </span>
+                              <span className="text-sm text-zinc-500">overall</span>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4 rounded-lg bg-black/20 border border-white/[0.05]">
+                            <h4 className="text-xs font-medium text-zinc-400 mb-2">Opportunity Rate</h4>
+                            <div className="flex flex-col">
+                              <span className="text-2xl font-bold">
+                                {totalContacts > 0
+                                  ? ((contacts.filter(c => c.conversion_status === 'opportunity').length / totalContacts) * 100).toFixed(1)
+                                  : '0'}%
+                              </span>
+                              <span className="text-sm text-zinc-500">of leads</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="mt-6">
+                          <h4 className="text-sm font-medium text-zinc-400 mb-3">Quick Actions</h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={handleAddContactClick}
+                              className="p-3 rounded-lg bg-black/20 hover:bg-black/40 transition-colors border border-white/[0.05] text-left group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Plus className="w-4 h-4 text-blue-400" />
+                                <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">Add Contact</span>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => setShowTagManagement(true)}
+                              className="p-3 rounded-lg bg-black/20 hover:bg-black/40 transition-colors border border-white/[0.05] text-left group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <BarChart3 className="w-4 h-4 text-purple-400" />
+                                <span className="text-sm font-medium group-hover:text-purple-400 transition-colors">Manage Tags</span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recent Activity */}
+                    <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+                      <h3 className="text-sm font-medium text-zinc-400 mb-6">Recent Activity</h3>
+                      <div className="space-y-3">
+                        {contacts
+                          .filter(contact => contact.updated_at)
+                          .sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime())
+                          .slice(0, 3)
+                          .map(contact => {
+                            const date = new Date(contact.updated_at!);
+                            return (
+                              <button
+                                key={contact.id}
+                                onClick={() => handleContactClick(contact)}
+                                className="w-full p-4 rounded-lg bg-black/20 hover:bg-black/40 transition-colors border border-white/[0.05] text-left group"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: LEAD_STATUS_COLORS[contact.lead_status || 'new'] }} />
+                                    <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">
+                                      {contact.first_name} {contact.last_name}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-zinc-500">
+                                    {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                  </span>
+                                </div>
+                                <div className="mt-1 text-xs text-zinc-500">
+                                  Status: <span className="capitalize text-zinc-400">{contact.lead_status}</span>
+                                  {contact.company && ` • ${contact.company}`}
+                                </div>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )
+
+    const bottomContent = (
+      <div className="h-full bg-black">
+        <motion.div 
+          className="h-full"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" 
+            style={{ 
+              background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))'
+            }}
+          >
+            <div className="relative z-10">
+              <div className="p-6">
+                <h3 className="text-lg font-medium mb-4">Recent Contacts</h3>
+                <div className="space-y-4">
+                  {contacts.slice(0, 3).map((contact, index) => (
+                    <motion.div
+                      key={contact.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-4 rounded-xl bg-black border border-white/[0.05]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ContactAvatar contact={contact} />
+                        <div>
+                          <h3 className="font-medium">{contact.first_name} {contact.last_name}</h3>
+                          {contact.company && (
+                            <p className="text-sm text-zinc-400 mt-1">{contact.company}</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {contacts.length === 0 && (
+                    <div className="text-zinc-400 text-center">
+                      No contacts yet. Click "Add Contact" to get started.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )
+
+    setContent(topContent, bottomContent, 'overview');
+  }, [contacts, loading, setContent]);
+
+  // Define refreshDashboard next
+  const refreshDashboard = useCallback(() => {
+    if (!isMounted) return;
+    hide();
+    // Increase timeout to ensure proper animation
+    setTimeout(() => {
+      setupInitialContent();
+      show();
+    }, 300); // Increased from 100ms to 300ms for smoother transition
+  }, [isMounted, hide, show, setupInitialContent]);
+
+  // Then define fetchContacts
   async function fetchContacts() {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       
-      console.log('Fetching contacts...')
-      
-      // First fetch contacts
-      const query = supabase
+      const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select(`
           *,
@@ -170,74 +597,35 @@ export default function ContactsPage() {
             )
           )
         `)
-        .order('first_name', { ascending: sortDirection === 'asc' })
+        .order('first_name', { ascending: sortDirection === 'asc' });
       
-      const { data: contactsData, error: contactsError } = await query
+      if (contactsError) throw contactsError;
       
-      if (contactsError) {
-        console.error('Contacts fetch error details:', {
-          message: contactsError.message,
-          details: contactsError.details,
-          hint: contactsError.hint
-        })
-        throw contactsError
-      }
-
-      console.log('Raw contacts data:', JSON.stringify(contactsData, null, 2))
-      console.log('Number of contacts:', contactsData?.length)
-      console.log('First contact:', {
-        id: contactsData?.[0]?.id,
-        name: `${contactsData?.[0]?.first_name} ${contactsData?.[0]?.last_name}`,
-        industries: contactsData?.[0]?.industries,
-        industry_id: contactsData?.[0]?.industry_id
-      })
-
-      // Add some test data for social media and address
       const contacts = (contactsData as ContactWithTags[])?.map(contact => ({
         ...contact,
         tags: contact.contact_tag_relations?.map((rel: ContactTagRelation) => rel.tag_id) || [],
-        // Test data for development
-        website: contact.website || 'https://example.com',
-        linkedin: contact.linkedin || 'https://linkedin.com/in/example',
-        twitter: contact.twitter || 'example',
-        facebook: contact.facebook || 'https://facebook.com/example',
-        whatsapp: contact.whatsapp || '1234567890',
-        address_line1: contact.address_line1 || '123 Main Street',
-        address_line2: contact.address_line2 || 'Suite 456',
-        city: contact.city || 'San Francisco',
-        region: contact.region || 'CA',
-        postcode: contact.postcode || '94105',
-        country: contact.country || 'United States'
-      })) || []
+      })) || [];
       
-      console.log('Processed contacts:', contacts.length)
-      setContacts(contacts)
+      setContacts(contacts);
+      
+      // Ensure dashboard refresh happens after state update
+      setTimeout(() => {
+        refreshDashboard();
+      }, 0);
     } catch (error: any) {
-      console.error('Error fetching contacts:', {
-        error,
-        message: error.message,
-        details: error.details,
-        stack: error.stack
-      })
-      setError(error.message || 'Failed to fetch contacts')
+      console.error('Error fetching contacts:', error);
+      setError(error.message || 'Failed to fetch contacts');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  async function fetchIndustries() {
-    try {
-      const { data, error } = await supabase
-        .from('industries')
-        .select('id, name')
-        .order('name')
-
-      if (error) throw error
-      setIndustries(data || [])
-    } catch (error) {
-      console.error('Error fetching industries:', error)
-    }
-  }
+  // Finally, add the useEffect for initial setup
+  useEffect(() => {
+    if (!isMounted) return;
+    setupInitialContent();
+    show();
+  }, [isMounted, setupInitialContent, show]);
 
   const handleEditClick = useCallback((contact: Contact) => {
     hide();
@@ -442,52 +830,29 @@ export default function ContactsPage() {
       
       // Reset to QuickAddContact form with animation
       setTimeout(() => {
-        const content = (
+        const topContent = (
           <ContactFormProvider>
-            <motion.div
-              key="add-contact-new"
-              className="h-full"
-              initial={{ y: "-100%" }}
-              animate={{ 
-                y: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 50,
-                  damping: 15
-                }
-              }}
-            >
-              <QuickAddContact 
-                onSuccess={handleCreateContact}
-                onCancel={hide}
-                section="upper"
-              />
-            </motion.div>
-
-            <motion.div
-              key="add-contact-bottom-new"
-              className="h-full"
-              initial={{ y: "100%" }}
-              animate={{ 
-                y: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 50,
-                  damping: 15
-                }
-              }}
-            >
-              <QuickAddContact 
-                onSuccess={handleCreateContact}
-                onCancel={hide}
-                section="lower"
-              />
-            </motion.div>
+            <QuickAddContact 
+              onSuccess={handleCreateContact}
+              onCancel={hide}
+              section="upper"
+            />
           </ContactFormProvider>
-        )
-        setContent(content)
-        show()
-      }, 100)
+        );
+        
+        const bottomContent = (
+          <ContactFormProvider>
+            <QuickAddContact 
+              onSuccess={handleCreateContact}
+              onCancel={hide}
+              section="lower"
+            />
+          </ContactFormProvider>
+        );
+        
+        setContent(topContent, bottomContent, 'add-contact');
+        show();
+      }, 100);
     } catch (error) {
       console.error('Error creating contact:', error)
       throw error // Re-throw to let QuickAddContact handle the error display
@@ -495,65 +860,7 @@ export default function ContactsPage() {
   }
 
   useEffect(() => {
-    if (!isMounted) return
-
-    const setupInitialContent = () => {
-      const content = (
-        <ContactFormProvider>
-          <motion.div
-            key="add-contact"
-            className="h-full"
-            initial={{ y: "-100%" }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <QuickAddContact 
-              onSuccess={handleCreateContact}
-              onCancel={hide}
-              section="upper"
-            />
-          </motion.div>
-
-          <motion.div
-            key="add-contact-bottom"
-            className="h-full"
-            initial={{ y: "100%" }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <QuickAddContact 
-              onSuccess={handleCreateContact}
-              onCancel={hide}
-              section="lower"
-            />
-          </motion.div>
-        </ContactFormProvider>
-      );
-
-      setContent(content);
-      show();
-    }
-
-    const persistedState = localStorage.getItem('splitViewState')
-    if (!persistedState) {
-      setupInitialContent()
-    }
-  }, [setContent, show, isMounted])
-
-  useEffect(() => {
-    if (!isMounted) return
+    if (!isMounted) return;
 
     const persistedState = localStorage.getItem('splitViewState')
     if (persistedState) {
@@ -598,6 +905,57 @@ export default function ContactsPage() {
     fetchContacts()
   }, [sortDirection])
 
+  // Fix setContent call in the button click handler
+  const handleAddContactClick = () => {
+    hide();
+    
+    setTimeout(() => {
+      const topContent = (
+        <ContactFormProvider>
+          <QuickAddContact 
+            onSuccess={handleCreateContact}
+            onCancel={hide}
+            section="upper"
+          />
+        </ContactFormProvider>
+      );
+      
+      const bottomContent = (
+        <ContactFormProvider>
+          <QuickAddContact 
+            onSuccess={handleCreateContact}
+            onCancel={hide}
+            section="lower"
+          />
+        </ContactFormProvider>
+      );
+      
+      setContent(topContent, bottomContent, 'add-contact');
+      show();
+    }, 100);
+  };
+
+  // Add initial data loading
+  useEffect(() => {
+    fetchContacts();
+    fetchIndustries();
+  }, []);
+
+  // Add fetchIndustries function
+  async function fetchIndustries() {
+    try {
+      const { data, error } = await supabase
+        .from('industries')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setIndustries(data || []);
+    } catch (error) {
+      console.error('Error fetching industries:', error);
+    }
+  }
+
   return (
     <PageTransition>
       <div className="flex h-full">
@@ -635,58 +993,7 @@ export default function ContactsPage() {
                 onSortChange={setSortDirection}
               />
               <Button 
-                onClick={() => {
-                  hide();
-                  
-                  setTimeout(() => {
-                    const content = (
-                      <ContactFormProvider>
-                        <motion.div
-                          key="add-contact"
-                          className="h-full"
-                          initial={{ y: "-100%" }}
-                          animate={{ 
-                            y: 0,
-                            transition: {
-                              type: "spring",
-                              stiffness: 50,
-                              damping: 15
-                            }
-                          }}
-                        >
-                          <QuickAddContact 
-                            onSuccess={handleCreateContact}
-                            onCancel={hide}
-                            section="upper"
-                          />
-                        </motion.div>
-
-                        <motion.div
-                          key="add-contact-bottom"
-                          className="h-full"
-                          initial={{ y: "100%" }}
-                          animate={{ 
-                            y: 0,
-                            transition: {
-                              type: "spring",
-                              stiffness: 50,
-                              damping: 15
-                            }
-                          }}
-                        >
-                          <QuickAddContact 
-                            onSuccess={handleCreateContact}
-                            onCancel={hide}
-                            section="lower"
-                          />
-                        </motion.div>
-                      </ContactFormProvider>
-                    );
-
-                    setContent(content);
-                    show();
-                  }, 100);
-                }}
+                onClick={handleAddContactClick}
                 className="bg-[#111111] hover:bg-[#1a1a1a] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
               >
                 Create Contact
@@ -713,7 +1020,7 @@ export default function ContactsPage() {
             />
             <ConversionStatusFilter
               selectedStatus={selectedConversionStatus}
-              onStatusChange={setSelectedConversionStatus}
+              onStatusChange={(status: ConversionStatus | null) => setSelectedConversionStatus(status)}
             />
             <CompanyFilter
               selectedIndustry={selectedIndustry}
@@ -724,6 +1031,19 @@ export default function ContactsPage() {
               selectedDepartment={selectedDepartment}
               onDepartmentChange={setSelectedDepartment}
             />
+            <Button
+              onClick={() => {
+                hide();
+                setTimeout(() => {
+                  setupInitialContent();
+                  show();
+                }, 100);
+              }}
+              className="bg-[#111111] hover:bg-[#1a1a1a] text-white w-10 h-10 rounded-lg transition-colors border border-white/[0.08] flex items-center justify-center ml-auto"
+              title="View Contacts Dashboard"
+            >
+              <BarChart3 className="w-7 h-7 text-zinc-400 group-hover:text-white transition-colors" strokeWidth={2.5} />
+            </Button>
           </div>
 
           <div className="flex-1 overflow-auto">
