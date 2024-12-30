@@ -34,15 +34,26 @@ function SplitForm({ onSubmit, onCancel, initialData }: SplitFormProps) {
 interface TasksProps {
   tasks: Task[]
   isLoading: boolean
-  onCreateTask: (data: any) => Promise<any>
-  onUpdateTask: (task: Task) => Promise<any>
-  onDeleteTask: (taskId: string) => Promise<void>
+  onCreateTask?: (data: any) => Promise<void>
+  onUpdateTask?: (task: Task) => Promise<void>
+  onDeleteTask?: (taskId: string) => Promise<void>
   currentUserId: string
   onViewTask: (task: Task) => void
   onEditTask: (task: Task) => void
+  setupInitialContent: () => void
 }
 
-export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask, onDeleteTask, currentUserId, onViewTask, onEditTask }: TasksProps) {
+export function Tasks({ 
+  tasks, 
+  isLoading, 
+  onCreateTask, 
+  onUpdateTask, 
+  onDeleteTask, 
+  currentUserId, 
+  onViewTask, 
+  onEditTask,
+  setupInitialContent 
+}: TasksProps) {
   const { setContent, show, hide } = useSplitViewStore()
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -414,6 +425,10 @@ export function Tasks({ tasks, isLoading, onCreateTask, onUpdateTask, onDeleteTa
         onFiltersChange={setFilters}
         currentUserId={currentUserId}
         users={users}
+        tasks={tasks}
+        onViewTask={handleViewTask}
+        onEditTask={handleEditTask}
+        setupInitialContent={setupInitialContent}
       />
 
       {showGroupsManager && (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useContext, useRef } from 'react'
 import { ContactFormProvider } from '@/components/contacts/ContactFormContext'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Mail, Phone, X, MoreHorizontal, BarChart3, Users, Building2, ArrowUpRight } from 'lucide-react'
+import { Plus, Search, Mail, Phone, X, MoreHorizontal, BarChart3, Users, Building2, ArrowUpRight, LayoutGrid } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
 import PageTransition from '@/components/animations/PageTransition'
@@ -208,7 +208,7 @@ export default function ContactsPage() {
             <div className="relative z-10">
               <div className="p-6">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-500/10 border border-white/[0.05] flex items-center justify-center">
                     <Users className="w-8 h-8" />
                   </div>
                   <div className="flex-1">
@@ -1039,10 +1039,12 @@ export default function ContactsPage() {
                   show();
                 }, 100);
               }}
-              className="bg-[#111111] hover:bg-[#1a1a1a] text-white w-10 h-10 rounded-lg transition-colors border border-white/[0.08] flex items-center justify-center ml-auto"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 border border-white/[0.08] bg-transparent hover:bg-white/5 ml-auto"
               title="View Contacts Dashboard"
             >
-              <BarChart3 className="w-7 h-7 text-zinc-400 group-hover:text-white transition-colors" strokeWidth={2.5} />
+              <LayoutGrid className="h-4 w-4" />
             </Button>
           </div>
 

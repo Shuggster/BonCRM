@@ -6,8 +6,21 @@ import { StatusFilter } from './StatusFilter'
 import { DueDateFilter } from './DueDateFilter'
 import { AssignedToFilter } from './AssignedToFilter'
 import { GroupFilter } from './GroupFilter'
+import { Button } from '@/components/ui/button'
+import { LayoutGrid, BarChart2, Clock, CheckCircle2, ArrowRight } from 'lucide-react'
+import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
+import { motion } from 'framer-motion'
+import { TaskOverview } from './TaskOverview'
+import { PRIORITY_COLORS } from '@/lib/constants'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { DueDateOption } from './DueDateFilter'
 import type { AssignedToOption } from './AssignedToFilter'
+import type { Task } from '@/types/tasks'
 
 interface TaskFiltersProps {
   onFiltersChange: (filters: {
@@ -19,9 +32,14 @@ interface TaskFiltersProps {
   }) => void
   currentUserId: string
   users: Array<{ id: string; name: string }>
+  tasks: Task[]
+  onViewTask: (task: Task) => void
+  onEditTask: (task: Task) => void
+  setupInitialContent: () => void
 }
 
-export function TaskFilters({ onFiltersChange, currentUserId, users }: TaskFiltersProps) {
+export function TaskFilters({ onFiltersChange, currentUserId, users, tasks, onViewTask, onEditTask, setupInitialContent }: TaskFiltersProps) {
+  const { hide, show, setContent } = useSplitViewStore()
   const [filters, setFilters] = useState({
     priority: null as 'high' | 'medium' | 'low' | null,
     status: null as 'todo' | 'in-progress' | 'completed' | null,
@@ -34,6 +52,13 @@ export function TaskFilters({ onFiltersChange, currentUserId, users }: TaskFilte
     const updatedFilters = { ...filters, ...newFilters }
     setFilters(updatedFilters)
     onFiltersChange(updatedFilters)
+  }
+
+  const handleRefresh = () => {
+    hide();
+    setTimeout(() => {
+      setupInitialContent();
+    }, 100);
   }
 
   return (
@@ -60,6 +85,25 @@ export function TaskFilters({ onFiltersChange, currentUserId, users }: TaskFilte
         selectedGroup={filters.group}
         onGroupChange={(group) => updateFilters({ group })}
       />
+      <div className="ml-auto">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefresh}
+                className="h-9 w-9 border border-white/[0.08] bg-transparent hover:bg-white/5"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Return To Task Overview</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </div>
   )
 } 

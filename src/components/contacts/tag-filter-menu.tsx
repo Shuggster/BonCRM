@@ -109,7 +109,7 @@ export const TagFilterMenu = forwardRef<{ refreshTags: () => void }, TagFilterMe
         </DropdownMenuTrigger>
         <DropdownMenuContent 
           align="start" 
-          className="w-64 bg-[#1C2333] border border-white/10 rounded-lg overflow-hidden"
+          className="w-64 bg-black border border-white/10 rounded-lg overflow-hidden"
         >
           <DropdownMenuLabel className="flex items-center justify-between px-3 py-2 border-b border-white/[0.03]">
             <span className="text-sm font-medium">Filter by Tags</span>
