@@ -17,7 +17,7 @@ interface TaskOverviewProps {
 }
 
 export function TaskOverview({ tasks, onViewTask, onEditTask }: TaskOverviewProps) {
-  const { setContent, show, hide } = useSplitViewStore()
+  const { setContentAndShow, hide } = useSplitViewStore()
 
   // Calculate metrics
   const dueToday = tasks.filter(task => {
@@ -104,8 +104,7 @@ export function TaskOverview({ tasks, onViewTask, onEditTask }: TaskOverviewProp
         </div>
       )
 
-      setContent(content, null)
-      show()
+      setContentAndShow(content, null, 'due-today')
     }, 100)
   }
 
@@ -155,8 +154,7 @@ export function TaskOverview({ tasks, onViewTask, onEditTask }: TaskOverviewProp
         </div>
       )
 
-      setContent(content, null)
-      show()
+      setContentAndShow(content, null, 'completed')
     }, 100)
   }
 

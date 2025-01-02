@@ -135,18 +135,18 @@ const CONVERSION_COLORS = {
 }
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
-  const [tagFilterMode, setTagFilterMode] = useState<'AND' | 'OR'>('OR')
-  const { setContent, show, hide } = useSplitViewStore()
-  const supabase = createClientComponentClient()
-  const [isMounted, setIsMounted] = useState(false)
-  const [showTagStats, setShowTagStats] = useState(false)
-  const [showTagManagement, setShowTagManagement] = useState(false)
+  const { setContentAndShow, hide } = useSplitViewStore();
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [tagFilterMode, setTagFilterMode] = useState<'AND' | 'OR'>('OR');
+  const supabase = createClientComponentClient();
+  const [showTagStats, setShowTagStats] = useState(false);
+  const [showTagManagement, setShowTagManagement] = useState(false);
   const tagFilterRef = useRef<{ refreshTags: () => void }>(null)
   const [selectedLeadStatus, setSelectedLeadStatus] = useState<LeadStatus | null>(null)
   const [selectedLeadSource, setSelectedLeadSource] = useState<LeadSource | null>(null)
@@ -156,6 +156,92 @@ export default function ContactsPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
+
+  // Function declarations
+  const handleContactClick = useCallback((contact: Contact) => {
+    hide();
+    
+    setTimeout(() => {
+      const topContent = (
+        <motion.div
+          key={contact.id}
+          className="h-full"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <ViewContact 
+            contact={contact}
+            section="upper"
+            onEdit={() => handleEditClick(contact)}
+            onRefresh={() => fetchContacts()}
+          />
+        </motion.div>
+      );
+
+      const bottomContent = (
+        <motion.div
+          key={`${contact.id}-bottom`}
+          className="h-full"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <ViewContact 
+            contact={contact}
+            section="lower"
+            onEdit={() => handleEditClick(contact)}
+            onRefresh={() => fetchContacts()}
+          />
+        </motion.div>
+      );
+
+      setContentAndShow(topContent, bottomContent, contact.id);
+    }, 100);
+  }, [hide, setContentAndShow]);
+
+  const handleEditClick = useCallback((contact: Contact) => {
+    hide();
+    setSelectedContact(contact);
+    
+    setTimeout(() => {
+      const topContent = (
+        <EditContactSplitView
+          contact={contact}
+          onSave={async (data: Partial<Contact>) => {
+            try {
+              const { error } = await supabase
+                .from('contacts')
+                .update(data)
+                .eq('id', contact.id);
+
+              if (error) throw error;
+              
+              await fetchContacts();
+              handleContactClick(contact);
+            } catch (error) {
+              console.error('Error updating contact:', error);
+            }
+          }}
+          onCancel={() => handleContactClick(contact)}
+        />
+      );
+
+      setContentAndShow(topContent, null, `edit-contact-${contact.id}`);
+    }, 100);
+  }, [hide, setContentAndShow, handleContactClick, fetchContacts, supabase]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -264,7 +350,6 @@ export default function ContactsPage() {
                               key={status}
                               onClick={() => {
                                 setSelectedLeadStatus(status as LeadStatus);
-                                hide();
                               }}
                               className="p-4 rounded-lg bg-black/20 hover:bg-black/40 transition-colors border border-white/[0.05] group flex flex-col"
                             >
@@ -560,8 +645,15 @@ export default function ContactsPage() {
       </div>
     )
 
-    setContent(topContent, bottomContent, 'overview');
-  }, [contacts, loading, setContent]);
+    setContentAndShow(topContent, bottomContent, 'overview')
+  }, [contacts, loading, setContentAndShow])
+
+  // Add effect to setup initial content
+  useEffect(() => {
+    if (contacts.length > 0 && isMounted) {
+      setupInitialContent();
+    }
+  }, [contacts, isMounted, setupInitialContent]);
 
   // Define refreshDashboard next
   const refreshDashboard = useCallback(() => {
@@ -570,9 +662,8 @@ export default function ContactsPage() {
     // Increase timeout to ensure proper animation
     setTimeout(() => {
       setupInitialContent();
-      show();
     }, 300); // Increased from 100ms to 300ms for smoother transition
-  }, [isMounted, hide, show, setupInitialContent]);
+  }, [isMounted, hide, setupInitialContent]);
 
   // Then define fetchContacts
   async function fetchContacts() {
@@ -624,96 +715,7 @@ export default function ContactsPage() {
   useEffect(() => {
     if (!isMounted) return;
     setupInitialContent();
-    show();
-  }, [isMounted, setupInitialContent, show]);
-
-  const handleEditClick = useCallback((contact: Contact) => {
-    hide();
-    setSelectedContact(contact);
-    
-    setTimeout(() => {
-      const content = (
-        <EditContactSplitView
-          contact={contact}
-          onSave={async (data) => {
-            try {
-              const { error } = await supabase
-                .from('contacts')
-                .update(data)
-                .eq('id', contact.id)
-
-              if (error) throw error
-              
-              await fetchContacts()
-              handleContactClick(contact)
-            } catch (error) {
-              console.error('Error updating contact:', error)
-            }
-          }}
-          onCancel={() => handleContactClick(contact)}
-        />
-      );
-
-      setContent(content, null, contact.id);
-      show();
-    }, 100);
-  }, [setContent, show, hide]);
-
-  const handleContactClick = useCallback((contact: Contact) => {
-    hide();
-    setSelectedContact(contact);
-    
-    setTimeout(() => {
-      const topContent = (
-        <motion.div
-          key={contact.id}
-          className="h-full"
-          initial={{ y: "-100%" }}
-          animate={{ 
-            y: 0,
-            transition: {
-              type: "spring",
-              stiffness: 50,
-              damping: 15
-            }
-          }}
-        >
-          <ViewContact 
-            contact={contact}
-            section="upper"
-            onEdit={() => handleEditClick(contact)}
-            onRefresh={() => fetchContacts()}
-          />
-        </motion.div>
-      );
-
-      const bottomContent = (
-        <motion.div
-          key={`${contact.id}-bottom`}
-          className="h-full"
-          initial={{ y: "100%" }}
-          animate={{ 
-            y: 0,
-            transition: {
-              type: "spring",
-              stiffness: 50,
-              damping: 15
-            }
-          }}
-        >
-          <ViewContact 
-            contact={contact}
-            section="lower"
-            onEdit={() => handleEditClick(contact)}
-            onRefresh={() => fetchContacts()}
-          />
-        </motion.div>
-      );
-
-      setContent(topContent, bottomContent, contact.id);
-      show();
-    }, 100);
-  }, [setContent, show, hide, handleEditClick]);
+  }, [isMounted, setupInitialContent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -747,117 +749,32 @@ export default function ContactsPage() {
     }
   }
 
-  const handleCreateContact = async (data: any) => {
-    try {
-      // Get default organization
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .select('id')
-        .limit(1)
-        .single()
-
-      if (orgError) {
-        console.error('Organization fetch error:', orgError)
-        throw new Error('Failed to fetch organization')
-      }
-
-      if (!org) {
-        console.error('No organization found')
-        throw new Error('No organization found')
-      }
-
-      // Format data for submission
-      const contactData = {
-        first_name: data.first_name.trim(),
-        last_name: data.last_name?.trim() || undefined,
-        email: data.email?.trim() || undefined,
-        phone: data.phone?.trim() || undefined,
-        company: data.company?.trim() || undefined,
-        job_title: data.job_title?.trim() || undefined,
-        department: data.department?.trim() || undefined,
-        industry_id: data.industry_id || undefined,
-        website: data.website?.trim() || undefined,
-        linkedin: data.linkedin?.trim() || undefined,
-        twitter: data.twitter?.trim() || undefined,
-        facebook: data.facebook?.trim() || undefined,
-        whatsapp: data.whatsapp?.trim() || undefined,
-        address_line1: data.address_line1?.trim() || undefined,
-        address_line2: data.address_line2?.trim() || undefined,
-        city: data.city?.trim() || undefined,
-        region: data.region?.trim() || undefined,
-        postcode: data.postcode?.trim() || undefined,
-        country: data.country?.trim() || undefined,
-        lead_status: data.lead_status || 'new',
-        lead_source: data.lead_source || 'website',
-        lead_score: data.lead_score || 0,
-        expected_value: data.expected_value || 0,
-        conversion_status: 'lead',
-        organization_id: org.id
-      }
-
-      console.log('Inserting contact:', contactData)
-      const { data: contact, error } = await supabase
-        .from('contacts')
-        .insert([contactData])
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Create tag relations if there are any tags
-      if (data.tags && data.tags.length > 0) {
-        const tagRelations = data.tags.map((tagId: string) => ({
-          contact_id: contact.id,
-          tag_id: tagId,
-          created_at: new Date().toISOString()
-        }))
-
-        console.log('Creating tag relations:', tagRelations)
-        const { error: tagError } = await supabase
-          .from('contact_tag_relations')
-          .insert(tagRelations)
-
-        if (tagError) {
-          console.error('Error creating tag relations:', tagError)
-          throw tagError
-        }
-      }
-
-      await fetchContacts()
+  const handleCreateContact = useCallback(() => {
+    hide();
+    setTimeout(() => {
+      const topContent = (
+        <ContactFormProvider>
+          <QuickAddContact 
+            onSuccess={handleCreateContact}
+            onCancel={hide}
+            section="upper"
+          />
+        </ContactFormProvider>
+      );
       
-      // Hide current content
-      hide()
+      const bottomContent = (
+        <ContactFormProvider>
+          <QuickAddContact 
+            onSuccess={handleCreateContact}
+            onCancel={hide}
+            section="lower"
+          />
+        </ContactFormProvider>
+      );
       
-      // Reset to QuickAddContact form with animation
-      setTimeout(() => {
-        const topContent = (
-          <ContactFormProvider>
-              <QuickAddContact 
-                onSuccess={handleCreateContact}
-                onCancel={hide}
-                section="upper"
-              />
-          </ContactFormProvider>
-        );
-        
-        const bottomContent = (
-          <ContactFormProvider>
-              <QuickAddContact 
-                onSuccess={handleCreateContact}
-                onCancel={hide}
-                section="lower"
-              />
-          </ContactFormProvider>
-        );
-        
-        setContent(topContent, bottomContent, 'add-contact');
-        show();
-      }, 100);
-    } catch (error) {
-      console.error('Error creating contact:', error)
-      throw error // Re-throw to let QuickAddContact handle the error display
-    }
-  }
+      setContentAndShow(topContent, bottomContent, 'create-contact');
+    }, 100);
+  }, [hide, setContentAndShow]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -906,34 +823,20 @@ export default function ContactsPage() {
   }, [sortDirection])
 
   // Fix setContent call in the button click handler
-  const handleAddContactClick = () => {
+  const handleAddContactClick = useCallback(() => {
     hide();
-    
     setTimeout(() => {
       const topContent = (
-        <ContactFormProvider>
-          <QuickAddContact 
-            onSuccess={handleCreateContact}
-            onCancel={hide}
-            section="upper"
-          />
-        </ContactFormProvider>
+        <QuickAddContact 
+          onSuccess={handleSubmit} 
+          onCancel={hide}
+          section="upper"
+        />
       );
-      
-      const bottomContent = (
-        <ContactFormProvider>
-          <QuickAddContact 
-            onSuccess={handleCreateContact}
-            onCancel={hide}
-            section="lower"
-          />
-        </ContactFormProvider>
-      );
-      
-      setContent(topContent, bottomContent, 'add-contact');
-      show();
+      const bottomContent = null;
+      setContentAndShow(topContent, bottomContent, 'add-contact');
     }, 100);
-  };
+  }, [hide, setContentAndShow, handleSubmit]);
 
   // Add initial data loading
   useEffect(() => {
@@ -955,6 +858,42 @@ export default function ContactsPage() {
       console.error('Error fetching industries:', error);
     }
   }
+
+  const handleEditContact = useCallback((contact: Contact) => {
+    hide()
+    setTimeout(() => {
+      const topContent = (
+        <EditContact contact={contact} onSubmit={handleSubmit} onCancel={hide} />
+      )
+      const bottomContent = null
+      setContentAndShow(topContent, bottomContent, `edit-contact-${contact.id}`)
+    }, 100)
+  }, [hide, setContentAndShow, handleSubmit])
+
+  const handleTagsClick = useCallback(() => {
+    hide()
+    setTimeout(() => {
+      const topContent = (
+        <TagManagementModal onClose={hide} />
+      )
+      const bottomContent = null
+      setContentAndShow(topContent, bottomContent, 'manage-tags')
+    }, 100)
+  }, [hide, setContentAndShow])
+
+  const handleImportClick = useCallback(() => {
+    hide()
+    setTimeout(() => {
+      const topContent = (
+        <div className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Import Contacts</h2>
+          {/* Import form content */}
+        </div>
+      )
+      const bottomContent = null
+      setContentAndShow(topContent, bottomContent, 'import-contacts')
+    }, 100)
+  }, [hide, setContentAndShow])
 
   return (
     <PageTransition>
@@ -1036,7 +975,6 @@ export default function ContactsPage() {
                 hide();
                 setTimeout(() => {
                   setupInitialContent();
-                  show();
                 }, 100);
               }}
               variant="ghost"

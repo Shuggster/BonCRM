@@ -66,7 +66,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetric[]>(defaultMetrics)
   const [tasks, setTasks] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
-  const { setContent, show, hide } = useSplitViewStore()
+  const { setContentAndShow, hide } = useSplitViewStore()
   const supabase = createClientComponentClient()
   const [selectedMetric, setSelectedMetric] = useState<DashboardMetric | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -85,156 +85,157 @@ export default function DashboardPage() {
     })
   }, [])
 
-  const handleMetricClick = useCallback((metric: DashboardMetric) => {
-    hide();
-    setSelectedMetric(metric);
-    
-    setTimeout(() => {
-      const topContent = (
-        <motion.div 
-          key={metric.id}
-          className="h-full bg-[#111111] rounded-t-2xl"
-          initial={{ y: "-100%" }}
-          animate={{ 
-            y: 0,
-            transition: {
-              type: "tween",
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
-            }
-          }}
-        >
-          <div className="p-8">
-            <div className="flex items-start gap-6">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
-                <metric.icon className="w-8 h-8" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-semibold">{metric.name}</h2>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-bold">{metric.value}</span>
-                  <span className="text-sm font-medium text-zinc-400">
-                    {metric.change}
-                  </span>
+  const handleMetricClick = useCallback(
+    (metric: DashboardMetric) => {
+      hide()
+      
+      setTimeout(() => {
+        const topContent = (
+          <motion.div 
+            key={metric.id}
+            className="h-full bg-[#111111] rounded-t-2xl"
+            initial={{ y: "-100%" }}
+            animate={{ 
+              y: 0,
+              transition: {
+                type: "tween",
+                duration: 0.4,
+                ease: [0.4, 0, 0.2, 1]
+              }
+            }}
+          >
+            <div className="p-8">
+              <div className="flex items-start gap-6">
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                  <metric.icon className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-semibold">{metric.name}</h2>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-bold">{metric.value}</span>
+                    <span className="text-sm font-medium text-zinc-400">
+                      {metric.change}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.div>
-      )
+          </motion.div>
+        )
 
-      const bottomContent = (
-        <motion.div 
-          key={`${metric.id}-bottom`}
-          className="h-full bg-[#111111] rounded-b-2xl"
-          initial={{ y: "100%" }}
-          animate={{ 
-            y: 0,
-            transition: {
-              type: "tween",
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
-            }
-          }}
-        >
-          <div className="p-8 border-t border-white/[0.03]">
-            <div className="space-y-6">
-              {metric.name === "Total Contacts" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Recent Contacts</h3>
-                  {activities.map((activity, index) => (
-                    <motion.div 
-                      key={activity.id} 
-                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-pink-400 activity-dot" />
-                        <h3 className="font-medium flex-1">{activity.title}</h3>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-zinc-400">Added {formatDate(activity.scheduled_for)}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              {metric.name === "Tasks Completed" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Completed Tasks</h3>
-                  {tasks.filter(t => t.status === 'completed').map((task, index) => (
-                    <motion.div 
-                      key={task.id} 
-                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
-                    >
-                      <h3 className="font-medium">{task.title}</h3>
-                      <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">completed</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              {metric.name === "Active Tasks" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">In Progress Tasks</h3>
-                  {tasks.filter(t => t.status === 'in-progress').map((task, index) => (
-                    <motion.div 
-                      key={task.id} 
-                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
-                    >
-                      <h3 className="font-medium">{task.title}</h3>
-                      <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">in progress</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              {metric.name === "Scheduled Activities" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Upcoming Activities</h3>
-                  {activities.map((activity, index) => (
-                    <motion.div 
-                      key={activity.id} 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
-                          <activity.icon className="w-5 h-5" />
+        const bottomContent = (
+          <motion.div 
+            key={`${metric.id}-bottom`}
+            className="h-full bg-[#111111] rounded-b-2xl"
+            initial={{ y: "100%" }}
+            animate={{ 
+              y: 0,
+              transition: {
+                type: "tween",
+                duration: 0.4,
+                ease: [0.4, 0, 0.2, 1]
+              }
+            }}
+          >
+            <div className="p-8 border-t border-white/[0.03]">
+              <div className="space-y-6">
+                {metric.name === "Total Contacts" && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Recent Contacts</h3>
+                    {activities.map((activity, index) => (
+                      <motion.div 
+                        key={activity.id} 
+                        className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-pink-400 activity-dot" />
+                          <h3 className="font-medium flex-1">{activity.title}</h3>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium">{activity.title}</p>
-                          <p className="text-sm text-zinc-400 mt-0.5">{activity.type}</p>
-                          <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.scheduled_for)}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-zinc-400">Added {formatDate(activity.scheduled_for)}</span>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {metric.name === "Tasks Completed" && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Completed Tasks</h3>
+                    {tasks.filter(t => t.status === 'completed').map((task, index) => (
+                      <motion.div 
+                        key={task.id} 
+                        className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
+                      >
+                        <h3 className="font-medium">{task.title}</h3>
+                        <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">completed</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {metric.name === "Active Tasks" && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">In Progress Tasks</h3>
+                    {tasks.filter(t => t.status === 'in-progress').map((task, index) => (
+                      <motion.div 
+                        key={task.id} 
+                        className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
+                      >
+                        <h3 className="font-medium">{task.title}</h3>
+                        <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">in progress</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {metric.name === "Scheduled Activities" && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Upcoming Activities</h3>
+                    {activities.map((activity, index) => (
+                      <motion.div 
+                        key={activity.id} 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+                            <activity.icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">{activity.title}</p>
+                            <p className="text-sm text-zinc-400 mt-0.5">{activity.type}</p>
+                            <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.scheduled_for)}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </motion.div>
-      )
+          </motion.div>
+        )
 
-      setContent(topContent, bottomContent);
-      show();
-    }, 100); // Small delay for animation
-  }, [hide, show, setContent, activities, tasks, formatDate]);
+        setContentAndShow(topContent, bottomContent, metric.id)
+      }, 100)
+    },
+    [hide, setContentAndShow, activities, tasks, formatDate]
+  )
 
   // Handle notification clicks
   const handleNotificationClick = useCallback((type: string, id: string) => {
@@ -559,8 +560,7 @@ export default function DashboardPage() {
         </motion.div>
       )
 
-      setContent(initialTopContent, initialBottomContent)
-      show()
+      setContentAndShow(initialTopContent, initialBottomContent, 'initial')
     }
 
     requestAnimationFrame(setupInitialContent)

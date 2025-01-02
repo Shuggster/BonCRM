@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Plus, Filter, Search, FolderKanban, X } from 'lucide-react'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
 import type { Task, TaskGroup } from '@/types/tasks'
-import { TaskFormProvider, type TaskFormData } from './TaskFormContext'
 import { SimpleTaskForm } from './SimpleTaskForm'
 import { TaskView } from './TaskView'
 import { TaskFilters } from './TaskFilters'
@@ -16,25 +15,13 @@ import type { AssignedToOption } from './AssignedToFilter'
 import { getUsers } from '@/app/actions/users'
 import { TaskGroupsManager } from './TaskGroupsManager'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
-interface SplitFormProps {
-  onSubmit: (data: TaskFormData) => Promise<void>
-  onCancel: () => void
-  initialData?: Partial<TaskFormData>
-}
-
-function SplitForm({ onSubmit, onCancel, initialData }: SplitFormProps) {
-  return (
-    <TaskFormProvider onSubmit={onSubmit} onClose={onCancel} initialData={initialData}>
-      <SimpleTaskForm onSubmit={onSubmit} onCancel={onCancel} initialData={initialData} />
-    </TaskFormProvider>
-  )
-}
+import type { TaskFormData } from './TaskFormContext'
+import { TaskFormProvider } from './TaskFormContext'
 
 interface TasksProps {
   tasks: Task[]
   isLoading: boolean
-  onCreateTask?: (data: any) => Promise<void>
+  onCreateTask?: (data: TaskFormData) => Promise<void>
   onUpdateTask?: (task: Task) => Promise<void>
   onDeleteTask?: (taskId: string) => Promise<void>
   currentUserId: string
@@ -54,7 +41,7 @@ export function Tasks({
   onEditTask,
   setupInitialContent 
 }: TasksProps) {
-  const { setContent, show, hide } = useSplitViewStore()
+  const { setContentAndShow, hide } = useSplitViewStore();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [users, setUsers] = useState<Array<{ id: string; name: string }>>([])
@@ -125,18 +112,10 @@ export function Tasks({
 
   const handleEditTask = (task: Task) => {
     if (onUpdateTask) {
-      hide()
+      hide();
       
-      const initialFormData: Partial<TaskFormData> = {
-        title: task.title,
-        description: task.description || '',
-        priority: task.priority || 'medium',
-        due_date: task.due_date,
-        status: task.status,
-        task_group_id: task.task_group_id,
-        assigned_to: task.assigned_to
-      }
-
+      console.log('Edit task initiated:', task);
+      
       setTimeout(() => {
         const topContent = (
           <motion.div
@@ -152,31 +131,68 @@ export function Tasks({
               }
             }}
           >
-            <SplitForm
-              onSubmit={async (formData) => {
-                await onUpdateTask({
-                  id: task.id,
-                  title: formData.title,
-                  description: formData.description,
-                  priority: formData.priority,
-                  due_date: formData.due_date,
-                  status: formData.status || task.status,
-                  task_group_id: formData.task_group_id || task.task_group_id,
-                  user_id: task.user_id,
-                  assigned_to: formData.assigned_to || task.assigned_to,
-                  created_at: task.created_at,
-                  updated_at: new Date().toISOString()
-                })
-                hide()
-                setSelectedTask(null)
-              }}
-              onCancel={() => {
-                handleViewTask(task)
-              }}
-              initialData={initialFormData}
-            />
+            <div className="h-full flex flex-col rounded-b-2xl">
+              <TaskFormProvider 
+                onSubmit={async (formData) => {
+                  console.log('Form submitted with data:', formData);
+                  await onUpdateTask({
+                    id: task.id,
+                    title: formData.title,
+                    description: formData.description,
+                    priority: formData.priority,
+                    due_date: formData.due_date,
+                    status: formData.status || task.status,
+                    task_group_id: formData.task_group_id || task.task_group_id,
+                    user_id: task.user_id,
+                    assigned_to: formData.assigned_to || task.assigned_to,
+                    created_at: task.created_at,
+                    updated_at: new Date().toISOString()
+                  });
+                  hide();
+                  setSelectedTask(null);
+                }}
+                onClose={() => {
+                  console.log('Edit cancelled, returning to view');
+                  handleViewTask(task);
+                }}
+              >
+                <SimpleTaskForm
+                  onSubmit={async (formData) => {
+                    console.log('Form submitted with data:', formData);
+                    await onUpdateTask({
+                      id: task.id,
+                      title: formData.title,
+                      description: formData.description,
+                      priority: formData.priority,
+                      due_date: formData.due_date,
+                      status: formData.status || task.status,
+                      task_group_id: formData.task_group_id || task.task_group_id,
+                      user_id: task.user_id,
+                      assigned_to: formData.assigned_to || task.assigned_to,
+                      created_at: task.created_at,
+                      updated_at: new Date().toISOString()
+                    });
+                    hide();
+                    setSelectedTask(null);
+                  }}
+                  onCancel={() => {
+                    console.log('Edit cancelled, returning to view');
+                    handleViewTask(task);
+                  }}
+                  initialData={{
+                    title: task.title,
+                    description: task.description || '',
+                    priority: task.priority || 'medium',
+                    due_date: task.due_date,
+                    status: task.status,
+                    task_group_id: task.task_group_id,
+                    assigned_to: task.assigned_to
+                  }}
+                />
+              </TaskFormProvider>
+            </div>
           </motion.div>
-        )
+        );
 
         const bottomContent = (
           <motion.div
@@ -196,21 +212,21 @@ export function Tasks({
               task={task}
               section="lower"
               onClose={() => {
-                hide()
-                setSelectedTask(null)
+                hide();
+                setSelectedTask(null);
               }}
             />
           </motion.div>
-        )
+        );
 
-        setContent(topContent, bottomContent, `${task.id}-edit`)
-        show()
-      }, 100)
+        setContentAndShow(topContent, bottomContent, `${task.id}-edit`);
+      }, 100);
     }
-  }
+  };
 
   const handleViewTask = (task: Task) => {
-    hide()
+    hide();
+    setSelectedTask(task);
     
     setTimeout(() => {
       const topContent = (
@@ -231,22 +247,13 @@ export function Tasks({
             task={task}
             section="upper"
             onClose={() => {
-              hide()
-              setSelectedTask(null)
+              hide();
+              setSelectedTask(null);
             }}
-            onEdit={async (updatedTask) => {
-              if (onUpdateTask) {
-                await onUpdateTask({
-                  ...updatedTask,
-                  updated_at: new Date().toISOString()
-                })
-                // Update the view with the latest task data
-                handleViewTask(updatedTask)
-              }
-            }}
+            onEdit={() => handleEditTask(task)}
           />
         </motion.div>
-      )
+      );
 
       const bottomContent = (
         <motion.div
@@ -266,50 +273,83 @@ export function Tasks({
             task={task}
             section="lower"
             onClose={() => {
-              hide()
-              setSelectedTask(null)
+              hide();
+              setSelectedTask(null);
             }}
+            onEdit={() => handleEditTask(task)}
           />
         </motion.div>
-      )
+      );
 
-      setContent(topContent, bottomContent, task.id)
-      show()
-    }, 100)
-  }
+      setContentAndShow(topContent, bottomContent, task.id);
+    }, 100);
+  };
 
   const handleCreateClick = () => {
-    hide()
-    
-    setTimeout(() => {
-      const topContent = (
-        <motion.div
-          key="create-task"
-          className="h-full"
-          initial={{ y: "-100%" }}
-          animate={{ 
-            y: 0,
-            transition: {
-              type: "spring",
-              stiffness: 50,
-              damping: 15
-            }
-          }}
-        >
-          <SplitForm
-            onSubmit={async (formData) => {
-              await onCreateTask(formData)
-              hide()
+    if (onCreateTask) {
+      hide();
+      
+      setTimeout(() => {
+        const topContent = (
+          <motion.div
+            key="create-task"
+            className="h-full"
+            initial={{ y: "-100%" }}
+            animate={{ 
+              y: 0,
+              transition: {
+                type: "spring",
+                stiffness: 50,
+                damping: 15
+              }
             }}
-            onCancel={() => hide()}
-          />
-        </motion.div>
-      )
+          >
+            <div className="h-full flex flex-col rounded-b-2xl">
+              <TaskFormProvider
+                onSubmit={onCreateTask}
+                onClose={hide}
+              >
+                <SimpleTaskForm
+                  onSubmit={onCreateTask}
+                  onCancel={hide}
+                />
+              </TaskFormProvider>
+            </div>
+          </motion.div>
+        );
 
-      setContent(topContent, null, 'create-task')
-      show()
-    }, 100)
-  }
+        const bottomContent = (
+          <motion.div
+            key="create-task-bottom"
+            className="h-full"
+            initial={{ y: "100%" }}
+            animate={{ 
+              y: 0,
+              transition: {
+                type: "spring",
+                stiffness: 50,
+                damping: 15
+              }
+            }}
+          >
+            <div className="h-full flex flex-col rounded-b-2xl">
+              <TaskFormProvider
+                onSubmit={onCreateTask}
+                onClose={hide}
+              >
+                <SimpleTaskForm
+                  onSubmit={onCreateTask}
+                  onCancel={hide}
+                />
+              </TaskFormProvider>
+            </div>
+          </motion.div>
+        );
+
+        setContentAndShow(topContent, bottomContent, 'create-task');
+      }, 100);
+    }
+  };
 
   const filteredTasks = tasks.filter(task => {
     // Text search filter
@@ -426,7 +466,7 @@ export function Tasks({
         currentUserId={currentUserId}
         users={users}
         tasks={tasks}
-        onViewTask={handleViewTask}
+        onViewTask={onViewTask}
         onEditTask={handleEditTask}
         setupInitialContent={setupInitialContent}
       />
@@ -477,7 +517,7 @@ export function Tasks({
             ) : (
               <TaskList
                 tasks={filteredTasks}
-                onViewClick={handleViewTask}
+                onViewClick={onViewTask}
                 onEditClick={handleEditTask}
                 onTaskDeleted={handleTaskDeleted}
               />

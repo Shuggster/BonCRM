@@ -60,10 +60,17 @@ interface TaskFormProviderProps {
 }
 
 export function TaskFormProvider({ children, onSubmit, initialData, onClose }: TaskFormProviderProps) {
-  const [formData, setFormData] = useState<TaskFormData>({
-    ...initialFormData,
-    ...initialData
-  })
+  console.log('TaskFormProvider initializing with data:', initialData);
+
+  const [formData, setFormData] = useState<TaskFormData>(() => {
+    const mergedData = {
+      ...initialFormData,
+      ...(initialData || {})
+    };
+    console.log('Initial form state:', mergedData);
+    return mergedData;
+  });
+
   const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -72,17 +79,29 @@ export function TaskFormProvider({ children, onSubmit, initialData, onClose }: T
   const supabase = createClientComponentClient()
 
   const resetForm = useCallback(() => {
+    console.log('Resetting form to initial state');
     setFormData(initialFormData)
   }, [])
 
   useEffect(() => {
-    console.log('TaskFormProvider mounted')
-    if (!initialData?.title) {
-      resetForm()
-    }
+    console.log('TaskFormProvider mounted, fetching data...');
     fetchTaskGroups()
     fetchUsers()
-  }, [resetForm, initialData?.title])
+  }, [])
+
+  useEffect(() => {
+    if (initialData) {
+      console.log('Updating form with new initial data:', initialData);
+      setFormData(current => {
+        const updated = {
+          ...current,
+          ...initialData
+        };
+        console.log('Updated form state:', updated);
+        return updated;
+      });
+    }
+  }, [initialData])
 
   useEffect(() => {
     console.log('Users state updated:', users)
@@ -141,16 +160,25 @@ export function TaskFormProvider({ children, onSubmit, initialData, onClose }: T
   }
 
   const updateField = (field: keyof TaskFormData, value: any) => {
+    console.log(`Updating field ${field}:`, value);
     if (field === 'task_group_id') {
       const newGroup = value === 'no-group' ? null : value;
       const groupDetails = newGroup ? taskGroups.find(g => g.id === newGroup) : undefined;
-      setFormData(prev => ({
-        ...prev,
-        task_group_id: newGroup,
-        task_groups: groupDetails
-      }));
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          task_group_id: newGroup,
+          task_groups: groupDetails
+        };
+        console.log('Updated form state after group change:', updated);
+        return updated;
+      });
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
+      setFormData(prev => {
+        const updated = { ...prev, [field]: value };
+        console.log('Updated form state:', updated);
+        return updated;
+      });
     }
   };
 

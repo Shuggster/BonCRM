@@ -10,7 +10,7 @@ import { EVENT_CATEGORIES, EventCategory } from "@/lib/constants/categories"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { addMinutes } from 'date-fns'
-import { UserSession } from '@/types/users'
+import { UserSession } from '@/types/session'
 import { cn } from '@/lib/utils'
 
 interface AssignmentSelection {

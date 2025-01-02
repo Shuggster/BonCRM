@@ -55,18 +55,21 @@ export const authOptions: AuthOptions = {
 
           return {
             id: user.id,
-            email: user.email,
-            name: authUser.user.user_metadata.name,
-            role: authUser.user.user_metadata.role,
-            department: authUser.user.user_metadata.department
+            email: user.email || '',
+            name: authUser.user.user_metadata.name || null,
+            role: authUser.user.user_metadata.role || 'user',
+            department: authUser.user.user_metadata.department || 'general'
           }
-
         } catch (error) {
-          console.error('Authorization error:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          })
+          if (error instanceof Error) {
+            console.error('Authorization error:', {
+              name: error.name,
+              message: error.message,
+              stack: error.stack
+            })
+          } else {
+            console.error('Unknown authorization error:', error)
+          }
           return null
         }
       }
@@ -75,6 +78,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id
         token.role = user.role
         token.department = user.department
         token.name = user.name
@@ -83,9 +87,10 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session?.user) {
+        session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.department = token.department as string
-        session.user.name = token.name as string
+        session.user.name = token.name as string || null
       }
       return session
     }

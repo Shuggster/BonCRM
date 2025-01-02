@@ -1,16 +1,17 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { create } from 'zustand'
+import { splitContainerVariants, splitContentVariants } from '@/lib/animations'
 
 interface SplitViewState {
   isVisible: boolean
   topContent: React.ReactNode | null
   bottomContent: React.ReactNode | null
   selectedId: string | null
-  setContent: (top: React.ReactNode | null, bottom: React.ReactNode | null, id?: string | null) => void
-  show: () => void
+  provider: React.ReactNode | null
+  setContentAndShow: (top: React.ReactNode | null, bottom: React.ReactNode | null, id?: string | null, provider?: React.ReactNode | null) => void
   hide: () => void
   reset: () => void
 }
@@ -20,91 +21,26 @@ export const useSplitViewStore = create<SplitViewState>((set) => ({
   topContent: null,
   bottomContent: null,
   selectedId: null,
-  setContent: (top, bottom, id) => {
-    set({ topContent: top, bottomContent: bottom, selectedId: id })
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('splitViewState', JSON.stringify({ 
-        isVisible: true,
-        selectedId: id
-      }))
-    }
-  },
-  show: () => {
-    set({ isVisible: true })
-    if (typeof window !== 'undefined') {
-      const state = localStorage.getItem('splitViewState')
-      if (state) {
-        const parsed = JSON.parse(state)
-        localStorage.setItem('splitViewState', JSON.stringify({ ...parsed, isVisible: true }))
-      }
-    }
-  },
-  hide: () => {
-    set({ isVisible: false })
-    if (typeof window !== 'undefined') {
-      const state = localStorage.getItem('splitViewState')
-      if (state) {
-        const parsed = JSON.parse(state)
-        localStorage.setItem('splitViewState', JSON.stringify({ ...parsed, isVisible: false }))
-      }
-    }
-  },
-  reset: () => {
-    set({ isVisible: false, topContent: null, bottomContent: null, selectedId: null })
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('splitViewState')
-    }
-  }
+  provider: null,
+  setContentAndShow: (top, bottom, id = null, provider = null) => set({
+    isVisible: true,
+    topContent: top,
+    bottomContent: bottom,
+    selectedId: id,
+    provider
+  }),
+  hide: () => set({ isVisible: false }),
+  reset: () => set({
+    isVisible: false,
+    topContent: null,
+    bottomContent: null,
+    selectedId: null,
+    provider: null
+  })
 }))
 
-// Main container animation - syncs with page transition
-const containerVariants = {
-  initial: { x: "100%" },
-  animate: { 
-    x: 0,
-    transition: {
-      type: "tween",
-      duration: 1.2,
-      ease: [0.4, 0, 0.2, 1]
-    }
-  },
-  exit: { 
-    x: "100%",
-    transition: {
-      type: "tween",
-      duration: 1.2,
-      ease: [0.4, 0, 0.2, 1]
-    }
-  }
-}
-
-// Split view animations
-const topVariants = {
-  initial: { y: "-100%" },
-  animate: { 
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 50,
-      damping: 15
-    }
-  }
-}
-
-const bottomVariants = {
-  initial: { y: "100%" },
-  animate: { 
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 50,
-      damping: 15
-    }
-  }
-}
-
 export function SplitViewContainer() {
-  const { isVisible, topContent, bottomContent, selectedId } = useSplitViewStore()
+  const { isVisible, topContent, bottomContent, selectedId, provider } = useSplitViewStore()
 
   return (
     <AnimatePresence mode="wait">
@@ -112,16 +48,17 @@ export function SplitViewContainer() {
         <motion.div 
           key={selectedId || 'container'}
           className="fixed right-0 top-0 bottom-0 w-[600px] flex items-center bg-black/80 pointer-events-auto"
-          variants={containerVariants}
+          variants={splitContainerVariants}
           initial="initial"
           animate="animate"
           exit="exit"
         >
           <div className="w-full h-[calc(100%-8rem)] relative overflow-y-auto pointer-events-auto">
+            {provider}
             <div className="min-h-full pointer-events-auto">
               {/* Top Card */}
               <motion.div
-                variants={topVariants}
+                variants={splitContentVariants.top}
                 initial="initial"
                 animate="animate"
                 className="h-[50%] pointer-events-auto"
@@ -131,7 +68,7 @@ export function SplitViewContainer() {
 
               {/* Bottom Card */}
               <motion.div
-                variants={bottomVariants}
+                variants={splitContentVariants.bottom}
                 initial="initial"
                 animate="animate"
                 className="h-[50%] pointer-events-auto"
@@ -148,17 +85,17 @@ export function SplitViewContainer() {
 
 // Add this component to handle persistence
 export function SplitViewPersistence() {
-  const { setContent, show } = useSplitViewStore()
+  const { setContentAndShow } = useSplitViewStore()
   
   useEffect(() => {
     const persistedState = localStorage.getItem('splitViewState')
     if (persistedState) {
       const { isVisible, selectedId } = JSON.parse(persistedState)
       if (isVisible) {
-        show()
+        setContentAndShow(null, null, selectedId)
       }
     }
-  }, [show])
+  }, [setContentAndShow])
 
   return null
 } 

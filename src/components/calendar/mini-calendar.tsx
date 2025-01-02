@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 interface MiniCalendarProps {
   selectedDate: Date
   onDateSelect: (date: Date) => void
+  className?: string
 }
 
 const WEEKDAYS = [
@@ -21,19 +22,26 @@ const WEEKDAYS = [
   { key: 'sat', label: 'S' }
 ] as const
 
-export function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) {
+export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCalendarProps) {
+  if (!(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+    console.error('Invalid selectedDate:', selectedDate)
+    selectedDate = new Date() // Fallback to current date
+  }
+  
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate))
 
   const getDaysInMonth = (date: Date) => {
+    console.log('Current month:', date)
     const start = startOfWeek(startOfMonth(date))
     const end = endOfWeek(endOfMonth(date))
+    console.log('Calendar interval:', { start, end })
     return eachDayOfInterval({ start, end })
   }
 
   const days = getDaysInMonth(currentMonth)
 
   return (
-    <div className="space-y-4 bg-[#111111] rounded-lg border border-white/10 p-3">
+    <div className={cn("space-y-4 bg-[#111111] rounded-lg border border-white/10 p-3", className)}>
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"

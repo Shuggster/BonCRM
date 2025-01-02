@@ -2,7 +2,7 @@
 
 import { Calendar, CheckSquare, Clock, Tag, AlertCircle, Loader2, Plus, Save } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
-import { useTaskForm, TaskFormData } from './TaskFormContext'
+import { TaskFormData } from './TaskFormContext'
 import { FormCard, FormCardSection, formInputStyles } from '@/components/ui/form-card'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,20 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { TaskGroupModal } from './TaskGroupModal'
 import { useState, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+
+interface TaskGroup {
+  id: string
+  name: string
+  color: string
+  description?: string | null
+}
+
+interface User {
+  id: string
+  email: string
+  name?: string
+}
 
 interface TaskFormProps {
   onSubmit: (data: TaskFormData) => void
@@ -61,35 +75,98 @@ function CustomFormInput({ label, children }: CustomFormInputProps) {
 }
 
 export function SimpleTaskForm({ onSubmit, onCancel, initialData }: TaskFormProps) {
-  const { formData, updateField, isSubmitting, taskGroups, users, resetForm, error } = useTaskForm()
-  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false)
+  console.log('SimpleTaskForm rendering with initialData:', initialData);
+  
+  const [formData, setFormData] = useState<TaskFormData>(() => ({
+    title: '',
+    description: '',
+    priority: 'medium',
+    due_date: null,
+    task_group_id: null,
+    status: 'todo',
+    assigned_to: null,
+    ...initialData
+  }));
+  
+  const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isTitleTouched, setIsTitleTouched] = useState(false)
   const [isSubmitAttempted, setIsSubmitAttempted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false)
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
-    if (users.length > 0 || taskGroups.length > 0) {
+    console.log('SimpleTaskForm mounted, form data:', formData);
+    fetchTaskGroups();
+    fetchUsers();
+  }, []);
+
+  const fetchTaskGroups = async () => {
+    const { data, error } = await supabase
+      .from('task_groups')
+      .select('id, name, color, description')
+      .order('name')
+    
+    if (!error && data) {
+      const uniqueGroups = data.reduce((acc: TaskGroup[], current) => {
+        const exists = acc.some(group => group.name === current.name);
+        if (!exists) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+      
+      setTaskGroups(uniqueGroups);
+    }
+  }
+
+  const fetchUsers = async () => {
+    console.log('Fetching users...')
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, name')
+      .order('name')
+    
+    console.log('Users response:', { data, error })
+    
+    if (!error && data) {
+      console.log('Setting users state:', data)
+      setUsers(data)
       setIsLoading(false)
     }
-  }, [users.length, taskGroups.length])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Form submission attempted with data:', formData);
     setIsSubmitAttempted(true)
     if (!formData.title.trim()) {
+      console.log('Form submission blocked: missing title');
+      setError('Title is required');
       return
     }
     try {
       await onSubmit(formData)
-      resetForm()
-      setIsTitleTouched(false)
-      setIsSubmitAttempted(false)
     } catch (err) {
       console.error('Failed to submit task:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit task');
     }
   }
 
+  const updateField = (field: keyof TaskFormData, value: any) => {
+    console.log(`Updating field ${field}:`, value);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log('Updated form state:', updated);
+      return updated;
+    });
+  }
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Title changed:', e.target.value);
     updateField('title', e.target.value)
     if (!isTitleTouched) {
       setIsTitleTouched(true)

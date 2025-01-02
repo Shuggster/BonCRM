@@ -44,6 +44,7 @@ export type Database = {
             frequency: 'daily' | 'weekly' | 'monthly'
             interval: number
             end_date?: string
+            exception_dates?: string[]
           } | null
           user_id: string
           assigned_to: string | null
@@ -63,6 +64,7 @@ export type Database = {
             frequency: 'daily' | 'weekly' | 'monthly'
             interval: number
             end_date?: string
+            exception_dates?: string[]
           } | null
           user_id: string
           assigned_to?: string | null
@@ -82,6 +84,7 @@ export type Database = {
             frequency: 'daily' | 'weekly' | 'monthly'
             interval: number
             end_date?: string
+            exception_dates?: string[]
           } | null
           user_id?: string
           assigned_to?: string | null

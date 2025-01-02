@@ -1,25 +1,29 @@
-import { getServerSession } from "next-auth"
 import { redirect } from 'next/navigation'
-import { authOptions } from "@/app/(auth)/lib/auth-options"
-import { CalendarClient } from "./calendar-client"
-import { toUserSession } from "@/types/session"
+import { toUserSession } from '@/types/session'
+import { getSession } from '@/app/(auth)/lib/session'
+import CalendarClient from './calendar-client'
+import { SplitViewContainer } from '@/components/layouts/SplitViewContainer'
 
 export default async function CalendarPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
 
-  if (!session?.user) {
+  if (!session) {
     return redirect('/login')
   }
-
-  // Ensure all required fields are present
-  if (!session.user.id || !session.user.role || !session.user.department) {
-    console.error('Invalid session data:', session)
-    return redirect('/login')
-  }
-
+   
   try {
     const userSession = toUserSession(session)
-    return <CalendarClient session={userSession} />
+    return (
+      <div className="flex h-screen">
+        {/* Main Calendar View */}
+        <div className="flex-1 overflow-hidden">
+          <CalendarClient session={userSession} />
+        </div>
+
+        {/* Split View */}
+        <SplitViewContainer />
+      </div>
+    )
   } catch (error) {
     console.error('Error converting session:', error)
     return redirect('/login')

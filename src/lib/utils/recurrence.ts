@@ -1,73 +1,58 @@
-import { addDays, addMonths, addWeeks, addYears, endOfDay, isAfter, isBefore, parseISO, startOfDay } from 'date-fns'
-import { CalendarEvent, RecurrenceRule } from '@/types/calendar'
+import { CalendarEvent } from '@/types/calendar'
+import { addDays, addMonths, addWeeks, format, isBefore, isWithinInterval } from 'date-fns'
 
-export function generateRecurringInstances(event: CalendarEvent, viewStart: Date, viewEnd: Date): CalendarEvent[] {
-  // Convert string dates to Date objects if needed
-  const startDate = typeof viewStart === 'string' ? parseISO(viewStart) : viewStart
-  const endDate = typeof viewEnd === 'string' ? parseISO(viewEnd) : viewEnd
-  
-  // Use start of day and end of day to ensure we include events that start or end on the boundary days
-  const rangeStart = startOfDay(startDate)
-  const rangeEnd = endOfDay(endDate)
-
-  // If not a recurring event and it falls within our range, return just the event
-  if (!event.recurrence) {
+export function generateRecurringInstances(
+  event: CalendarEvent,
+  rangeStart: Date,
+  rangeEnd: Date
+): CalendarEvent[] {
+  if (!event.recurring || event.recurring.frequency === 'none') {
     return [event]
   }
 
   const instances: CalendarEvent[] = []
-  let instanceCount = 0
-  const { frequency, interval = 1, endDate: recurrenceEndDate } = event.recurrence
-  const eventStart = new Date(event.start)
-  const eventEnd = new Date(event.end)
-  const duration = eventEnd.getTime() - eventStart.getTime()
+  let currentDate = new Date(event.start)
+  const eventDuration = event.end.getTime() - event.start.getTime()
+  const interval = event.recurring.interval || 1
 
-  const recurrenceEnd = recurrenceEndDate ? (typeof recurrenceEndDate === 'string' ? parseISO(recurrenceEndDate) : recurrenceEndDate) : undefined
+  // Convert exception dates to yyyy-MM-dd format for comparison
+  const exceptionDates = (event.recurring.exception_dates || [])
 
-  let currentStart = eventStart
-  while ((!recurrenceEnd || isBefore(currentStart, recurrenceEnd)) && 
-         isBefore(currentStart, rangeEnd)) {
-    
-    // If this instance falls within our view range
-    if (!isBefore(currentStart, rangeStart)) {
-      const currentEnd = new Date(currentStart.getTime() + duration)
-      
-      // Create a new instance
-      instances.push({
-        ...event,
-        id: `${event.id}_${instanceCount}`,
-        start: currentStart,
-        end: currentEnd,
-        isRecurring: true,
-        originalEventId: event.id
-      })
+  while (isBefore(currentDate, rangeEnd)) {
+    // Check if this instance should be included based on the date range
+    if (isWithinInterval(currentDate, { start: rangeStart, end: rangeEnd })) {
+      // Check if this date is not in the exception dates
+      const currentDateStr = format(currentDate, 'yyyy-MM-dd')
+      if (!exceptionDates.includes(currentDateStr)) {
+        const instanceEnd = new Date(currentDate.getTime() + eventDuration)
+        instances.push({
+          ...event,
+          id: `${event.id}_${format(currentDate, 'yyyyMMdd')}`,
+          start: new Date(currentDate),
+          end: instanceEnd,
+        })
+      }
     }
 
-    // Move to next instance based on frequency
-    switch (frequency) {
+    // Stop if we've reached the end date
+    if (event.recurring.endDate && isBefore(event.recurring.endDate, currentDate)) {
+      break
+    }
+
+    // Increment the date based on frequency
+    switch (event.recurring.frequency) {
       case 'daily':
-        currentStart = addDays(currentStart, interval)
+        currentDate = addDays(currentDate, interval)
         break
       case 'weekly':
-        currentStart = addWeeks(currentStart, interval)
+        currentDate = addWeeks(currentDate, interval)
         break
       case 'monthly':
-        currentStart = addMonths(currentStart, interval)
+        currentDate = addMonths(currentDate, interval)
         break
-      case 'yearly':
-        currentStart = addYears(currentStart, interval)
-        break
+      default:
+        return instances
     }
-
-    instanceCount++
-  }
-
-  // Add the original event if it falls within the range
-  if (!isBefore(eventEnd, rangeStart) && !isAfter(eventStart, rangeEnd)) {
-    instances.unshift({
-      ...event,
-      isRecurring: true
-    })
   }
 
   return instances

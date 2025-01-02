@@ -18,7 +18,7 @@ const views: { type: ViewType; icon: React.ReactNode; label: string }[] = [
 
 export function CalendarViewToggle({ currentView, onViewChange }: CalendarViewToggleProps) {
   return (
-    <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-[#111111] rounded-lg border border-white/10 p-1">
       {views.map(({ type, icon, label }) => (
         <Button
           key={type}
@@ -26,12 +26,15 @@ export function CalendarViewToggle({ currentView, onViewChange }: CalendarViewTo
           size="sm"
           onClick={() => onViewChange(type)}
           className={cn(
-            "gap-2",
-            currentView === type && "bg-white/10"
+            "gap-2 px-3 h-8",
+            "text-white/70 hover:text-white",
+            "hover:bg-white/[0.02]",
+            "transition-all duration-200",
+            currentView === type && "bg-white/10 text-white"
           )}
         >
           {icon}
-          <span className="hidden md:inline">{label}</span>
+          <span>{label}</span>
         </Button>
       ))}
     </div>

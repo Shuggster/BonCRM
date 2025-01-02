@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useContactForm } from './ContactFormContext'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { motion } from 'framer-motion'
 import { 
   Plus, Mail, Phone, Building2, User2, Briefcase, Factory, 
@@ -662,18 +662,12 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Submitting form data:', formData)
     
     const trimmedFirstName = formData.first_name.trim()
     const trimmedEmail = formData.email.trim()
-
-    if (!trimmedFirstName) {
-      setError('First name is required')
-      return
-    }
-
-    if (!trimmedEmail) {
-      setError('Email is required')
+    
+    if (!trimmedFirstName || !trimmedEmail) {
+      setError('First name and email are required')
       return
     }
 
@@ -681,16 +675,16 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
     setError(null)
 
     try {
-      await onSuccess({
+      const dataToSubmit = {
         ...formData,
         first_name: trimmedFirstName,
         email: trimmedEmail,
         tags: formData.tags || []
-      })
-      resetForm()
-    } catch (err: any) {
+      }
+      await onSuccess(dataToSubmit)
+    } catch (err) {
       console.error('Error submitting form:', err)
-      setError(err.message || 'An error occurred while submitting the form')
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsSubmitting(false)
     }
@@ -699,24 +693,61 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
   return (
     <form onSubmit={handleSubmit} className="h-full flex flex-col">
       <div className="flex-1 flex flex-col min-h-0">
-        {section === 'upper' ? (
-          <motion.div
-            key="add-upper"
-            className="flex-none"
-            initial={{ y: "-100%" }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <div className="relative z-10">
+        {/* Upper Section */}
+        <motion.div
+          key="add-upper"
+          className="flex-none"
+          initial={{ y: "-100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <div className="relative rounded-t-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div className="relative z-10">
+              <QuickAddContactSection
+                section="upper"
+                formData={formData}
+                onFieldUpdate={onFieldUpdate}
+                industries={industries}
+                tags={tags}
+                showTagSelect={showTagSelect}
+                setShowTagSelect={setShowTagSelect}
+                showTagInput={showTagInput}
+                setShowTagInput={setShowTagInput}
+                newTagName={newTagName}
+                setNewTagName={setNewTagName}
+                newTagColor={newTagColor}
+                setNewTagColor={setNewTagColor}
+                handleTagCreate={handleTagCreate}
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Lower Section */}
+        <motion.div
+          key="add-lower"
+          className="flex-1 min-h-0"
+          initial={{ y: "100%" }}
+          animate={{ 
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 50,
+              damping: 15
+            }
+          }}
+        >
+          <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div className="relative z-10">
+              <div className="pb-24">
                 <QuickAddContactSection
-                  section={section}
+                  section="lower"
                   formData={formData}
                   onFieldUpdate={onFieldUpdate}
                   industries={industries}
@@ -733,72 +764,33 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
                 />
               </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="add-lower"
-            className="flex-1 min-h-0"
-            initial={{ y: "100%" }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <div className="relative z-10">
-                <div className="pb-24">
-                  <QuickAddContactSection
-                    section={section}
-                    formData={formData}
-                    onFieldUpdate={onFieldUpdate}
-                    industries={industries}
-                    tags={tags}
-                    showTagSelect={showTagSelect}
-                    setShowTagSelect={setShowTagSelect}
-                    showTagInput={showTagInput}
-                    setShowTagInput={setShowTagInput}
-                    newTagName={newTagName}
-                    setNewTagName={setNewTagName}
-                    newTagColor={newTagColor}
-                    setNewTagColor={setNewTagColor}
-                    handleTagCreate={handleTagCreate}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
       </div>
 
-      {/* Fixed Save Button - Only show in lower section */}
-      {section === 'lower' && (
-        <div className="fixed bottom-0 left-0 right-0 px-8 py-6 bg-[#111111] border-t border-white/10 flex justify-between items-center z-50">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCancel}
-            className="text-white/70 border-white/10 hover:bg-white/5"
-            type="button"
-          >
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-[#111111] hover:bg-[#1a1a1a] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            {isSubmitting ? 'Creating...' : 'Create Contact'}
-          </Button>
-        </div>
-      )}
+      {/* Fixed Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 px-8 py-6 bg-[#111111] border-t border-white/10 flex justify-between items-center z-50 rounded-b-2xl">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onCancel}
+          className="text-white/70 border-white/10 hover:bg-white/5"
+          type="button"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Cancel
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-[#111111] hover:bg-[#1a1a1a] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          {isSubmitting ? 'Creating...' : 'Create Contact'}
+        </Button>
+      </div>
 
       {error && (
         <div className="fixed top-4 right-4 bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-2 rounded">

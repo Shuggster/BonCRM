@@ -5,15 +5,15 @@ import { CalendarEvent, ViewType } from "@/types/calendar"
 import { CalendarViewToggle } from './calendar-view-toggle'
 import { Button } from "@/components/ui/button"
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
-import { MonthView } from './views/month-view'
-import { WeekView } from './views/week-view'
-import { DayView } from './views/day-view'
+import { MonthView } from './new/views/month-view'
+import { WeekView } from './new/views/week-view'
+import { DayView } from './new/views/day-view'
 import { EventModal } from './event-modal'
 import { CalendarDndContext } from './calendar-dnd-context'
 import { subMonths, addMonths, subWeeks, addWeeks, subDays, addDays, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { generateRecurringInstances } from '@/lib/utils/recurrence'
-import { UserSession } from '@/types/users'
+import { UserSession } from '@/types/session'
 
 interface CalendarViewProps {
   events: CalendarEvent[]
@@ -37,9 +37,9 @@ export function CalendarView({
   session
 }: CalendarViewProps) {
   const [currentView, setCurrentView] = useState<ViewType>('month')
+  const [currentDate, setCurrentDate] = useState(selectedDate)
   const [showEventModal, setShowEventModal] = useState(false)
   const [newEventTime, setNewEventTime] = useState<{ start: Date; end: Date } | null>(null)
-  const [currentDate, setCurrentDate] = useState(selectedDate)
 
   useEffect(() => {
     setCurrentDate(selectedDate)
@@ -50,59 +50,65 @@ export function CalendarView({
     onDateChange?.(date)
   }, [onDateChange])
 
+  const getNavigationText = useCallback(() => {
+    switch (currentView) {
+      case 'month':
+        return format(currentDate, 'MMMM yyyy')
+      case 'week':
+        const weekStart = startOfWeek(currentDate)
+        const weekEnd = endOfWeek(currentDate)
+        return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`
+      case 'day':
+        return format(currentDate, 'EEEE, MMMM d, yyyy')
+      default:
+        return format(currentDate, 'MMMM yyyy')
+    }
+  }, [currentDate, currentView])
+
   const handlePrevious = useCallback(() => {
-    const newDate = (() => {
-      switch (currentView) {
-        case 'month':
-          return subMonths(currentDate, 1)
-        case 'week':
-          return subWeeks(currentDate, 1)
-        case 'day':
-          return subDays(currentDate, 1)
-        default:
-          return currentDate
-      }
-    })()
-    handleDateChange(newDate)
+    switch (currentView) {
+      case 'month':
+        handleDateChange(subMonths(currentDate, 1))
+        break
+      case 'week':
+        handleDateChange(subWeeks(currentDate, 1))
+        break
+      case 'day':
+        handleDateChange(subDays(currentDate, 1))
+        break
+    }
   }, [currentView, currentDate, handleDateChange])
 
   const handleNext = useCallback(() => {
-    const newDate = (() => {
-      switch (currentView) {
-        case 'month':
-          return addMonths(currentDate, 1)
-        case 'week':
-          return addWeeks(currentDate, 1)
-        case 'day':
-          return addDays(currentDate, 1)
-        default:
-          return currentDate
-      }
-    })()
-    handleDateChange(newDate)
+    switch (currentView) {
+      case 'month':
+        handleDateChange(addMonths(currentDate, 1))
+        break
+      case 'week':
+        handleDateChange(addWeeks(currentDate, 1))
+        break
+      case 'day':
+        handleDateChange(addDays(currentDate, 1))
+        break
+    }
   }, [currentView, currentDate, handleDateChange])
 
-  const handleEventCreate = useCallback((eventData: Partial<CalendarEvent>) => {
-    if (eventData.start && eventData.end) {
-      setNewEventTime({ start: eventData.start, end: eventData.end })
-      setShowEventModal(true)
-    }
-  }, [])
+  const handleEventCreate = (start: Date, end: Date) => {
+    setNewEventTime({ start, end })
+    setShowEventModal(true)
+  }
 
-  const handleSaveEvent = useCallback((eventData: Partial<CalendarEvent>) => {
+  const handleSaveEvent = (eventData: Partial<CalendarEvent>) => {
     if (newEventTime) {
       onEventCreate({
         ...eventData,
         start: newEventTime.start,
-        end: newEventTime.end,
-        title: eventData.title || '',
-        description: eventData.description || '',
-        category: eventData.category || 'default'
+        end: newEventTime.end
       })
     }
     setShowEventModal(false)
     setNewEventTime(null)
-  }, [newEventTime, onEventCreate])
+  }
 
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -171,6 +177,7 @@ export function CalendarView({
             onEventClick={onEventClick}
             onEventDrop={onEventDrop}
             currentDate={currentDate}
+            onDateChange={handleDateChange}
           />
         )
       case 'week':
@@ -178,7 +185,11 @@ export function CalendarView({
           <WeekView 
             events={visibleEvents} 
             onEventClick={onEventClick}
+            onEventCreate={handleEventCreate}
+            onEventDrop={onEventDrop}
+            onEventResize={onEventResize}
             currentDate={currentDate}
+            onDateChange={handleDateChange}
           />
         )
       case 'day':
@@ -187,20 +198,22 @@ export function CalendarView({
             events={visibleEvents} 
             onEventClick={onEventClick}
             onEventCreate={handleEventCreate}
+            onEventDrop={onEventDrop}
             onEventResize={onEventResize}
             currentDate={currentDate}
+            onDateChange={handleDateChange}
           />
         )
       default:
         return null
     }
-  }, [currentView, visibleEvents, currentDate, onEventClick, onEventDrop, handleEventCreate, onEventResize])
+  }, [currentView, visibleEvents, currentDate, onEventClick, onEventDrop, handleEventCreate, onEventResize, handleDateChange])
 
   return (
     <CalendarDndContext onEventDrop={onEventDrop}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between bg-[#0F1629]/50 backdrop-blur-xl rounded-lg border border-white/[0.08] shadow-xl p-4">
-          <div className="flex items-center gap-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between bg-[#111111] rounded-xl border border-white/[0.08] p-4">
+          <div className="flex items-center gap-6">
             <CalendarViewToggle
               currentView={currentView}
               onViewChange={setCurrentView}
@@ -211,51 +224,53 @@ export function CalendarView({
               onClick={() => handleDateChange(new Date())}
               className={cn(
                 "gap-2 px-4 py-2 h-9",
-                "bg-[#1C2333] text-gray-300 hover:text-gray-200",
-                "border-white/10 hover:bg-[#1C2333]/80",
+                "bg-[#111111] text-white hover:text-white",
+                "border-white/10 hover:bg-white/[0.02]",
                 "transition-all duration-200"
               )}
             >
               <CalendarIcon className="h-4 w-4" />
-              Today
+              Jump to Today
             </Button>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-[#1C2333] rounded-md border border-white/10 p-1">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 bg-[#111111] rounded-lg border border-white/10 p-2">
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={handlePrevious}
                 className={cn(
-                  "h-7 w-7",
-                  "text-gray-400 hover:text-gray-300",
-                  "hover:bg-white/5",
+                  "gap-2 px-3 h-8",
+                  "text-white/70 hover:text-white",
+                  "hover:bg-white/[0.02]",
                   "transition-all duration-200"
                 )}
               >
                 <ChevronLeft className="h-4 w-4" />
+                Previous {currentView}
               </Button>
-              <span className="text-sm font-medium min-w-[150px] text-center text-gray-200">
-                {format(currentDate, 'MMMM yyyy')}
+              <span className="text-sm font-medium min-w-[150px] text-center text-white">
+                {getNavigationText()}
               </span>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={handleNext}
                 className={cn(
-                  "h-7 w-7",
-                  "text-gray-400 hover:text-gray-300",
-                  "hover:bg-white/5",
+                  "gap-2 px-3 h-8",
+                  "text-white/70 hover:text-white",
+                  "hover:bg-white/[0.02]",
                   "transition-all duration-200"
                 )}
               >
+                Next {currentView}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="relative">
+        <div className="bg-[#111111] rounded-xl border border-white/[0.08]">
           {currentViewComponent}
         </div>
 

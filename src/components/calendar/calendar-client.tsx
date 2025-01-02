@@ -8,11 +8,12 @@ import { CalendarIcon, Plus, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { CalendarView } from '@/components/calendar/calendar-view'
-import { EventModal } from '@/components/calendar/event-modal'
+import { EventDetails } from '@/components/calendar/new/EventDetails'
 import { MiniCalendar } from '@/components/calendar/mini-calendar'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { EVENT_CATEGORIES } from '@/lib/constants/categories'
 import { Input } from '@/components/ui/input'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface CalendarClientProps {
   session: UserSession
@@ -21,7 +22,7 @@ interface CalendarClientProps {
 export function CalendarClient({ session }: CalendarClientProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-  const [showEventModal, setShowEventModal] = useState(false)
+  const [showEventDetails, setShowEventDetails] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [searchQuery, setSearchQuery] = useState('')
   
@@ -91,7 +92,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
     } as CalendarEvent
 
     setSelectedEvent(cleanEvent)
-    setShowEventModal(true)
+    setShowEventDetails(true)
   }, [])
 
   const handleEventDelete = useCallback(async (event: CalendarEvent) => {
@@ -99,7 +100,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
       await calendarService.deleteEvent(session, event.id)
       setEvents(prevEvents => prevEvents.filter(e => e.id !== event.id))
       toast.success('Event deleted successfully')
-      setShowEventModal(false)
+      setShowEventDetails(false)
       setSelectedEvent(null)
     } catch (error) {
       console.error('Error deleting event:', error)
@@ -192,7 +193,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
         setEvents([...events, newEvent])
         toast.success('Event created successfully')
       }
-      setShowEventModal(false)
+      setShowEventDetails(false)
       setSelectedEvent(null)
     } catch (error) {
       console.error('Error saving event:', error)
@@ -249,7 +250,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
           </div>
           <div className="flex-shrink-0">
             <Button 
-              onClick={() => setShowEventModal(true)} 
+              onClick={() => setShowEventDetails(true)} 
               className={cn(
                 "gap-2 px-4 py-2 h-10",
                 "bg-blue-600 hover:bg-blue-700 text-white",
@@ -345,29 +346,30 @@ export function CalendarClient({ session }: CalendarClientProps) {
         </div>
       </div>
 
-      {/* Event Modal */}
-      <EventModal
-        isOpen={showEventModal}
-        onClose={() => {
-          setShowEventModal(false)
-          setSelectedEvent(null)
-        }}
-        onSave={handleSaveEvent}
-        onDelete={handleEventDelete}
-        event={selectedEvent}
-        session={session}
-        initialData={selectedEvent ? {
-          title: selectedEvent.title,
-          description: selectedEvent.description || '',
-          category: selectedEvent.category || 'default',
-          start: new Date(selectedEvent.start),
-          end: new Date(selectedEvent.end),
-          recurrence: selectedEvent.recurrence,
-          assigned_to: selectedEvent.assigned_to,
-          assigned_to_type: selectedEvent.assigned_to_type,
-          department: selectedEvent.department
-        } : undefined}
-      />
+      {/* Event Details Split View */}
+      <AnimatePresence>
+        {showEventDetails && selectedEvent && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 20 }}
+            className="fixed top-0 right-0 bottom-0 w-[400px] bg-[#0F1629] border-l border-white/[0.08] shadow-2xl"
+          >
+            <EventDetails
+              event={selectedEvent}
+              onClose={() => {
+                setShowEventDetails(false)
+                setSelectedEvent(null)
+              }}
+              onEdit={() => {
+                // Handle edit
+              }}
+              onDelete={() => handleEventDelete(selectedEvent)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 } 

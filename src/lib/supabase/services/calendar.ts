@@ -1,311 +1,271 @@
-import { supabase } from '@/lib/supabase/client'
-import { CalendarEvent } from '@/types/calendar'
-import { UserSession } from '@/types/users'
+import { EventCategory } from '@/lib/constants/categories'
+import { Session } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/app/(auth)/lib/supabase-admin'
+import { CalendarEvent, RecurrenceRule, RecurringEventDeleteOption } from '@/types/calendar'
+import { format } from 'date-fns'
+import { UserSession } from '@/types/session'
+import { Database } from '@/types/supabase'
+import { generateRecurringInstances } from '@/lib/utils/recurrence'
+
+type CalendarEventRow = Database['public']['Tables']['calendar_events']['Row']
 
 export const calendarService = {
-  async getDepartments(session: UserSession): Promise<string[]> {
-    if (!session?.user?.id) {
-      throw new Error('No user session found')
-    }
+  async getEvents(start: Date, end: Date, session: UserSession): Promise<CalendarEvent[]> {
+    console.log('Fetching events for range:', { start, end })
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('start_time', { ascending: true })
 
-    // If not admin, return only user's department
-    if (session.user.role !== 'admin') {
-      return session.user.department ? [session.user.department] : []
-    }
+      if (error) {
+        console.error('Error fetching calendar events:', error)
+        throw error
+      }
 
-    // For admins, get all departments from users
-    const { data, error } = await supabase
-      .from('users')
-      .select('department')
-      .not('department', 'is', null)
-      .order('department')
+      console.log('Raw events from database:', data)
 
-    if (error) {
-      console.error('Supabase error:', error)
-      throw error
-    }
-
-    // Get unique departments
-    const departments = [...new Set(data.map(user => user.department))]
-    return departments
-  },
-
-  async getUsers(session: UserSession): Promise<{ id: string; name: string }[]> {
-    if (!session?.user?.id) {
-      throw new Error('No user session found')
-    }
-
-    // If not admin, return only the current user
-    if (session.user.role !== 'admin') {
-      return [{
-        id: session.user.id,
-        name: session.user.name || session.user.email
-      }]
-    }
-
-    // For admins, get all users
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching users:', error)
-      throw error
-    }
-
-    return data.map(user => ({
-      id: user.id,
-      name: user.name || user.email
-    }))
-  },
-
-  async getEvents(session: UserSession) {
-    if (!session?.user?.id) {
-      throw new Error('No user session found')
-    }
-
-    // First get calendar events
-    const { data: events, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('start_time', { ascending: true })
-
-    if (error) {
-      console.error('Supabase error:', error)
-      throw error
-    }
-
-    // Then get assignments for these events
-    const eventIds = events?.map(e => e.id) || []
-    const { data: assignments, error: assignmentsError } = await supabase
-      .from('assignments')
-      .select('*')
-      .in('assignable_id', eventIds)
-      .eq('assignable_type', 'calendar_event')
-
-    if (assignmentsError) {
-      console.error('Assignments error:', assignmentsError)
-      throw assignmentsError
-    }
-
-    // Map assignments to events
-    const assignmentMap = new Map(
-      assignments?.map(a => [a.assignable_id, a]) || []
-    )
-
-    return events?.map(event => {
-      const assignment = assignmentMap.get(event.id)
-      return {
+      const baseEvents = (data || []).map((event: CalendarEventRow) => ({
         id: event.id,
         title: event.title,
         description: event.description || '',
         start: new Date(event.start_time),
         end: new Date(event.end_time),
-        category: event.category || 'default',
-        recurrence: event.recurrence ? {
+        category: (event.category || 'default') as EventCategory,
+        recurring: event.recurrence ? {
           frequency: event.recurrence.frequency,
           interval: event.recurrence.interval || 1,
-          endDate: event.recurrence.endDate ? new Date(event.recurrence.endDate) : undefined
-        } : undefined,
-        assigned_to: assignment?.assigned_to || undefined,
-        assigned_to_type: assignment?.assigned_to_type || undefined,
-        department: event.department || undefined,
-        user_id: event.user_id,
-        created_at: event.created_at ? new Date(event.created_at) : undefined,
-        updated_at: event.updated_at ? new Date(event.updated_at) : undefined
-      }
-    }) || []
+          endDate: event.recurrence.end_date ? new Date(event.recurrence.end_date) : undefined,
+          exception_dates: event.recurrence.exception_dates || []
+        } : undefined
+      }))
+
+      // Generate all recurring instances within the date range
+      const allEvents = baseEvents.flatMap(event => 
+        generateRecurringInstances(event, start, end)
+      )
+
+      console.log('Events with recurrences:', allEvents)
+      return allEvents
+    } catch (err) {
+      console.error('Error in getEvents:', err)
+      throw err
+    }
   },
 
-  async createEvent(session: UserSession, event: Omit<CalendarEvent, 'id'>) {
-    if (!session?.user?.id) {
-      throw new Error('No user session found')
-    }
-
-    // First create the event
-    const { data: eventData, error: eventError } = await supabase
+  async createEvent(event: Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>, session: UserSession): Promise<CalendarEvent> {
+    const { data, error } = await supabaseAdmin
       .from('calendar_events')
       .insert({
         title: event.title,
-        description: event.description || '',
+        description: event.description || null,
         start_time: event.start.toISOString(),
         end_time: event.end.toISOString(),
         category: event.category || 'default',
-        recurrence: event.recurrence ? {
-          frequency: event.recurrence.frequency,
-          interval: event.recurrence.interval || 1,
-          endDate: event.recurrence.endDate?.toISOString()
-        } : null,
         user_id: session.user.id,
-        department: event.department || null
+        recurrence: event.recurring && event.recurring.frequency !== 'none' && event.recurring.frequency !== 'yearly' ? {
+          frequency: event.recurring.frequency,
+          interval: event.recurring.interval || 1,
+          end_date: event.recurring.endDate?.toISOString()
+        } : null
       })
       .select()
       .single()
-
-    if (eventError) {
-      console.error('Event creation error:', eventError)
-      throw eventError
-    }
-
-    if (!eventData) {
-      throw new Error('Failed to create event')
-    }
-
-    // Then create the assignment if needed
-    if (event.assigned_to && event.assigned_to_type) {
-      const { error: assignmentError } = await supabase
-        .from('assignments')
-        .insert({
-          assignable_id: eventData.id,
-          assignable_type: 'calendar_event',
-          assigned_to: event.assigned_to,
-          assigned_to_type: event.assigned_to_type
-        })
-
-      if (assignmentError) {
-        console.error('Assignment error:', assignmentError)
-        // Clean up the event since assignment failed
-        await supabase
-          .from('calendar_events')
-          .delete()
-          .eq('id', eventData.id)
-        throw assignmentError
-      }
-    }
-
-    // Return the complete event
-    return {
-      id: eventData.id,
-      title: eventData.title,
-      description: eventData.description || '',
-      start: new Date(eventData.start_time),
-      end: new Date(eventData.end_time),
-      category: eventData.category || 'default',
-      recurrence: event.recurrence ? {
-        frequency: event.recurrence.frequency,
-        interval: event.recurrence.interval || 1,
-        endDate: event.recurrence.endDate
-      } : undefined,
-      assigned_to: event.assigned_to || undefined,
-      assigned_to_type: event.assigned_to_type || undefined,
-      department: event.department || undefined,
-      user_id: eventData.user_id,
-      created_at: eventData.created_at ? new Date(eventData.created_at) : undefined,
-      updated_at: eventData.updated_at ? new Date(eventData.updated_at) : undefined
-    }
-  },
-
-  async updateEvent(session: UserSession, id: string, event: Partial<CalendarEvent>) {
-    if (!session?.user?.id) {
-      throw new Error('No user session found')
-    }
-
-    // First update the event
-    const { data: eventData, error: eventError } = await supabase
-      .from('calendar_events')
-      .update({
-        title: event.title,
-        description: event.description || '',
-        start_time: event.start?.toISOString(),
-        end_time: event.end?.toISOString(),
-        category: event.category || 'default',
-        recurrence: event.recurrence ? {
-          frequency: event.recurrence.frequency,
-          interval: event.recurrence.interval || 1,
-          endDate: event.recurrence.endDate?.toISOString()
-        } : null,
-        department: event.department || null
-      })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (eventError) {
-      console.error('Event update error:', eventError)
-      throw eventError
-    }
-
-    if (!eventData) {
-      throw new Error('Event not found')
-    }
-
-    // Handle assignment
-    if (event.assigned_to && event.assigned_to_type) {
-      // First delete any existing assignment
-      await supabase
-        .from('assignments')
-        .delete()
-        .eq('assignable_id', id)
-        .eq('assignable_type', 'calendar_event')
-
-      // Then create the new assignment
-      const { error: assignmentError } = await supabase
-        .from('assignments')
-        .insert({
-          assignable_id: id,
-          assignable_type: 'calendar_event',
-          assigned_to: event.assigned_to,
-          assigned_to_type: event.assigned_to_type
-        })
-
-      if (assignmentError) {
-        console.error('Assignment error:', assignmentError)
-        throw assignmentError
-      }
-    } else {
-      // Remove assignment if it exists
-      await supabase
-        .from('assignments')
-        .delete()
-        .eq('assignable_id', id)
-        .eq('assignable_type', 'calendar_event')
-    }
-
-    // Return the complete updated event
-    return {
-      id: eventData.id,
-      title: eventData.title,
-      description: eventData.description || '',
-      start: new Date(eventData.start_time),
-      end: new Date(eventData.end_time),
-      category: eventData.category || 'default',
-      recurrence: eventData.recurrence ? {
-        frequency: eventData.recurrence.frequency,
-        interval: eventData.recurrence.interval || 1,
-        endDate: eventData.recurrence.endDate ? new Date(eventData.recurrence.endDate) : undefined
-      } : undefined,
-      assigned_to: event.assigned_to || undefined,
-      assigned_to_type: event.assigned_to_type || undefined,
-      department: eventData.department || undefined,
-      user_id: eventData.user_id,
-      created_at: eventData.created_at ? new Date(eventData.created_at) : undefined,
-      updated_at: eventData.updated_at ? new Date(eventData.updated_at) : undefined
-    }
-  },
-
-  async deleteEvent(session: UserSession, id: string) {
-    if (!session?.user?.id) {
-      throw new Error('No user session found')
-    }
-
-    // First delete any assignments
-    await supabase
-      .from('assignments')
-      .delete()
-      .eq('assignable_id', id)
-      .eq('assignable_type', 'calendar_event')
-
-    // Then delete the event
-    const { error } = await supabase
-      .from('calendar_events')
-      .delete()
-      .eq('id', id)
 
     if (error) {
-      console.error('Event deletion error:', error)
+      console.error('Error creating calendar event:', error)
       throw error
+    }
+
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description || '',
+      start: new Date(data.start_time),
+      end: new Date(data.end_time),
+      category: (data.category || 'default') as EventCategory,
+      user_id: data.user_id,
+      recurring: data.recurrence ? {
+        frequency: data.recurrence.frequency,
+        interval: data.recurrence.interval || 1,
+        endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : null,
+        weekdays: []
+      } : undefined
+    }
+  },
+
+  async updateEvent(event: Partial<CalendarEvent>, session: UserSession): Promise<CalendarEvent> {
+    try {
+      if (!event.id) {
+        throw new Error('Event ID is required for update')
+      }
+
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      }
+
+      if (event.title !== undefined) updateData.title = event.title
+      if (event.description !== undefined) updateData.description = event.description
+      if (event.start) updateData.start_time = event.start.toISOString()
+      if (event.end) updateData.end_time = event.end.toISOString()
+      if (event.category) updateData.category = event.category
+      if (event.recurring !== undefined) {
+        updateData.recurrence = event.recurring && event.recurring.frequency !== 'none' && event.recurring.frequency !== 'yearly' ? {
+          frequency: event.recurring.frequency,
+          interval: event.recurring.interval || 1,
+          end_date: event.recurring.endDate?.toISOString()
+        } : null
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('calendar_events')
+        .update(updateData)
+        .eq('id', event.id)
+        .eq('user_id', session.user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating calendar event:', error)
+        throw new Error(error.message)
+      }
+
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description || '',
+        start: new Date(data.start_time),
+        end: new Date(data.end_time),
+        category: (data.category || 'default') as EventCategory,
+        user_id: data.user_id,
+        recurring: data.recurrence ? {
+          frequency: data.recurrence.frequency,
+          interval: data.recurrence.interval || 1,
+          endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : null,
+          weekdays: []
+        } : undefined
+      }
+    } catch (error) {
+      console.error('Error updating calendar event:', error)
+      throw error instanceof Error ? error : new Error('Failed to update calendar event')
+    }
+  },
+
+  async deleteEvent(
+    id: string, 
+    session: UserSession, 
+    deleteOption?: RecurringEventDeleteOption,
+    instanceDate?: Date
+  ): Promise<void> {
+    // Get the original event ID if this is an instance
+    const originalId = id.includes('_') ? id.split('_')[0] : id
+
+    // Get the event to check if it's recurring
+    const { data: event, error: fetchError } = await supabaseAdmin
+      .from('calendar_events')
+      .select('*')
+      .eq('id', originalId)
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching event:', fetchError)
+      throw fetchError
+    }
+
+    // If it's not a recurring event or user chose to delete all, just delete the event
+    if (!event.recurrence || deleteOption === 'all') {
+      const { error } = await supabaseAdmin
+        .from('calendar_events')
+        .delete()
+        .eq('id', originalId)
+        .eq('user_id', session.user.id)
+
+      if (error) {
+        console.error('Error deleting calendar event:', error)
+        throw error
+      }
+      return
+    }
+
+    // Handle single instance deletion
+    if (deleteOption === 'single' && instanceDate) {
+      const exceptionDates = event.recurrence.exception_dates || []
+      const formattedDate = format(instanceDate, 'yyyy-MM-dd')
+      
+      if (!exceptionDates.includes(formattedDate)) {
+        exceptionDates.push(formattedDate)
+      }
+
+      const { error } = await supabaseAdmin
+        .from('calendar_events')
+        .update({
+          recurrence: {
+            ...event.recurrence,
+            exception_dates: exceptionDates
+          }
+        })
+        .eq('id', originalId)
+        .eq('user_id', session.user.id)
+
+      if (error) {
+        console.error('Error updating event exceptions:', error)
+        throw error
+      }
+      return
+    }
+
+    // Handle future instances deletion
+    if (deleteOption === 'future' && instanceDate) {
+      const { error } = await supabaseAdmin
+        .from('calendar_events')
+        .update({
+          recurrence: {
+            ...event.recurrence,
+            end_date: format(instanceDate, 'yyyy-MM-dd')
+          }
+        })
+        .eq('id', originalId)
+        .eq('user_id', session.user.id)
+
+      if (error) {
+        console.error('Error updating event end date:', error)
+        throw error
+      }
+      return
+    }
+
+    throw new Error('Invalid delete option or missing instance date')
+  },
+
+  async getEventById(id: string, session: UserSession): Promise<CalendarEvent> {
+    const { data, error } = await supabaseAdmin
+      .from('calendar_events')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching calendar event:', error)
+      throw error
+    }
+
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description || '',
+      start: new Date(data.start_time),
+      end: new Date(data.end_time),
+      category: (data.category || 'default') as EventCategory,
+      user_id: data.user_id,
+      recurring: data.recurrence ? {
+        frequency: data.recurrence.frequency,
+        interval: data.recurrence.interval || 1,
+        endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : null,
+        weekdays: []
+      } : undefined
     }
   }
 }

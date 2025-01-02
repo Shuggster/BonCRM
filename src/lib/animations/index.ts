@@ -4,22 +4,68 @@ import { Variants } from 'framer-motion'
 export const pageVariants: Variants = {
   initial: { 
     opacity: 0,
-    y: 20
+    x: "100%"
   },
   animate: { 
     opacity: 1,
-    y: 0,
+    x: 0,
     transition: {
-      type: "spring",
-      stiffness: 35,
-      damping: 25,
-      when: "beforeChildren",
-      staggerChildren: 0.1
+      duration: 1.2,
+      ease: [0.32, 0.72, 0, 1]
     }
   },
   exit: { 
     opacity: 0,
-    y: 20
+    x: "100%",
+    transition: {
+      duration: 1.2,
+      ease: [0.32, 0.72, 0, 1]
+    }
+  }
+}
+
+// Split view container variants
+export const splitContainerVariants: Variants = {
+  initial: { x: "100%" },
+  animate: { 
+    x: 0,
+    transition: {
+      duration: 1.2,
+      ease: [0.32, 0.72, 0, 1]
+    }
+  },
+  exit: { 
+    x: "100%",
+    transition: {
+      duration: 1.2,
+      ease: [0.32, 0.72, 0, 1]
+    }
+  }
+}
+
+// Split view content variants
+export const splitContentVariants = {
+  top: {
+    initial: { y: "-100%" },
+    animate: { 
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 50,
+        damping: 15
+      }
+    }
+  },
+  bottom: {
+    initial: { y: "100%" },
+    animate: { 
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 50,
+        damping: 15
+      }
+    }
   }
 }
 
@@ -36,16 +82,6 @@ export const fadeInVariants: Variants = {
       type: "spring",
       stiffness: 35,
       damping: 25
-    }
-  }
-}
-
-// Stagger children variants
-export const staggerContainerVariants: Variants = {
-  initial: {},
-  animate: {
-    transition: {
-      staggerChildren: 0.1
     }
   }
 }
@@ -68,13 +104,18 @@ export const cardHoverVariants: Variants = {
 
 // Animation timing constants
 export const ANIMATION_DURATION = {
-  page: 0.5,
-  component: 0.3,
+  page: 1.2,
+  split: 1.2,
   hover: 0.2
 }
 
 // Standardized spring configs
 export const SPRING_CONFIGS = {
+  splitView: {
+    type: "spring",
+    stiffness: 50,
+    damping: 15
+  },
   gentle: {
     type: "spring",
     stiffness: 35,
