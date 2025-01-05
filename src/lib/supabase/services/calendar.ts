@@ -6,17 +6,24 @@ import { format } from 'date-fns'
 import { UserSession } from '@/types/session'
 import { Database } from '@/types/supabase'
 import { generateRecurringInstances } from '@/lib/utils/recurrence'
+import { StatusType } from '@/components/calendar/new/StatusFilter'
+import { PriorityType } from '@/components/calendar/new/PriorityFilter'
 
 type CalendarEventRow = Database['public']['Tables']['calendar_events']['Row']
 
 export const calendarService = {
   async getEvents(start: Date, end: Date, session: UserSession): Promise<CalendarEvent[]> {
+    if (!session?.user?.id) {
+      throw new Error('Unauthorized: No valid session')
+    }
+
     console.log('Fetching events for range:', { start, end })
     try {
       const { data, error } = await supabaseAdmin
         .from('calendar_events')
         .select('*')
         .eq('user_id', session.user.id)
+        .or(`and(start_time.gte.${start.toISOString()},start_time.lte.${end.toISOString()}),recurrence.not.is.null`)
         .order('start_time', { ascending: true })
 
       if (error) {
@@ -26,25 +33,54 @@ export const calendarService = {
 
       console.log('Raw events from database:', data)
 
-      const baseEvents = (data || []).map((event: CalendarEventRow) => ({
-        id: event.id,
-        title: event.title,
-        description: event.description || '',
-        start: new Date(event.start_time),
-        end: new Date(event.end_time),
-        category: (event.category || 'default') as EventCategory,
-        recurring: event.recurrence ? {
-          frequency: event.recurrence.frequency,
-          interval: event.recurrence.interval || 1,
-          endDate: event.recurrence.end_date ? new Date(event.recurrence.end_date) : undefined,
-          exception_dates: event.recurrence.exception_dates || []
-        } : undefined
-      }))
+      const baseEvents = (data || []).map((event: CalendarEventRow) => {
+        console.log('Converting event:', event)
+        return ({
+          id: event.id,
+          title: event.title,
+          description: event.description || '',
+          start: new Date(event.start_time),
+          end: new Date(event.end_time),
+          category: (event.category || 'default') as EventCategory,
+          user_id: event.user_id,
+          status: event.status as StatusType,
+          priority: event.priority as PriorityType,
+          type: event.type || 'meeting',
+          assigned_to: event.assigned_to || undefined,
+          assigned_to_type: (event.assigned_to_type === 'team' ? 'department' : event.assigned_to_type) || undefined,
+          department: event.department || undefined,
+          location: event.location || undefined,
+          recurrence: event.recurrence ? {
+            frequency: event.recurrence.frequency,
+            interval: event.recurrence.interval || 1,
+            endDate: event.recurrence.end_date ? new Date(event.recurrence.end_date) : undefined,
+            exception_dates: event.recurrence.exception_dates || []
+          } : undefined
+        } as CalendarEvent)
+      })
 
-      // Generate all recurring instances within the date range
-      const allEvents = baseEvents.flatMap(event => 
+      console.log('Converted base events:', baseEvents)
+
+      // Separate recurring and non-recurring events
+      const [recurringEvents, nonRecurringEvents] = baseEvents.reduce<[CalendarEvent[], CalendarEvent[]]>(
+        (acc, event) => {
+          if (event.recurrence) {
+            acc[0].push(event)
+          } else {
+            acc[1].push(event)
+          }
+          return acc
+        },
+        [[], []]
+      )
+
+      // Generate instances only for recurring events
+      const recurringInstances = recurringEvents.flatMap(event => 
         generateRecurringInstances(event, start, end)
       )
+
+      // Combine recurring instances with non-recurring events
+      const allEvents = [...nonRecurringEvents, ...recurringInstances]
 
       console.log('Events with recurrences:', allEvents)
       return allEvents
@@ -54,7 +90,7 @@ export const calendarService = {
     }
   },
 
-  async createEvent(event: Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>, session: UserSession): Promise<CalendarEvent> {
+  async createEvent(event: Omit<CalendarEvent, 'id'>, session: UserSession): Promise<CalendarEvent> {
     const { data, error } = await supabaseAdmin
       .from('calendar_events')
       .insert({
@@ -64,10 +100,14 @@ export const calendarService = {
         end_time: event.end.toISOString(),
         category: event.category || 'default',
         user_id: session.user.id,
-        recurrence: event.recurring && event.recurring.frequency !== 'none' && event.recurring.frequency !== 'yearly' ? {
-          frequency: event.recurring.frequency,
-          interval: event.recurring.interval || 1,
-          end_date: event.recurring.endDate?.toISOString()
+        assigned_to: event.assigned_to || null,
+        assigned_to_type: event.assigned_to_type || null,
+        department: event.department || null,
+        recurrence: event.recurrence ? {
+          frequency: event.recurrence.frequency,
+          interval: event.recurrence.interval || 1,
+          end_date: event.recurrence.endDate?.toISOString(),
+          exception_dates: event.recurrence.exception_dates || []
         } : null
       })
       .select()
@@ -78,6 +118,7 @@ export const calendarService = {
       throw error
     }
 
+    // Convert the database response to match our CalendarEvent type
     return {
       id: data.id,
       title: data.title,
@@ -86,11 +127,17 @@ export const calendarService = {
       end: new Date(data.end_time),
       category: (data.category || 'default') as EventCategory,
       user_id: data.user_id,
-      recurring: data.recurrence ? {
+      status: 'scheduled' as StatusType, // Default status
+      priority: 'medium' as PriorityType, // Default priority
+      type: 'meeting', // Default type
+      assigned_to: data.assigned_to || undefined,
+      assigned_to_type: data.assigned_to_type || undefined,
+      department: data.department || undefined,
+      recurrence: data.recurrence ? {
         frequency: data.recurrence.frequency,
         interval: data.recurrence.interval || 1,
-        endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : null,
-        weekdays: []
+        endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : undefined,
+        exception_dates: data.recurrence.exception_dates || []
       } : undefined
     }
   },

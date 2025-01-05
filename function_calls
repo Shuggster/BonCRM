@@ -1,0 +1,59 @@
+<invoke name="run_terminal_cmd">
+<parameter name="command">jest src/lib/ai/__tests__/chunking.test.ts --verbose</parameter>
+<parameter name="explanation">Running chunking test using Jest directly with verbose output</parameter>
+<parameter name="is_background">false</parameter>
+<parameter name="require_user_approval">true</parameter>
+</invoke>
+
+<invoke name="run_terminal_cmd">
+<parameter name="command">npm test src/lib/ai/__tests__/document-system.test.ts</parameter>
+<parameter name="explanation">Checking overall system integration</parameter>
+<parameter name="is_background">false</parameter>
+<parameter name="require_user_approval">true</parameter>
+</invoke>
+
+<invoke name="run_terminal_cmd">
+<parameter name="command">npm test src/lib/ai/__tests__/retry-handler.test.ts</parameter>
+<parameter name="explanation">Validating retry mechanism functionality</parameter>
+<parameter name="is_background">false</parameter>
+<parameter name="require_user_approval">true</parameter>
+</invoke>
+
+<invoke name="grep_search">
+<parameter name="query">chunking.test.ts</parameter>
+<parameter name="explanation">Searching specifically for the chunking test file</parameter>
+<parameter name="include_pattern">*.ts</parameter>
+</invoke>
+
+<invoke name="list_dir">
+<parameter name="explanation">First, let's check what's in the auth directory</parameter>
+<parameter name="relative_workspace_path">src/lib/auth</parameter>
+</invoke>
+
+<invoke name="read_file">
+<parameter name="explanation">Reading the auth system section from DISASTER-RECOVERY.md</parameter>
+<parameter name="relative_workspace_path">Documentation/4-maintenance/DISASTER-RECOVERY.md</parameter>
+<parameter name="start_line_one_indexed">1</parameter>
+<parameter name="end_line_one_indexed">50</parameter>
+<parameter name="should_read_entire_file">false</parameter>
+</invoke>
+
+<invoke name="file_search">
+<parameter name="query">auth-options</parameter>
+<parameter name="explanation">Looking for the auth-options file in the codebase</parameter>
+</invoke>
+
+<invoke name="file_search">
+<parameter name="query">tsconfig.json</parameter>
+<parameter name="explanation">Looking for TypeScript path configurations</parameter>
+</invoke>
+
+<invoke name="file_search">
+<parameter name="query">jest.config</parameter>
+<parameter name="explanation">Looking for Jest configuration file</parameter>
+</invoke>
+
+<invoke name="list_dir">
+<parameter name="explanation">Checking root directory for config files</parameter>
+<parameter name="relative_workspace_path">.</parameter>
+</invoke> 

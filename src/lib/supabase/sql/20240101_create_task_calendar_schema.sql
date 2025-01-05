@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
     start_time TIMESTAMPTZ NOT NULL,
     end_time TIMESTAMPTZ NOT NULL,
     category TEXT NOT NULL,
+    type TEXT CHECK (type IN ('call', 'email', 'meeting', 'follow_up')),
+    status TEXT NOT NULL DEFAULT 'scheduled',
+    priority TEXT NOT NULL DEFAULT 'medium',
+    location TEXT,
     recurrence JSONB,
     assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
@@ -33,6 +37,16 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add status check constraint
+ALTER TABLE public.calendar_events
+ADD CONSTRAINT calendar_events_status_check
+CHECK (status IN ('scheduled', 'cancelled', 'completed', 'pending'));
+
+-- Add priority check constraint
+ALTER TABLE public.calendar_events
+ADD CONSTRAINT calendar_events_priority_check
+CHECK (priority IN ('high', 'medium', 'low'));
 
 -- Create task-event relationship table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.task_calendar_relations (

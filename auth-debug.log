@@ -1,0 +1,1048 @@
+2025-01-05T11:55:22.277Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T11:55:22.279Z: Auth Secret exists: true
+2025-01-05T11:55:22.492Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T11:55:22.493Z: Auth Secret exists: true
+2025-01-05T11:55:28.788Z: Starting authorization...
+2025-01-05T11:55:28.788Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T11:55:28.920Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T11:55:28.921Z: Auth Secret exists: true
+2025-01-05T11:55:28.971Z: Supabase response: {
+  "user": {
+    "id": "0233b606-d5af-4bcf-9adf-0980d0dc434a",
+    "email": "hugh@bonnymans.co.uk",
+    "password_hash": "$2b$10$dummyHashForTesting",
+    "name": "Hugh Bonnyman",
+    "role": "admin",
+    "created_at": "2025-01-05T00:01:22.634+00:00",
+    "updated_at": "2025-01-05T00:01:22.635+00:00",
+    "department": "sales",
+    "is_active": true
+  },
+  "error": null
+}
+2025-01-05T11:55:28.980Z: Password verification result: false
+2025-01-05T11:55:28.981Z: Invalid password
+2025-01-05T11:55:28.983Z: Authorization error: Error: Invalid credentials
+2025-01-05T11:58:10.979Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T11:58:10.980Z: Auth Secret exists: true
+2025-01-05T11:58:11.219Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T11:58:11.220Z: Auth Secret exists: true
+2025-01-05T11:58:19.369Z: Starting authorization...
+2025-01-05T11:58:19.370Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T11:58:19.426Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T11:58:19.427Z: Auth Secret exists: true
+2025-01-05T11:58:19.554Z: Supabase response: {
+  "user": {
+    "id": "0233b606-d5af-4bcf-9adf-0980d0dc434a",
+    "email": "hugh@bonnymans.co.uk",
+    "password_hash": "$2b$10$dummyHashForTesting",
+    "name": "Hugh Bonnyman",
+    "role": "admin",
+    "created_at": "2025-01-05T00:01:22.634+00:00",
+    "updated_at": "2025-01-05T00:01:22.635+00:00",
+    "department": "sales",
+    "is_active": true
+  },
+  "error": null
+}
+2025-01-05T11:58:19.556Z: Password verification result: false
+2025-01-05T11:58:19.559Z: Invalid password
+2025-01-05T11:58:19.562Z: Authorization error: Error: Invalid credentials
+2025-01-05T12:00:48.209Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:00:48.210Z: Auth Secret exists: true
+2025-01-05T12:00:48.488Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:00:48.489Z: Auth Secret exists: true
+2025-01-05T12:00:48.770Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:00:48.770Z: Auth Secret exists: true
+2025-01-05T12:00:56.141Z: Starting authorization...
+2025-01-05T12:00:56.143Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T12:00:56.303Z: Supabase URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:00:56.304Z: Auth Secret exists: true
+2025-01-05T12:00:56.471Z: Supabase response: {
+  "user": {
+    "id": "0233b606-d5af-4bcf-9adf-0980d0dc434a",
+    "email": "hugh@bonnymans.co.uk",
+    "password_hash": "$2b$10$dummyHashForTesting",
+    "name": "Hugh Bonnyman",
+    "role": "admin",
+    "created_at": "2025-01-05T00:01:22.634+00:00",
+    "updated_at": "2025-01-05T00:01:22.635+00:00",
+    "department": "sales",
+    "is_active": true
+  },
+  "error": null
+}
+2025-01-05T12:00:56.476Z: Password verification result: false
+2025-01-05T12:00:56.477Z: Invalid password
+2025-01-05T12:00:56.481Z: Authorization error: Error: Invalid credentials
+2025-01-05T12:05:16.916Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:05:16.916Z: Auth Secret exists: true
+2025-01-05T12:05:17.136Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:05:17.137Z: Auth Secret exists: true
+2025-01-05T12:05:20.887Z: Starting authorization...
+2025-01-05T12:05:20.888Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T12:05:21.023Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:05:21.023Z: Auth Secret exists: true
+2025-01-05T12:05:21.029Z: Database response: {"hasUser":true}
+2025-01-05T12:05:21.126Z: Password verification result: true
+2025-01-05T12:05:21.126Z: Authorization successful
+2025-01-05T12:05:21.430Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:05:21.431Z: Auth Secret exists: true
+2025-01-05T12:09:26.860Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:09:26.860Z: Auth Secret exists: true
+2025-01-05T12:09:27.114Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:09:27.115Z: Auth Secret exists: true
+2025-01-05T12:09:56.621Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:09:56.625Z: Auth Secret exists: true
+2025-01-05T12:09:58.810Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:09:58.811Z: Auth Secret exists: true
+2025-01-05T12:10:06.001Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:10:06.002Z: Auth Secret exists: true
+2025-01-05T12:10:06.256Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:10:06.257Z: Auth Secret exists: true
+2025-01-05T12:10:13.718Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:10:13.719Z: Auth Secret exists: true
+2025-01-05T12:12:54.672Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:12:54.673Z: Auth Secret exists: true
+2025-01-05T12:12:54.953Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:12:54.954Z: Auth Secret exists: true
+2025-01-05T12:15:11.665Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:15:11.665Z: Auth Secret exists: true
+2025-01-05T12:15:11.948Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:15:11.949Z: Auth Secret exists: true
+2025-01-05T12:15:16.311Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:15:16.312Z: Auth Secret exists: true
+2025-01-05T12:23:10.240Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:23:10.241Z: Auth Secret exists: true
+2025-01-05T12:23:10.508Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:23:10.509Z: Auth Secret exists: true
+2025-01-05T12:23:19.762Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:23:19.763Z: Auth Secret exists: true
+2025-01-05T12:27:58.435Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:27:58.436Z: Auth Secret exists: true
+2025-01-05T12:27:58.713Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:27:58.714Z: Auth Secret exists: true
+2025-01-05T12:28:10.980Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:28:10.981Z: Auth Secret exists: true
+2025-01-05T12:34:16.514Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:34:16.514Z: Auth Secret exists: true
+2025-01-05T12:34:16.813Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:34:16.814Z: Auth Secret exists: true
+2025-01-05T12:34:23.647Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:34:23.648Z: Auth Secret exists: true
+2025-01-05T12:34:23.951Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:34:23.952Z: Auth Secret exists: true
+2025-01-05T12:35:54.497Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:35:54.497Z: Auth Secret exists: true
+2025-01-05T12:35:54.768Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:35:54.769Z: Auth Secret exists: true
+2025-01-05T12:35:57.134Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:35:57.134Z: Auth Secret exists: true
+2025-01-05T12:39:07.306Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:07.307Z: Auth Secret exists: true
+2025-01-05T12:39:07.593Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:07.594Z: Auth Secret exists: true
+2025-01-05T12:39:26.061Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:26.061Z: Auth Secret exists: true
+2025-01-05T12:39:26.352Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:26.353Z: Auth Secret exists: true
+2025-01-05T12:39:29.751Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:29.752Z: Auth Secret exists: true
+2025-01-05T12:39:35.688Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:35.689Z: Auth Secret exists: true
+2025-01-05T12:39:40.351Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:39:40.352Z: Auth Secret exists: true
+2025-01-05T12:42:51.882Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:42:51.882Z: Auth Secret exists: true
+2025-01-05T12:42:52.177Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:42:52.178Z: Auth Secret exists: true
+2025-01-05T12:43:49.736Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:43:49.737Z: Auth Secret exists: true
+2025-01-05T12:43:57.965Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:43:57.966Z: Auth Secret exists: true
+2025-01-05T12:43:58.252Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:43:58.253Z: Auth Secret exists: true
+2025-01-05T12:49:30.158Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:49:30.159Z: Auth Secret exists: true
+2025-01-05T12:49:30.445Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:49:30.446Z: Auth Secret exists: true
+2025-01-05T12:50:13.853Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:50:13.853Z: Auth Secret exists: true
+2025-01-05T12:57:00.097Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:57:00.098Z: Auth Secret exists: true
+2025-01-05T12:57:12.329Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:57:12.330Z: Auth Secret exists: true
+2025-01-05T12:57:12.616Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:57:12.617Z: Auth Secret exists: true
+2025-01-05T12:57:48.061Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:57:48.061Z: Auth Secret exists: true
+2025-01-05T12:57:48.425Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:57:48.426Z: Auth Secret exists: true
+2025-01-05T12:58:18.503Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:58:18.503Z: Auth Secret exists: true
+2025-01-05T12:58:18.808Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:58:18.809Z: Auth Secret exists: true
+2025-01-05T12:58:22.990Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T12:58:22.991Z: Auth Secret exists: true
+2025-01-05T13:05:08.710Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:05:08.711Z: Auth Secret exists: true
+2025-01-05T13:05:09.004Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:05:09.005Z: Auth Secret exists: true
+2025-01-05T13:05:14.778Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:05:14.779Z: Auth Secret exists: true
+2025-01-05T13:05:41.283Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:05:41.284Z: Auth Secret exists: true
+2025-01-05T13:05:41.584Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:05:41.585Z: Auth Secret exists: true
+2025-01-05T13:07:16.589Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:07:16.590Z: Auth Secret exists: true
+2025-01-05T13:09:12.292Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:12.293Z: Auth Secret exists: true
+2025-01-05T13:09:33.000Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:33.001Z: Auth Secret exists: true
+2025-01-05T13:09:37.854Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:37.855Z: Auth Secret exists: true
+2025-01-05T13:09:42.624Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:42.625Z: Auth Secret exists: true
+2025-01-05T13:09:51.674Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:51.675Z: Auth Secret exists: true
+2025-01-05T13:09:52.027Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:52.028Z: Auth Secret exists: true
+2025-01-05T13:09:59.682Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:59.682Z: Auth Secret exists: true
+2025-01-05T13:09:59.971Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:09:59.972Z: Auth Secret exists: true
+2025-01-05T13:22:42.934Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:22:42.935Z: Auth Secret exists: true
+2025-01-05T13:22:43.230Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:22:43.231Z: Auth Secret exists: true
+2025-01-05T13:22:48.574Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:22:48.575Z: Auth Secret exists: true
+2025-01-05T13:23:58.842Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:23:58.843Z: Auth Secret exists: true
+2025-01-05T13:25:43.592Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:25:43.593Z: Auth Secret exists: true
+2025-01-05T13:28:17.791Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:28:17.791Z: Auth Secret exists: true
+2025-01-05T13:28:18.077Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:28:18.077Z: Auth Secret exists: true
+2025-01-05T13:33:41.171Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:33:41.171Z: Auth Secret exists: true
+2025-01-05T13:33:41.466Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:33:41.467Z: Auth Secret exists: true
+2025-01-05T13:34:05.546Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:34:05.547Z: Auth Secret exists: true
+2025-01-05T13:35:29.112Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:35:29.113Z: Auth Secret exists: true
+2025-01-05T13:35:29.382Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:35:29.383Z: Auth Secret exists: true
+2025-01-05T13:35:48.791Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:35:48.791Z: Auth Secret exists: true
+2025-01-05T13:39:53.614Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:39:53.614Z: Auth Secret exists: true
+2025-01-05T13:39:53.887Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:39:53.888Z: Auth Secret exists: true
+2025-01-05T13:41:16.120Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:41:16.120Z: Auth Secret exists: true
+2025-01-05T13:41:16.393Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:41:16.394Z: Auth Secret exists: true
+2025-01-05T13:49:54.084Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:49:54.084Z: Auth Secret exists: true
+2025-01-05T13:49:54.345Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:49:54.346Z: Auth Secret exists: true
+2025-01-05T13:50:09.696Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:50:09.697Z: Auth Secret exists: true
+2025-01-05T13:50:23.418Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:50:23.419Z: Auth Secret exists: true
+2025-01-05T13:50:23.675Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:50:23.676Z: Auth Secret exists: true
+2025-01-05T13:50:32.682Z: Starting authorization...
+2025-01-05T13:50:32.682Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T13:50:32.830Z: Database response: {"hasUser":true}
+2025-01-05T13:50:32.871Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:50:32.872Z: Auth Secret exists: true
+2025-01-05T13:50:32.885Z: Password verification result: true
+2025-01-05T13:50:32.885Z: Authorization successful
+2025-01-05T13:50:33.183Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:50:33.184Z: Auth Secret exists: true
+2025-01-05T13:51:48.713Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:51:48.714Z: Auth Secret exists: true
+2025-01-05T13:51:48.992Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:51:48.992Z: Auth Secret exists: true
+2025-01-05T13:57:26.687Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T13:57:26.688Z: Auth Secret exists: true
+2025-01-05T14:03:11.405Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:03:11.406Z: Auth Secret exists: true
+2025-01-05T14:03:11.664Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:03:11.664Z: Auth Secret exists: true
+2025-01-05T14:03:12.012Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:03:12.013Z: Auth Secret exists: true
+2025-01-05T14:03:18.154Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:03:18.156Z: Auth Secret exists: true
+2025-01-05T14:03:23.031Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:03:23.032Z: Auth Secret exists: true
+2025-01-05T14:04:17.341Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:04:17.342Z: Auth Secret exists: true
+2025-01-05T14:04:17.640Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:04:17.641Z: Auth Secret exists: true
+2025-01-05T14:05:17.234Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:05:17.235Z: Auth Secret exists: true
+2025-01-05T14:05:17.516Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:05:17.517Z: Auth Secret exists: true
+2025-01-05T14:06:28.827Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:06:28.828Z: Auth Secret exists: true
+2025-01-05T14:06:29.127Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:06:29.128Z: Auth Secret exists: true
+2025-01-05T14:06:29.433Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:06:29.434Z: Auth Secret exists: true
+2025-01-05T14:06:31.668Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:06:31.669Z: Auth Secret exists: true
+2025-01-05T14:08:03.177Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:08:03.178Z: Auth Secret exists: true
+2025-01-05T14:08:03.483Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:08:03.484Z: Auth Secret exists: true
+2025-01-05T14:09:12.338Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:09:12.340Z: Auth Secret exists: true
+2025-01-05T14:09:12.645Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:09:12.646Z: Auth Secret exists: true
+2025-01-05T14:10:45.742Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:10:45.744Z: Auth Secret exists: true
+2025-01-05T14:10:46.031Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:10:46.031Z: Auth Secret exists: true
+2025-01-05T14:11:03.194Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:11:03.195Z: Auth Secret exists: true
+2025-01-05T14:11:03.494Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:11:03.494Z: Auth Secret exists: true
+2025-01-05T14:13:39.695Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:13:39.697Z: Auth Secret exists: true
+2025-01-05T14:13:39.969Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:13:39.970Z: Auth Secret exists: true
+2025-01-05T14:13:49.462Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:13:49.463Z: Auth Secret exists: true
+2025-01-05T14:13:49.762Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:13:49.763Z: Auth Secret exists: true
+2025-01-05T14:14:08.876Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:14:08.877Z: Auth Secret exists: true
+2025-01-05T14:14:15.519Z: Starting authorization...
+2025-01-05T14:14:15.520Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:14:15.600Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:14:15.601Z: Auth Secret exists: true
+2025-01-05T14:14:15.711Z: Database response: {"hasUser":true}
+2025-01-05T14:14:15.893Z: Password verification result: true
+2025-01-05T14:14:15.894Z: Authorization successful
+2025-01-05T14:14:16.320Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:14:16.321Z: Auth Secret exists: true
+2025-01-05T14:15:14.603Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:15:14.604Z: Auth Secret exists: true
+2025-01-05T14:15:33.843Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:15:33.844Z: Auth Secret exists: true
+2025-01-05T14:15:38.924Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:15:38.925Z: Auth Secret exists: true
+2025-01-05T14:15:52.376Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:15:52.377Z: Auth Secret exists: true
+2025-01-05T14:16:10.054Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:16:10.055Z: Auth Secret exists: true
+2025-01-05T14:16:16.670Z: Starting authorization...
+2025-01-05T14:16:16.671Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:16:16.707Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:16:16.708Z: Auth Secret exists: true
+2025-01-05T14:16:16.836Z: Database response: {"hasUser":true}
+2025-01-05T14:16:16.920Z: Password verification result: true
+2025-01-05T14:16:16.922Z: Authorization successful
+2025-01-05T14:16:17.361Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:16:17.361Z: Auth Secret exists: true
+2025-01-05T14:17:10.734Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:17:10.735Z: Auth Secret exists: true
+2025-01-05T14:18:52.803Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:18:52.803Z: Auth Secret exists: true
+2025-01-05T14:18:53.038Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:18:53.039Z: Auth Secret exists: true
+2025-01-05T14:19:01.817Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:19:01.818Z: Auth Secret exists: true
+2025-01-05T14:19:02.062Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:19:02.062Z: Auth Secret exists: true
+2025-01-05T14:19:06.024Z: Starting authorization...
+2025-01-05T14:19:06.025Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:19:06.179Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:19:06.180Z: Auth Secret exists: true
+2025-01-05T14:19:06.255Z: Database response: {"hasUser":true}
+2025-01-05T14:19:06.353Z: Password verification result: true
+2025-01-05T14:19:06.353Z: Authorization successful
+2025-01-05T14:19:06.647Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:19:06.648Z: Auth Secret exists: true
+2025-01-05T14:20:13.724Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:20:13.724Z: Auth Secret exists: true
+2025-01-05T14:20:13.991Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:20:13.992Z: Auth Secret exists: true
+2025-01-05T14:20:38.008Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:20:38.008Z: Auth Secret exists: true
+2025-01-05T14:20:38.329Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:20:38.330Z: Auth Secret exists: true
+2025-01-05T14:23:57.444Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:23:57.445Z: Auth Secret exists: true
+2025-01-05T14:23:57.750Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:23:57.751Z: Auth Secret exists: true
+2025-01-05T14:24:06.530Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:24:06.531Z: Auth Secret exists: true
+2025-01-05T14:24:34.175Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:24:34.176Z: Auth Secret exists: true
+2025-01-05T14:24:37.218Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:24:37.218Z: Auth Secret exists: true
+2025-01-05T14:24:37.493Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:24:37.493Z: Auth Secret exists: true
+2025-01-05T14:26:37.760Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:26:37.761Z: Auth Secret exists: true
+2025-01-05T14:26:37.994Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:26:37.995Z: Auth Secret exists: true
+2025-01-05T14:26:38.284Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:26:38.285Z: Auth Secret exists: true
+2025-01-05T14:26:45.061Z: Starting authorization...
+2025-01-05T14:26:45.062Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:26:45.224Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:26:45.225Z: Auth Secret exists: true
+2025-01-05T14:26:45.264Z: Database response: {"hasUser":true}
+2025-01-05T14:26:45.407Z: Password verification result: true
+2025-01-05T14:26:45.407Z: Authorization successful
+2025-01-05T14:26:45.712Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:26:45.713Z: Auth Secret exists: true
+2025-01-05T14:28:27.924Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:28:27.924Z: Auth Secret exists: true
+2025-01-05T14:28:28.178Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:28:28.179Z: Auth Secret exists: true
+2025-01-05T14:28:30.563Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:28:30.563Z: Auth Secret exists: true
+2025-01-05T14:28:30.827Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:28:30.827Z: Auth Secret exists: true
+2025-01-05T14:29:48.619Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:29:48.619Z: Auth Secret exists: true
+2025-01-05T14:29:48.858Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:29:48.859Z: Auth Secret exists: true
+2025-01-05T14:29:49.133Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:29:49.133Z: Auth Secret exists: true
+2025-01-05T14:29:55.119Z: Starting authorization...
+2025-01-05T14:29:55.120Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:29:55.249Z: Database response: {"hasUser":true}
+2025-01-05T14:29:55.289Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:29:55.289Z: Auth Secret exists: true
+2025-01-05T14:29:55.360Z: Password verification result: true
+2025-01-05T14:29:55.361Z: Authorization successful
+2025-01-05T14:29:55.643Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:29:55.644Z: Auth Secret exists: true
+2025-01-05T14:33:32.802Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:33:32.803Z: Auth Secret exists: true
+2025-01-05T14:33:33.103Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:33:33.104Z: Auth Secret exists: true
+2025-01-05T14:33:35.507Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:33:35.508Z: Auth Secret exists: true
+2025-01-05T14:33:35.765Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:33:35.766Z: Auth Secret exists: true
+2025-01-05T14:34:30.520Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:34:30.520Z: Auth Secret exists: true
+2025-01-05T14:34:30.735Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:34:30.736Z: Auth Secret exists: true
+2025-01-05T14:34:45.285Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:34:45.286Z: Auth Secret exists: true
+2025-01-05T14:34:45.525Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:34:45.526Z: Auth Secret exists: true
+2025-01-05T14:34:52.374Z: Starting authorization...
+2025-01-05T14:34:52.375Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:34:52.530Z: Database response: {"hasUser":true}
+2025-01-05T14:34:52.560Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:34:52.561Z: Auth Secret exists: true
+2025-01-05T14:34:52.649Z: Password verification result: true
+2025-01-05T14:34:52.649Z: Authorization successful
+2025-01-05T14:34:52.943Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:34:52.944Z: Auth Secret exists: true
+2025-01-05T14:37:27.971Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:37:27.971Z: Auth Secret exists: true
+2025-01-05T14:37:28.253Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:37:28.254Z: Auth Secret exists: true
+2025-01-05T14:37:41.288Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:37:41.289Z: Auth Secret exists: true
+2025-01-05T14:38:02.335Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:38:02.336Z: Auth Secret exists: true
+2025-01-05T14:38:04.717Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:38:04.717Z: Auth Secret exists: true
+2025-01-05T14:38:04.961Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:38:04.962Z: Auth Secret exists: true
+2025-01-05T14:39:25.497Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:25.498Z: Auth Secret exists: true
+2025-01-05T14:39:25.719Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:25.719Z: Auth Secret exists: true
+2025-01-05T14:39:38.071Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:38.071Z: Auth Secret exists: true
+2025-01-05T14:39:38.312Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:38.312Z: Auth Secret exists: true
+2025-01-05T14:39:45.856Z: Starting authorization...
+2025-01-05T14:39:45.856Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:39:46.023Z: Database response: {"hasUser":true}
+2025-01-05T14:39:46.056Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:46.057Z: Auth Secret exists: true
+2025-01-05T14:39:46.076Z: Password verification result: true
+2025-01-05T14:39:46.076Z: Authorization successful
+2025-01-05T14:39:46.327Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:46.328Z: Auth Secret exists: true
+2025-01-05T14:39:55.786Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:55.786Z: Auth Secret exists: true
+2025-01-05T14:39:56.037Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:39:56.038Z: Auth Secret exists: true
+2025-01-05T14:41:17.188Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:41:17.188Z: Auth Secret exists: true
+2025-01-05T14:41:17.441Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:41:17.442Z: Auth Secret exists: true
+2025-01-05T14:42:26.004Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:42:26.004Z: Auth Secret exists: true
+2025-01-05T14:42:26.261Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:42:26.262Z: Auth Secret exists: true
+2025-01-05T14:42:34.280Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:42:34.281Z: Auth Secret exists: true
+2025-01-05T14:42:34.546Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:42:34.547Z: Auth Secret exists: true
+2025-01-05T14:47:29.217Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:47:29.218Z: Auth Secret exists: true
+2025-01-05T14:47:29.880Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:47:29.881Z: Auth Secret exists: true
+2025-01-05T14:47:31.553Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:47:31.553Z: Auth Secret exists: true
+2025-01-05T14:47:31.810Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:47:31.810Z: Auth Secret exists: true
+2025-01-05T14:48:15.000Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:48:15.000Z: Auth Secret exists: true
+2025-01-05T14:48:15.276Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:48:15.276Z: Auth Secret exists: true
+2025-01-05T14:49:05.489Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:49:05.490Z: Auth Secret exists: true
+2025-01-05T14:49:05.742Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:49:05.742Z: Auth Secret exists: true
+2025-01-05T14:49:07.915Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:49:07.915Z: Auth Secret exists: true
+2025-01-05T14:49:08.182Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:49:08.183Z: Auth Secret exists: true
+2025-01-05T14:51:40.831Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:51:40.832Z: Auth Secret exists: true
+2025-01-05T14:51:41.089Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:51:41.090Z: Auth Secret exists: true
+2025-01-05T14:52:10.452Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:10.453Z: Auth Secret exists: true
+2025-01-05T14:52:31.622Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:31.623Z: Auth Secret exists: true
+2025-01-05T14:52:31.915Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:31.916Z: Auth Secret exists: true
+2025-01-05T14:52:41.311Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:41.312Z: Auth Secret exists: true
+2025-01-05T14:52:52.446Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:52.447Z: Auth Secret exists: true
+2025-01-05T14:52:52.683Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:52.684Z: Auth Secret exists: true
+2025-01-05T14:52:55.749Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:52:55.750Z: Auth Secret exists: true
+2025-01-05T14:53:03.514Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:53:03.515Z: Auth Secret exists: true
+2025-01-05T14:53:22.864Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:53:22.865Z: Auth Secret exists: true
+2025-01-05T14:53:23.138Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:53:23.139Z: Auth Secret exists: true
+2025-01-05T14:53:37.463Z: Starting authorization...
+2025-01-05T14:53:37.464Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T14:53:37.573Z: Database response: {"hasUser":true}
+2025-01-05T14:53:37.617Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:53:37.618Z: Auth Secret exists: true
+2025-01-05T14:53:37.638Z: Password verification result: true
+2025-01-05T14:53:37.639Z: Authorization successful
+2025-01-05T14:53:37.997Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:53:37.998Z: Auth Secret exists: true
+2025-01-05T14:53:43.655Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:53:43.656Z: Auth Secret exists: true
+2025-01-05T14:55:29.079Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:55:29.079Z: Auth Secret exists: true
+2025-01-05T14:55:29.320Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:55:29.321Z: Auth Secret exists: true
+2025-01-05T14:55:31.699Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:55:31.699Z: Auth Secret exists: true
+2025-01-05T14:55:31.971Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:55:31.972Z: Auth Secret exists: true
+2025-01-05T14:57:07.041Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:57:07.041Z: Auth Secret exists: true
+2025-01-05T14:57:07.270Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:57:07.271Z: Auth Secret exists: true
+2025-01-05T14:57:20.348Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:57:20.348Z: Auth Secret exists: true
+2025-01-05T14:57:20.641Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:57:20.642Z: Auth Secret exists: true
+2025-01-05T14:57:24.890Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:57:24.892Z: Auth Secret exists: true
+2025-01-05T14:58:54.650Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:58:54.651Z: Auth Secret exists: true
+2025-01-05T14:58:54.899Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:58:54.900Z: Auth Secret exists: true
+2025-01-05T14:58:56.735Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:58:56.736Z: Auth Secret exists: true
+2025-01-05T14:58:56.993Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T14:58:56.993Z: Auth Secret exists: true
+2025-01-05T15:00:20.365Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:00:20.365Z: Auth Secret exists: true
+2025-01-05T15:00:20.616Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:00:20.617Z: Auth Secret exists: true
+2025-01-05T15:02:56.761Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:02:56.761Z: Auth Secret exists: true
+2025-01-05T15:02:57.003Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:02:57.004Z: Auth Secret exists: true
+2025-01-05T15:04:11.264Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:04:11.264Z: Auth Secret exists: true
+2025-01-05T15:04:11.527Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:04:11.527Z: Auth Secret exists: true
+2025-01-05T15:05:14.077Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:05:14.077Z: Auth Secret exists: true
+2025-01-05T15:05:14.326Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:05:14.327Z: Auth Secret exists: true
+2025-01-05T15:05:25.059Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:05:25.059Z: Auth Secret exists: true
+2025-01-05T15:05:50.245Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:05:50.245Z: Auth Secret exists: true
+2025-01-05T15:05:50.529Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:05:50.530Z: Auth Secret exists: true
+2025-01-05T15:05:52.577Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:05:52.578Z: Auth Secret exists: true
+2025-01-05T15:06:59.027Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:06:59.027Z: Auth Secret exists: true
+2025-01-05T15:06:59.268Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:06:59.269Z: Auth Secret exists: true
+2025-01-05T15:07:09.366Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:07:09.367Z: Auth Secret exists: true
+2025-01-05T15:07:13.183Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:07:13.184Z: Auth Secret exists: true
+2025-01-05T15:07:17.041Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:07:17.041Z: Auth Secret exists: true
+2025-01-05T15:09:15.518Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:09:15.519Z: Auth Secret exists: true
+2025-01-05T15:09:15.790Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:09:15.791Z: Auth Secret exists: true
+2025-01-05T15:10:28.295Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:10:28.295Z: Auth Secret exists: true
+2025-01-05T15:10:28.573Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:10:28.574Z: Auth Secret exists: true
+2025-01-05T15:10:31.274Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:10:31.274Z: Auth Secret exists: true
+2025-01-05T15:10:45.212Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:10:45.212Z: Auth Secret exists: true
+2025-01-05T15:10:45.505Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:10:45.506Z: Auth Secret exists: true
+2025-01-05T15:11:21.651Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:11:21.652Z: Auth Secret exists: true
+2025-01-05T15:12:43.737Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:12:43.739Z: Auth Secret exists: true
+2025-01-05T15:12:46.547Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:12:46.548Z: Auth Secret exists: true
+2025-01-05T15:12:54.969Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:12:54.971Z: Auth Secret exists: true
+2025-01-05T15:12:55.267Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:12:55.268Z: Auth Secret exists: true
+2025-01-05T15:12:58.720Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:12:58.721Z: Auth Secret exists: true
+2025-01-05T15:13:11.782Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:13:11.783Z: Auth Secret exists: true
+2025-01-05T15:13:50.031Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:13:50.032Z: Auth Secret exists: true
+2025-01-05T15:13:50.326Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:13:50.327Z: Auth Secret exists: true
+2025-01-05T15:14:06.803Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:14:06.804Z: Auth Secret exists: true
+2025-01-05T15:15:26.402Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:15:26.403Z: Auth Secret exists: true
+2025-01-05T15:15:26.690Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:15:26.691Z: Auth Secret exists: true
+2025-01-05T15:15:42.831Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:15:42.832Z: Auth Secret exists: true
+2025-01-05T15:21:39.916Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:21:39.917Z: Auth Secret exists: true
+2025-01-05T15:21:40.174Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:21:40.175Z: Auth Secret exists: true
+2025-01-05T15:21:42.469Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:21:42.470Z: Auth Secret exists: true
+2025-01-05T15:24:09.410Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:24:09.410Z: Auth Secret exists: true
+2025-01-05T15:24:09.679Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:24:09.680Z: Auth Secret exists: true
+2025-01-05T15:24:11.700Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:24:11.701Z: Auth Secret exists: true
+2025-01-05T15:25:51.927Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:25:51.927Z: Auth Secret exists: true
+2025-01-05T15:25:52.184Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:25:52.185Z: Auth Secret exists: true
+2025-01-05T15:30:37.050Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:30:37.051Z: Auth Secret exists: true
+2025-01-05T15:30:39.480Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:30:39.481Z: Auth Secret exists: true
+2025-01-05T15:33:53.546Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:33:53.547Z: Auth Secret exists: true
+2025-01-05T15:33:53.839Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:33:53.839Z: Auth Secret exists: true
+2025-01-05T15:33:54.669Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:33:54.670Z: Auth Secret exists: true
+2025-01-05T15:33:57.755Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:33:57.756Z: Auth Secret exists: true
+2025-01-05T15:34:18.159Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:18.160Z: Auth Secret exists: true
+2025-01-05T15:34:34.883Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:34.884Z: Auth Secret exists: true
+2025-01-05T15:34:35.196Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:35.197Z: Auth Secret exists: true
+2025-01-05T15:34:44.094Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:44.094Z: Auth Secret exists: true
+2025-01-05T15:34:44.378Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:44.379Z: Auth Secret exists: true
+2025-01-05T15:34:47.134Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:47.135Z: Auth Secret exists: true
+2025-01-05T15:34:51.150Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:34:51.151Z: Auth Secret exists: true
+2025-01-05T15:39:02.523Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:39:02.524Z: Auth Secret exists: true
+2025-01-05T15:44:22.892Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:44:22.892Z: Auth Secret exists: true
+2025-01-05T15:44:23.712Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:44:23.714Z: Auth Secret exists: true
+2025-01-05T15:47:08.057Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:47:08.057Z: Auth Secret exists: true
+2025-01-05T15:47:08.329Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:47:08.330Z: Auth Secret exists: true
+2025-01-05T15:47:10.359Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:47:10.359Z: Auth Secret exists: true
+2025-01-05T15:47:23.417Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:47:23.418Z: Auth Secret exists: true
+2025-01-05T15:47:23.708Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:47:23.709Z: Auth Secret exists: true
+2025-01-05T15:47:48.984Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T15:47:48.985Z: Auth Secret exists: true
+2025-01-05T16:02:02.179Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:02.179Z: Auth Secret exists: true
+2025-01-05T16:02:02.508Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:02.509Z: Auth Secret exists: true
+2025-01-05T16:02:11.486Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:11.487Z: Auth Secret exists: true
+2025-01-05T16:02:11.772Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:11.773Z: Auth Secret exists: true
+2025-01-05T16:02:33.665Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:33.666Z: Auth Secret exists: true
+2025-01-05T16:02:33.960Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:33.961Z: Auth Secret exists: true
+2025-01-05T16:02:43.099Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:43.099Z: Auth Secret exists: true
+2025-01-05T16:02:43.393Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:43.394Z: Auth Secret exists: true
+2025-01-05T16:02:57.043Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:57.043Z: Auth Secret exists: true
+2025-01-05T16:02:57.305Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:02:57.306Z: Auth Secret exists: true
+2025-01-05T16:04:31.888Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:04:31.888Z: Auth Secret exists: true
+2025-01-05T16:04:32.191Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:04:32.192Z: Auth Secret exists: true
+2025-01-05T16:04:34.050Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:04:34.051Z: Auth Secret exists: true
+2025-01-05T16:05:28.239Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:05:28.239Z: Auth Secret exists: true
+2025-01-05T16:05:28.498Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:05:28.499Z: Auth Secret exists: true
+2025-01-05T16:05:30.209Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:05:30.210Z: Auth Secret exists: true
+2025-01-05T16:06:11.943Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:06:11.944Z: Auth Secret exists: true
+2025-01-05T16:06:12.249Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:06:12.250Z: Auth Secret exists: true
+2025-01-05T16:06:14.249Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:06:14.249Z: Auth Secret exists: true
+2025-01-05T16:07:33.632Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:07:33.633Z: Auth Secret exists: true
+2025-01-05T16:07:33.911Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:07:33.911Z: Auth Secret exists: true
+2025-01-05T16:07:45.607Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:07:45.608Z: Auth Secret exists: true
+2025-01-05T16:07:46.019Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:07:46.020Z: Auth Secret exists: true
+2025-01-05T16:07:57.011Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:07:57.011Z: Auth Secret exists: true
+2025-01-05T16:07:57.263Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:07:57.264Z: Auth Secret exists: true
+2025-01-05T16:11:56.680Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:11:56.680Z: Auth Secret exists: true
+2025-01-05T16:11:56.951Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:11:56.952Z: Auth Secret exists: true
+2025-01-05T16:14:19.239Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:19.240Z: Auth Secret exists: true
+2025-01-05T16:14:27.130Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:27.131Z: Auth Secret exists: true
+2025-01-05T16:14:30.308Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:30.309Z: Auth Secret exists: true
+2025-01-05T16:14:30.596Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:30.597Z: Auth Secret exists: true
+2025-01-05T16:14:31.035Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:31.037Z: Auth Secret exists: true
+2025-01-05T16:14:33.079Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:33.080Z: Auth Secret exists: true
+2025-01-05T16:14:33.372Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:14:33.373Z: Auth Secret exists: true
+2025-01-05T16:15:08.320Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:15:08.321Z: Auth Secret exists: true
+2025-01-05T16:18:31.646Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:18:31.646Z: Auth Secret exists: true
+2025-01-05T16:18:31.969Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:18:31.969Z: Auth Secret exists: true
+2025-01-05T16:20:00.415Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:00.415Z: Auth Secret exists: true
+2025-01-05T16:20:00.719Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:00.720Z: Auth Secret exists: true
+2025-01-05T16:20:02.929Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:02.930Z: Auth Secret exists: true
+2025-01-05T16:20:06.964Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:06.965Z: Auth Secret exists: true
+2025-01-05T16:20:07.247Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:07.248Z: Auth Secret exists: true
+2025-01-05T16:20:15.464Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:15.465Z: Auth Secret exists: true
+2025-01-05T16:20:56.432Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:56.432Z: Auth Secret exists: true
+2025-01-05T16:20:56.706Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:56.707Z: Auth Secret exists: true
+2025-01-05T16:20:57.062Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:20:57.063Z: Auth Secret exists: true
+2025-01-05T16:21:09.018Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:21:09.019Z: Auth Secret exists: true
+2025-01-05T16:21:11.230Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:21:11.231Z: Auth Secret exists: true
+2025-01-05T16:21:18.955Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:21:18.956Z: Auth Secret exists: true
+2025-01-05T16:21:22.521Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:21:22.522Z: Auth Secret exists: true
+2025-01-05T16:22:21.425Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:22:21.425Z: Auth Secret exists: true
+2025-01-05T16:22:21.742Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:22:21.743Z: Auth Secret exists: true
+2025-01-05T16:22:57.913Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:22:57.914Z: Auth Secret exists: true
+2025-01-05T16:22:58.242Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:22:58.243Z: Auth Secret exists: true
+2025-01-05T16:23:20.264Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:23:20.265Z: Auth Secret exists: true
+2025-01-05T16:23:20.578Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:23:20.579Z: Auth Secret exists: true
+2025-01-05T16:23:38.620Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:23:38.620Z: Auth Secret exists: true
+2025-01-05T16:23:38.940Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:23:38.941Z: Auth Secret exists: true
+2025-01-05T16:25:28.337Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:25:28.338Z: Auth Secret exists: true
+2025-01-05T16:25:28.660Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:25:28.662Z: Auth Secret exists: true
+2025-01-05T16:26:23.103Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:26:23.103Z: Auth Secret exists: true
+2025-01-05T16:26:23.369Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:26:23.370Z: Auth Secret exists: true
+2025-01-05T16:26:25.199Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:26:25.200Z: Auth Secret exists: true
+2025-01-05T16:26:27.721Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:26:27.722Z: Auth Secret exists: true
+2025-01-05T16:26:37.228Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:26:37.229Z: Auth Secret exists: true
+2025-01-05T16:26:37.516Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:26:37.517Z: Auth Secret exists: true
+2025-01-05T16:28:58.265Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:28:58.266Z: Auth Secret exists: true
+2025-01-05T16:28:58.525Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:28:58.526Z: Auth Secret exists: true
+2025-01-05T16:29:05.607Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:29:05.608Z: Auth Secret exists: true
+2025-01-05T16:29:10.211Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:29:10.212Z: Auth Secret exists: true
+2025-01-05T16:29:10.511Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:29:10.512Z: Auth Secret exists: true
+2025-01-05T16:30:19.911Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:30:19.911Z: Auth Secret exists: true
+2025-01-05T16:30:20.195Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:30:20.196Z: Auth Secret exists: true
+2025-01-05T16:30:27.261Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:30:27.261Z: Auth Secret exists: true
+2025-01-05T16:31:06.758Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:31:06.759Z: Auth Secret exists: true
+2025-01-05T16:31:07.035Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:31:07.036Z: Auth Secret exists: true
+2025-01-05T16:31:14.035Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:31:14.036Z: Auth Secret exists: true
+2025-01-05T16:32:41.177Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:32:41.178Z: Auth Secret exists: true
+2025-01-05T16:32:41.451Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:32:41.452Z: Auth Secret exists: true
+2025-01-05T16:33:38.015Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:33:38.015Z: Auth Secret exists: true
+2025-01-05T16:33:38.311Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:33:38.312Z: Auth Secret exists: true
+2025-01-05T16:33:40.816Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:33:40.817Z: Auth Secret exists: true
+2025-01-05T16:33:41.084Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:33:41.084Z: Auth Secret exists: true
+2025-01-05T16:33:50.976Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:33:50.977Z: Auth Secret exists: true
+2025-01-05T16:33:51.250Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:33:51.251Z: Auth Secret exists: true
+2025-01-05T16:34:09.515Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:34:09.515Z: Auth Secret exists: true
+2025-01-05T16:34:09.805Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:34:09.806Z: Auth Secret exists: true
+2025-01-05T16:35:54.232Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:35:54.233Z: Auth Secret exists: true
+2025-01-05T16:35:54.511Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:35:54.512Z: Auth Secret exists: true
+2025-01-05T16:35:56.235Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:35:56.236Z: Auth Secret exists: true
+2025-01-05T16:35:59.180Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:35:59.180Z: Auth Secret exists: true
+2025-01-05T16:35:59.457Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:35:59.458Z: Auth Secret exists: true
+2025-01-05T16:36:09.048Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:36:09.049Z: Auth Secret exists: true
+2025-01-05T16:37:40.259Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:37:40.260Z: Auth Secret exists: true
+2025-01-05T16:37:44.476Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:37:44.477Z: Auth Secret exists: true
+2025-01-05T16:37:58.326Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:37:58.326Z: Auth Secret exists: true
+2025-01-05T16:37:58.606Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:37:58.607Z: Auth Secret exists: true
+2025-01-05T16:38:04.852Z: Starting authorization...
+2025-01-05T16:38:04.852Z: Attempting login for email: hugh@bonnymans.co.uk
+2025-01-05T16:38:04.930Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:38:04.931Z: Auth Secret exists: true
+2025-01-05T16:38:04.985Z: Database response: {"hasUser":true}
+2025-01-05T16:38:05.098Z: Password verification result: true
+2025-01-05T16:38:05.098Z: Authorization successful
+2025-01-05T16:38:05.501Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:38:05.502Z: Auth Secret exists: true
+2025-01-05T16:38:37.060Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:38:37.060Z: Auth Secret exists: true
+2025-01-05T16:38:37.351Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:38:37.352Z: Auth Secret exists: true
+2025-01-05T16:40:28.565Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:40:28.566Z: Auth Secret exists: true
+2025-01-05T16:40:42.457Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:40:42.458Z: Auth Secret exists: true
+2025-01-05T16:41:04.607Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:41:04.608Z: Auth Secret exists: true
+2025-01-05T16:41:05.486Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:41:05.487Z: Auth Secret exists: true
+2025-01-05T16:43:50.124Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:43:50.124Z: Auth Secret exists: true
+2025-01-05T16:43:50.391Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:43:50.392Z: Auth Secret exists: true
+2025-01-05T16:43:59.437Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:43:59.437Z: Auth Secret exists: true
+2025-01-05T16:43:59.722Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:43:59.723Z: Auth Secret exists: true
+2025-01-05T16:46:58.915Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:46:58.916Z: Auth Secret exists: true
+2025-01-05T16:46:59.175Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:46:59.176Z: Auth Secret exists: true
+2025-01-05T16:47:07.503Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:47:07.504Z: Auth Secret exists: true
+2025-01-05T16:47:07.790Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:47:07.791Z: Auth Secret exists: true
+2025-01-05T16:52:40.204Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:52:40.205Z: Auth Secret exists: true
+2025-01-05T16:52:40.568Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:52:40.569Z: Auth Secret exists: true
+2025-01-05T16:54:51.604Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:54:51.604Z: Auth Secret exists: true
+2025-01-05T16:54:51.889Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:54:51.890Z: Auth Secret exists: true
+2025-01-05T16:55:00.071Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:55:00.071Z: Auth Secret exists: true
+2025-01-05T16:55:00.368Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:55:00.369Z: Auth Secret exists: true
+2025-01-05T16:56:48.606Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:56:48.607Z: Auth Secret exists: true
+2025-01-05T16:56:48.952Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:56:48.953Z: Auth Secret exists: true
+2025-01-05T16:56:57.479Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:56:57.480Z: Auth Secret exists: true
+2025-01-05T16:57:18.569Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:57:18.570Z: Auth Secret exists: true
+2025-01-05T16:57:18.884Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:57:18.885Z: Auth Secret exists: true
+2025-01-05T16:57:25.725Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:57:25.725Z: Auth Secret exists: true
+2025-01-05T16:57:45.162Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:57:45.162Z: Auth Secret exists: true
+2025-01-05T16:57:45.505Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:57:45.506Z: Auth Secret exists: true
+2025-01-05T16:57:53.483Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:57:53.483Z: Auth Secret exists: true
+2025-01-05T16:58:39.997Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:58:39.997Z: Auth Secret exists: true
+2025-01-05T16:58:40.333Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T16:58:40.334Z: Auth Secret exists: true
+2025-01-05T17:00:04.813Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:00:04.814Z: Auth Secret exists: true
+2025-01-05T17:00:05.118Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:00:05.119Z: Auth Secret exists: true
+2025-01-05T17:00:06.688Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:00:06.689Z: Auth Secret exists: true
+2025-01-05T17:00:09.251Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:00:09.252Z: Auth Secret exists: true
+2025-01-05T17:00:18.277Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:00:18.277Z: Auth Secret exists: true
+2025-01-05T17:01:13.776Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:01:13.778Z: Auth Secret exists: true
+2025-01-05T17:01:14.685Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:01:14.686Z: Auth Secret exists: true
+2025-01-05T17:01:23.548Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:01:23.549Z: Auth Secret exists: true
+2025-01-05T17:01:48.695Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:01:48.695Z: Auth Secret exists: true
+2025-01-05T17:01:49.031Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:01:49.032Z: Auth Secret exists: true
+2025-01-05T17:01:56.521Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:01:56.522Z: Auth Secret exists: true
+2025-01-05T17:03:11.241Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:03:11.242Z: Auth Secret exists: true
+2025-01-05T17:03:11.570Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:03:11.571Z: Auth Secret exists: true
+2025-01-05T17:04:31.804Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:04:31.805Z: Auth Secret exists: true
+2025-01-05T17:04:32.137Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:04:32.138Z: Auth Secret exists: true
+2025-01-05T17:04:34.145Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:04:34.146Z: Auth Secret exists: true
+2025-01-05T17:06:01.330Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:01.330Z: Auth Secret exists: true
+2025-01-05T17:06:01.585Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:01.585Z: Auth Secret exists: true
+2025-01-05T17:06:17.932Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:17.932Z: Auth Secret exists: true
+2025-01-05T17:06:18.202Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:18.202Z: Auth Secret exists: true
+2025-01-05T17:06:25.877Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:25.877Z: Auth Secret exists: true
+2025-01-05T17:06:41.035Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:41.036Z: Auth Secret exists: true
+2025-01-05T17:06:45.546Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:45.547Z: Auth Secret exists: true
+2025-01-05T17:06:45.852Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:45.853Z: Auth Secret exists: true
+2025-01-05T17:06:56.060Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:06:56.060Z: Auth Secret exists: true
+2025-01-05T17:07:00.835Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:07:00.835Z: Auth Secret exists: true
+2025-01-05T17:08:08.035Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:08:08.036Z: Auth Secret exists: true
+2025-01-05T17:10:19.220Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:10:19.221Z: Auth Secret exists: true
+2025-01-05T17:10:30.533Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:10:30.534Z: Auth Secret exists: true
+2025-01-05T17:13:59.489Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:13:59.490Z: Auth Secret exists: true
+2025-01-05T17:13:59.768Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:13:59.769Z: Auth Secret exists: true
+2025-01-05T17:14:04.168Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:14:04.169Z: Auth Secret exists: true
+2025-01-05T17:15:31.448Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:15:31.449Z: Auth Secret exists: true
+2025-01-05T17:15:31.755Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-05T17:15:31.756Z: Auth Secret exists: true

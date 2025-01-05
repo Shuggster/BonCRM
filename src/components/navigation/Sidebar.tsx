@@ -16,7 +16,8 @@ import {
   Bell,
   User,
   Shield,
-  Users2
+  Users2,
+  Sparkles
 } from "lucide-react"
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
@@ -33,7 +34,7 @@ export function Sidebar() {
   const iconColors = {
     dashboard: 'group-hover:text-[hsl(280,100%,76%)]', // Purple
     contacts: 'group-hover:text-[hsl(330,100%,76%)]', // Pink
-    messages: 'group-hover:text-[hsl(12,76%,61%)]', // Red
+    tools: 'group-hover:text-[hsl(12,76%,61%)]', // Red (reusing messages color)
     calendar: 'group-hover:text-[hsl(142,76%,56%)]', // Green
     tasks: 'group-hover:text-[hsl(25,95%,64%)]', // Orange
     analytics: 'group-hover:text-[hsl(199,89%,48%)]', // Blue
@@ -145,21 +146,6 @@ export function Sidebar() {
             </motion.div>
           </Link>
 
-          <Link href="/messages">
-            <motion.div
-              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
-                isActive('/messages')
-                  ? 'bg-white/[0.08] text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <MessageSquare className={`w-5 h-5 transition-colors ${iconColors.messages}`} />
-              Messages
-            </motion.div>
-          </Link>
-
           <Link href="/calendar">
             <motion.div
               className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
@@ -187,6 +173,21 @@ export function Sidebar() {
             >
               <FolderKanban className={`w-5 h-5 transition-colors ${iconColors.tasks}`} />
               Tasks
+            </motion.div>
+          </Link>
+
+          <Link href="/tools">
+            <motion.div
+              className={`group flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                isActive('/tools')
+                  ? 'bg-white/[0.08] text-white'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Sparkles className={`w-5 h-5 transition-colors ${iconColors.tools}`} />
+              Tools
             </motion.div>
           </Link>
 

@@ -88,13 +88,26 @@ const mockStore: MockStore = {
   ]
 }
 
+// Add type definition for QueryBuilder
+interface QueryBuilder {
+  select: jest.Mock
+  insert: jest.Mock
+  update: jest.Mock
+  delete: jest.Mock
+  eq: jest.Mock
+  in: jest.Mock
+  single: jest.Mock
+  order: jest.Mock
+  then: jest.Mock
+}
+
 // Mock Supabase client
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => {
     let currentQuery: any[] = []
     let currentTable: keyof MockStore = 'tasks'
 
-    const queryBuilder = {
+    const queryBuilder: QueryBuilder = {
       select: jest.fn().mockImplementation((fields = '*') => {
         if (fields.includes('task_calendar_relations') && currentTable === 'tasks') {
           currentQuery = currentQuery.map(task => ({
@@ -124,7 +137,6 @@ jest.mock('@supabase/supabase-js', () => ({
             case 'tasks':
               mockStore.tasks = mockStore.tasks.map(item => {
                 if (item.id === currentItem.id) {
-                  // Convert snake_case to camelCase for specific fields
                   const updatedData = { ...data }
                   if (updatedData.schedule_status) {
                     updatedData.scheduleStatus = updatedData.schedule_status

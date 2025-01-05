@@ -81,13 +81,22 @@ export interface Database {
           start_time: string
           end_time: string
           category: string
+          type: 'call' | 'email' | 'meeting' | 'follow_up' | null
+          status: string
+          priority: string
+          location: string | null
           recurrence: {
             frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
             interval?: number
             end_date?: string
+            exception_dates?: string[]
           } | null
           created_at: string
+          updated_at: string
           user_id: string
+          assigned_to: string | null
+          assigned_to_type: 'user' | 'team' | null
+          department: string | null
         }
         Insert: {
           id?: string
@@ -96,13 +105,22 @@ export interface Database {
           start_time: string
           end_time: string
           category?: string
+          type?: 'call' | 'email' | 'meeting' | 'follow_up' | null
+          status?: string
+          priority?: string
+          location?: string | null
           recurrence?: {
             frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
             interval?: number
             end_date?: string
+            exception_dates?: string[]
           } | null
           created_at?: string
+          updated_at?: string
           user_id?: string
+          assigned_to?: string | null
+          assigned_to_type?: 'user' | 'team' | null
+          department?: string | null
         }
         Update: {
           id?: string
@@ -111,13 +129,22 @@ export interface Database {
           start_time?: string
           end_time?: string
           category?: string
+          type?: 'call' | 'email' | 'meeting' | 'follow_up' | null
+          status?: string
+          priority?: string
+          location?: string | null
           recurrence?: {
             frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
             interval?: number
             end_date?: string
+            exception_dates?: string[]
           } | null
           created_at?: string
+          updated_at?: string
           user_id?: string
+          assigned_to?: string | null
+          assigned_to_type?: 'user' | 'team' | null
+          department?: string | null
         }
       }
       task_calendar_relations: {

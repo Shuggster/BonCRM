@@ -6,6 +6,12 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 
+const PRIORITY_COLORS = {
+  high: 'border-l-4 border-l-red-500',
+  medium: 'border-l-4 border-l-yellow-500',
+  low: 'border-l-4 border-l-green-500'
+} as const
+
 interface EventCardProps {
   event: CalendarEvent
   onClick: () => void
@@ -21,6 +27,7 @@ export function EventCard({
 }: EventCardProps) {
   const category = event.category || 'default'
   const categoryData = EVENT_CATEGORIES[category as keyof typeof EVENT_CATEGORIES]
+  const priorityColor = PRIORITY_COLORS[event.priority || 'medium']
 
   return (
     <div
@@ -32,17 +39,13 @@ export function EventCard({
         "border border-white/[0.08]",
         "shadow-lg shadow-black/20",
         "hover:bg-[#1C2333]/80 transition-all duration-200",
-        "border-l-2",
-        categoryData?.borderClass || EVENT_CATEGORIES.default.borderClass,
+        priorityColor,
         "cursor-pointer",
         className
       )}
     >
       <div className="flex items-center gap-2">
         <span className="font-medium truncate text-zinc-200">{event.title}</span>
-        {event.recurrence && (
-          <RefreshCw className="h-3 w-3 text-zinc-400 flex-shrink-0" />
-        )}
       </div>
       {showTime && (
         <div className="text-xs text-zinc-400">

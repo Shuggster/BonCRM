@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, createContext, useContext, useEffect } from 'react'
-import { CalendarEvent, EventPriority, RecurringOptions } from '@/types/calendar'
+import { CalendarEvent, EventPriority, RecurringOptions, RecurrenceRule, RecurrenceFrequency } from '@/types/calendar'
 import { EventCategory } from '@/lib/constants/categories'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -87,6 +87,7 @@ function EventFormProvider({ children, onSubmit, onCancel, initialData }: EventF
       end: defaultEnd,
       category: (initialData?.category || 'meeting') as EventCategory,
       priority: initialData?.priority || 'medium',
+      status: initialData?.status || 'scheduled',
       assigned_to: initialData?.assigned_to || '',
       assigned_to_type: initialData?.assigned_to_type || 'user',
       department: initialData?.department || '',
@@ -111,6 +112,12 @@ function EventFormProvider({ children, onSubmit, onCancel, initialData }: EventF
     console.log('Submitting form data:', formData)
     setIsSubmitting(true)
     try {
+      // Validate that end time is after start time
+      if (formData.end <= formData.start) {
+        setError('End time must be after start time')
+        setIsSubmitting(false)
+        return
+      }
       onSubmit(formData)
     } catch (err: any) {
       setError(err.message || 'An error occurred')
@@ -296,6 +303,11 @@ function TopSection() {
                   const newDate = new Date(formData.end)
                   newDate.setHours(hours)
                   newDate.setMinutes(minutes)
+                  // Ensure end time is after start time
+                  if (newDate <= formData.start) {
+                    // Set end time to 30 minutes after start time
+                    newDate.setTime(formData.start.getTime() + 30 * 60000)
+                  }
                   setFormData({ end: newDate })
                 }}
                 className="w-full mt-1 rounded-md border px-3 py-2 text-sm bg-black border-white/[0.08] text-white"
@@ -384,23 +396,22 @@ function BottomSection({ onCancel }: { onCancel: () => void }) {
   const handleRecurringChange = (checked: boolean) => {
     if (checked) {
       setFormData({
-        recurring: {
-          frequency: 'daily',
+        recurrence: {
+          frequency: 'daily' as RecurrenceFrequency,
           interval: 1,
-          endDate: null,
-          weekdays: []
+          endDate: undefined
         }
       })
     } else {
-      setFormData({ recurring: undefined })
+      setFormData({ recurrence: undefined })
     }
   }
 
-  const handleRecurringUpdate = (data: Partial<RecurringOptions>) => {
-    if (!formData.recurring) return
+  const handleRecurringUpdate = (data: Partial<RecurrenceRule>) => {
+    if (!formData.recurrence) return
     setFormData({
-      recurring: {
-        ...formData.recurring,
+      recurrence: {
+        ...formData.recurrence,
         ...data
       }
     })
@@ -532,19 +543,19 @@ function BottomSection({ onCancel }: { onCancel: () => void }) {
               Recurring Event
             </label>
             <Switch
-              checked={Boolean(formData.recurring)}
+              checked={Boolean(formData.recurrence)}
               onCheckedChange={handleRecurringChange}
             />
           </div>
 
-          {formData.recurring && (
+          {formData.recurrence && (
             <div className="mt-4 space-y-4 pl-4 border-l-2 border-white/5">
               <div>
                 <label className="text-sm font-medium text-zinc-400">Frequency</label>
                 <Select
-                  value={formData.recurring.frequency}
+                  value={formData.recurrence.frequency}
                   onValueChange={(value) => handleRecurringUpdate({
-                    frequency: value as RecurringOptions['frequency']
+                    frequency: value as RecurrenceFrequency
                   })}
                 >
                   <SelectTrigger className={cn(
@@ -568,17 +579,17 @@ function BottomSection({ onCancel }: { onCancel: () => void }) {
                   <Input
                     type="number"
                     min="1"
-                    value={formData.recurring.interval}
+                    value={formData.recurrence.interval}
                     onChange={(e) => handleRecurringUpdate({
                       interval: parseInt(e.target.value) || 1
                     })}
                     className="w-24 bg-black border-white/[0.08] text-white"
                   />
                   <span className="text-sm text-zinc-400">
-                    {formData.recurring.frequency === 'daily' && 'days'}
-                    {formData.recurring.frequency === 'weekly' && 'weeks'}
-                    {formData.recurring.frequency === 'monthly' && 'months'}
-                    {formData.recurring.frequency === 'yearly' && 'years'}
+                    {formData.recurrence.frequency === 'daily' && 'days'}
+                    {formData.recurrence.frequency === 'weekly' && 'weeks'}
+                    {formData.recurrence.frequency === 'monthly' && 'months'}
+                    {formData.recurrence.frequency === 'yearly' && 'years'}
                   </span>
                 </div>
               </div>
@@ -596,14 +607,14 @@ function BottomSection({ onCancel }: { onCancel: () => void }) {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.recurring.endDate ? format(formData.recurring.endDate, 'PPP') : <span>Pick a date</span>}
+                      {formData.recurrence.endDate ? format(formData.recurrence.endDate, 'PPP') : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-black border border-white/10" align="start">
                     <div className="p-3">
                       <Calendar
                         mode="single"
-                        selected={formData.recurring?.endDate || undefined}
+                        selected={formData.recurrence?.endDate || undefined}
                         onSelect={(date) => handleRecurringUpdate({ endDate: date })}
                         initialFocus
                         className={calendarClassName}
