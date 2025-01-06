@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Contact, LeadStatus, LeadSource, ConversionStatus } from '@/types'

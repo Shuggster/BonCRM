@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, User, Mail, Phone, Building2, Briefcase, Globe, MapPin, Tags, Target, Factory, Users, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
