@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { PasswordChangeForm } from "@/components/settings/PasswordChangeForm"
 
 export default function SecuritySettingsPage() {

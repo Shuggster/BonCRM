@@ -372,7 +372,12 @@ export default function DashboardPage() {
   // Update fetchDashboardData to set data ready state
   const fetchDashboardData = useCallback(async () => {
     try {
-      console.log('Fetching dashboard data...');
+      if (!session?.user?.id) {
+        console.log('No session available, skipping data fetch');
+        return;
+      }
+
+      console.log('Fetching dashboard data...', { sessionId: session?.user?.id });
       setIsLoading(true)
       
       const { data: contactsData, error: contactsError } = await supabase
@@ -381,14 +386,25 @@ export default function DashboardPage() {
         .order('created_at', { ascending: false })
         .limit(3);
 
+      console.log('Contacts data:', { contactsData, contactsError });
+
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('*');
+        .select('*')
+        .in('status', ['todo', 'in-progress'])
+        .order('due_date', { ascending: true })
+        .limit(3);
+
+      console.log('Tasks data:', { tasksData, tasksError });
 
       const { data: activitiesData, error: activitiesError } = await supabase
         .from('scheduled_activities')
         .select('*')
-        .order('scheduled_for', { ascending: true });
+        .gte('scheduled_for', new Date().toISOString())
+        .order('scheduled_for', { ascending: true })
+        .limit(3);
+
+      console.log('Activities data:', { activitiesData, activitiesError });
 
       if (contactsError) throw contactsError;
       if (tasksError) throw tasksError;
@@ -467,7 +483,7 @@ export default function DashboardPage() {
       setIsLoading(false)
       setIsDataReady(true) // Still set ready to show error states
     }
-  }, [supabase]);
+  }, [supabase, session]); // Remove session?.user?.id from dependencies
 
   // Update subscription handlers
   useEffect(() => {
@@ -481,11 +497,11 @@ export default function DashboardPage() {
     const supabase = createClientComponentClient()
     console.log('Supabase client created');
 
-    // Fetch initial data
+    // Fetch initial data only when session is available
     fetchDashboardData();
     console.log('Initial data fetch triggered');
 
-    // Set up task subscription
+    // Rest of the subscription setup...
     const tasksChannel = supabase.channel('tasks-changes')
       .on(
         'postgres_changes',
@@ -493,7 +509,7 @@ export default function DashboardPage() {
           event: '*',
           schema: 'public',
           table: 'tasks',
-          filter: `user_id=eq.${session.user.id}`
+          filter: `created_by=eq.${session.user.id}`
         },
         async (payload) => {
           console.log('Task change detected:', payload);
@@ -511,7 +527,6 @@ export default function DashboardPage() {
         }
       )
 
-    // Set up activities subscription
     const activitiesChannel = supabase.channel('activities-changes')
       .on(
         'postgres_changes',
@@ -519,7 +534,7 @@ export default function DashboardPage() {
           event: '*',
           schema: 'public',
           table: 'scheduled_activities',
-          filter: `user_id=eq.${session.user.id}`
+          filter: `created_by=eq.${session.user.id}`
         },
         async (payload) => {
           console.log('Activity change detected:', payload);
@@ -536,7 +551,6 @@ export default function DashboardPage() {
         }
       )
 
-    // Set up contacts subscription
     const contactsChannel = supabase.channel('contacts-changes')
       .on(
         'postgres_changes',
@@ -544,7 +558,7 @@ export default function DashboardPage() {
           event: '*',
           schema: 'public',
           table: 'contacts',
-          filter: `user_id=eq.${session.user.id}`
+          filter: `created_by=eq.${session.user.id}`
         },
         async (payload) => {
           console.log('Contact change detected:', payload);

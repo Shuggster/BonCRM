@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/Input"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useSession } from "next-auth/react"
@@ -338,7 +338,7 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
                   {initials}
                 </div>
               </div>
-              
+　　 　 　 　
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Input
@@ -636,10 +636,7 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
               />
             </div>
             <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-sm text-zinc-400">
-                <Factory className="w-5 h-5 text-blue-500" />
-                Industry
-              </Label>
+              <Label className="text-sm text-zinc-400">Industry</Label>
               <Select
                 value={contact.industry_id?.toString() || ''}
                 onValueChange={(value) => onFieldUpdate('industry_id', value)}
@@ -896,7 +893,7 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
             {contact.tags?.map((tagId) => {
               const tag = tags.find(t => t.id === tagId)
               if (!tag) return null
-              
+　　 　 　 　
               return (
                 <div
                   key={tag.id}
@@ -1235,7 +1232,7 @@ export function EditContact({ contact, section = 'upper', onFieldUpdate, classNa
               setNotes('')
               setScheduledFor(new Date())
               setDuration(30)
-              
+　　 　 　 　
               // Refresh activities list
               setRefreshKey(prev => prev + 1)
             } catch (err: any) {

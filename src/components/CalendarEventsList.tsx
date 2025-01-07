@@ -1,6 +1,6 @@
 import { CalendarEvent } from '@/types/calendar'
 import { format } from 'date-fns'
-import { Card } from '@/components/ui/Card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from '@/components/ui/badge'
 
 interface CalendarEventsListProps {

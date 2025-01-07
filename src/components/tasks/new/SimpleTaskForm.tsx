@@ -1,7 +1,7 @@
 'use client'
 
 import { Calendar, CheckSquare, Clock, Tag, AlertCircle, Loader2, Plus, Save } from 'lucide-react'
-import { Input } from '@/components/ui/Input'
+import { Input } from "@/components/ui/input"
 import { TaskFormData } from './TaskFormContext'
 import { FormCard, FormCardSection, formInputStyles } from '@/components/ui/form-card'
 import { motion } from 'framer-motion'

@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { Card } from "@/components/ui/card"
 import type { Task } from '@/types/tasks'
 
 interface TaskCardProps {
@@ -39,32 +40,34 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
       onClick={onClick}
       className="w-full text-left p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{task.title}</h3>
-            {task.description && (
-              <p className="text-sm text-zinc-400 line-clamp-1">
-                {task.description}
-              </p>
-            )}
+      <Card>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <h3 className="font-medium text-white">{task.title}</h3>
+              {task.description && (
+                <p className="text-sm text-zinc-400 line-clamp-1">
+                  {task.description}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className={`px-2 py-1 rounded-full text-xs capitalize
+              ${task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                task.priority === 'medium' ? 'bg-orange-500/20 text-orange-400' :
+                'bg-green-500/20 text-green-400'}`}>
+              {task.priority}
+            </span>
+            <span className={`px-2 py-1 rounded-full text-xs capitalize
+              ${task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
+                'bg-orange-500/20 text-orange-400'}`}>
+              {task.status.replace('-', ' ')}
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <span className={`px-2 py-1 rounded-full text-xs capitalize
-            ${task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-              task.priority === 'medium' ? 'bg-orange-500/20 text-orange-400' :
-              'bg-green-500/20 text-green-400'}`}>
-            {task.priority}
-          </span>
-          <span className={`px-2 py-1 rounded-full text-xs capitalize
-            ${task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-              task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
-              'bg-orange-500/20 text-orange-400'}`}>
-            {task.status.replace('-', ' ')}
-          </span>
-        </div>
-      </div>
+      </Card>
     </motion.button>
   )
 } 

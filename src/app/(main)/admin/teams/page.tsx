@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Users, Search, Building2, Loader2, Plus } from "lucide-react"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/Input"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,

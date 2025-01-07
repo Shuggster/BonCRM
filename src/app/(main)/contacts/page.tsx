@@ -717,35 +717,15 @@ export default function ContactsPage() {
     setupInitialContent();
   }, [isMounted, setupInitialContent]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const form = e.target as HTMLFormElement
-    const formData = new FormData(form)
-    
+  const handleSubmit = async (formData: any) => {    
     try {
-      const { data, error } = await supabase
-        .from('contacts')
-        .insert([{
-          first_name: formData.get('first_name'),
-          last_name: formData.get('last_name'),
-          email: formData.get('email'),
-          phone: formData.get('phone'),
-          company: formData.get('company'),
-          job_title: formData.get('job_title'),
-          industry_id: 'ec3ef12c-04ac-48ff-9d86-2678618e8872', // Technology industry
-          tags: [],
-          lead_status: 'new',
-          lead_source: 'website',
-          conversion_status: 'lead'
-        }])
-        .select()
-        .single()
-
+      const { data, error } = await supabase.from('contacts').insert([formData]).select().single()
       if (error) throw error
-
-      fetchContacts()
+      await fetchContacts()
+      return data
     } catch (error) {
       console.error('Error creating contact:', error)
+      throw error
     }
   }
 
@@ -755,7 +735,7 @@ export default function ContactsPage() {
       const topContent = (
         <ContactFormProvider>
           <QuickAddContact 
-            onSuccess={handleCreateContact}
+            onSuccess={handleSubmit}  // Pass handleSubmit instead
             onCancel={hide}
             section="upper"
           />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useContactForm } from './ContactFormContext'
-import { Input } from '@/components/ui/Input'
+import { Input } from "@/components/ui/input"
 import { motion } from 'framer-motion'
 import { 
   Plus, Mail, Phone, Building2, User2, Briefcase, Factory, 
@@ -569,7 +569,7 @@ function QuickAddContactSection({
                 placeholder="Tag name..."
                 className="flex-1 h-8 bg-black border-white/10 focus:border-white/20 placeholder:text-white/40"
               />
-              <input
+              <Input
                 type="color"
                 value={newTagColor}
                 onChange={(e) => setNewTagColor(e.target.value)}
@@ -605,7 +605,15 @@ function QuickAddContactSection({
 
 export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: QuickAddContactProps) {
   const supabase = createClientComponentClient()
-  const { formData, updateField: onFieldUpdate, resetForm, isSubmitting, setIsSubmitting, error, setError } = useContactForm()
+  const { 
+    formData, 
+    updateField: onFieldUpdate, 
+    resetForm, 
+    isSubmitting, 
+    setIsSubmitting, 
+    error, 
+    setError 
+  } = useContactForm()
   const [industries, setIndustries] = useState<Industry[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [showTagSelect, setShowTagSelect] = useState(false)
@@ -679,9 +687,24 @@ export function QuickAddContact({ onSuccess, onCancel, section = 'upper' }: Quic
         ...formData,
         first_name: trimmedFirstName,
         email: trimmedEmail,
-        tags: formData.tags || []
+        tags: formData.tags || [],
+        conversion_status: 'lead',
+        lead_status: 'new',
+        lead_source: 'website',
+        industry_id: formData.industry_id || 'ec3ef12c-04ac-48ff-9d86-2678618e8872',
+        lead_score: 0,
+        expected_value: 0,
+        assigned_to: formData.team_id,
+        assigned_to_type: formData.team_type
       }
+
+      // Remove the old team fields that aren't in the schema
+      delete dataToSubmit.team_id;
+      delete dataToSubmit.team_type;
+
       await onSuccess(dataToSubmit)
+      resetForm() // Reset form after successful submission
+      onCancel() // Close the form
     } catch (err) {
       console.error('Error submitting form:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')

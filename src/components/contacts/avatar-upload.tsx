@@ -4,6 +4,7 @@ import { useState, useRef } from "react"
 import { User, Upload, X } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Avatar } from "./avatar"
+import { Input } from "@/components/ui/input"
 
 interface AvatarUploadProps {
   url: string | null

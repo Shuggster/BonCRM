@@ -41,6 +41,8 @@ export const activityCalendarService = {
       contact_id: string
       scheduled_for: Date
       duration_minutes?: number
+      assigned_to?: string
+      assigned_to_type?: 'user' | 'team'
     }
   ) {
     if (!session?.user?.id) {
@@ -50,178 +52,53 @@ export const activityCalendarService = {
     try {
       // First create the activity
       const { data: activity, error: activityError } = await supabaseAdmin
-        .from('scheduled_activities')
+        .from('activities')
         .insert({
-          user_id: session.user.id,
-          contact_id: data.contact_id,
-          title: data.title.trim(),
+          title: data.title,
           type: data.type,
-          description: data.description?.trim() || null,
+          description: data.description,
+          contact_id: data.contact_id,
           scheduled_for: data.scheduled_for.toISOString(),
-          status: 'pending'
+          duration_minutes: data.duration_minutes || 30,
+          status: 'scheduled',
+          user_id: session.user.id,
+          assigned_to: data.assigned_to || session.user.id,
+          assigned_to_type: data.assigned_to_type || 'user'
         })
         .select()
         .single()
 
-      if (activityError) {
-        console.error('Error creating activity:', activityError)
-        throw activityError
-      }
+      if (activityError) throw activityError
 
-      // Calculate end time
-      const endTime = new Date(data.scheduled_for)
-      endTime.setMinutes(endTime.getMinutes() + (data.duration_minutes || 30))
-
-      // Create the calendar event
-      const eventInput: DatabaseEventInput = {
-        title: data.title,
-        description: data.description || null,
-        start_time: data.scheduled_for.toISOString(),
-        end_time: endTime.toISOString(),
-        category: data.type,
-        recurrence: null,
-        user_id: session.user.id,
-        department: session.user.department || null
-      }
-
-      console.log('Creating calendar event with input:', eventInput)
-
-      const { data: event, error: eventError } = await supabaseAdmin
+      // Then create the calendar event
+      const { data: calendarEvent, error: calendarError } = await supabaseAdmin
         .from('calendar_events')
-        .insert(eventInput)
-        .select('*')
+        .insert({
+          title: data.title,
+          description: data.description,
+          start_time: data.scheduled_for.toISOString(),
+          end_time: new Date(data.scheduled_for.getTime() + (data.duration_minutes || 30) * 60000).toISOString(),
+          user_id: session.user.id,
+          category: data.type,
+          assigned_to: data.assigned_to || session.user.id,
+          assigned_to_type: data.assigned_to_type || 'user'
+        })
+        .select()
         .single()
 
-      if (eventError) {
-        console.error('Error creating event:', eventError)
-        // Rollback activity
-        await supabaseAdmin
-          .from('scheduled_activities')
-          .delete()
-          .eq('id', activity.id)
-        throw eventError
-      }
+      if (calendarError) throw calendarError
 
-      console.log('Created calendar event:', event)
-
-      // Create the activity-calendar relation
+      // Finally create the relation between activity and calendar event
       const { error: relationError } = await supabaseAdmin
         .from('activity_calendar_relations')
         .insert({
           activity_id: activity.id,
-          calendar_event_id: event.id
+          calendar_event_id: calendarEvent.id
         })
 
-      if (relationError) {
-        console.error('Error creating relation:', relationError)
-        // Rollback event and activity
-        await supabaseAdmin
-          .from('calendar_events')
-          .delete()
-          .eq('id', event.id)
-        await supabaseAdmin
-          .from('scheduled_activities')
-          .delete()
-          .eq('id', activity.id)
-        throw relationError
-      }
+      if (relationError) throw relationError
 
-      console.log('Created activity-calendar relation')
-
-      // Create user assignment
-      const userAssignment: Assignment = {
-        assignable_id: event.id,
-        assignable_type: 'calendar_event',
-        assigned_to: session.user.id,
-        assigned_to_type: 'user'
-      }
-
-      console.log('Creating user assignment:', {
-        assignment: userAssignment,
-        userId: session.user.id,
-        eventId: event.id
-      })
-
-      // First verify the user exists
-      const { data: userExists, error: userCheckError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('id', session.user.id)
-        .single()
-
-      if (userCheckError || !userExists) {
-        console.error('User validation error:', userCheckError)
-        throw new Error('Invalid user for assignment')
-      }
-
-      // Then create the assignment
-      const { data: assignmentData, error: userAssignmentError } = await supabaseAdmin
-        .from('assignments')
-        .upsert(userAssignment, {
-          onConflict: 'assignable_id,assignable_type,assigned_to,assigned_to_type'
-        })
-        .select()
-
-      if (userAssignmentError) {
-        console.error('Error creating user assignment:', {
-          error: userAssignmentError,
-          assignment: userAssignment,
-          user: session.user
-        })
-        // Rollback everything
-        await supabaseAdmin
-          .from('activity_calendar_relations')
-          .delete()
-          .eq('calendar_event_id', event.id)
-        await supabaseAdmin
-          .from('calendar_events')
-          .delete()
-          .eq('id', event.id)
-        await supabaseAdmin
-          .from('scheduled_activities')
-          .delete()
-          .eq('id', activity.id)
-        throw userAssignmentError
-      }
-
-      console.log('Created user assignment:', assignmentData)
-
-      // Convert database event to CalendarEvent type
-      const calendarEvent: CalendarEvent = {
-        id: event.id,
-        title: event.title,
-        description: event.description || '',
-        start: new Date(event.start_time),
-        end: new Date(event.end_time),
-        category: event.category || 'default',
-        contact_id: data.contact_id,
-        assigned_to: event.assigned_to || undefined,
-        assigned_to_type: event.assigned_to_type || undefined,
-        department: event.department || undefined,
-        recurrence: event.recurrence ? {
-          frequency: event.recurrence.frequency,
-          interval: event.recurrence.interval || 1,
-          endDate: event.recurrence.end_date ? new Date(event.recurrence.end_date) : undefined
-        } : undefined,
-        isRecurring: Boolean(event.recurrence)
-      }
-
-      console.log('Converted to calendar event:', calendarEvent)
-
-      // Dispatch calendar refresh events
-      if (typeof window !== 'undefined') {
-        // Dispatch both standard and custom events for maximum compatibility
-        window.dispatchEvent(new Event('calendar:refresh', { bubbles: true }))
-        window.dispatchEvent(new CustomEvent('calendar:refresh', { bubbles: true }))
-        // Also dispatch a general refresh event that some components might be listening to
-        window.dispatchEvent(new Event('refresh', { bubbles: true }))
-        window.dispatchEvent(new CustomEvent('refresh', { bubbles: true }))
-      }
-
-      return {
-        activity,
-        event: calendarEvent
-      }
+      return activity
     } catch (error) {
       console.error('Error in createActivityWithEvent:', error)
       throw error
@@ -314,4 +191,4 @@ export const activityCalendarService = {
       return { data: null, error }
     }
   }
-} 
+}

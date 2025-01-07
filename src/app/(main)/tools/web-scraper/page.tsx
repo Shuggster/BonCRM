@@ -2,7 +2,7 @@
 
 import { Globe } from "lucide-react"
 import { PageHeader } from "@/components/ui/page-header"
-import { Card } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 export default function WebScraperPage() {
   return (

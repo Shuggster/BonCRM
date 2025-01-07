@@ -3,8 +3,8 @@
 import { useState, createContext, useContext, useEffect } from 'react'
 import { CalendarEvent, EventPriority, RecurringOptions, RecurrenceRule, RecurrenceFrequency } from '@/types/calendar'
 import { EventCategory } from '@/lib/constants/categories'
-import { Card } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'

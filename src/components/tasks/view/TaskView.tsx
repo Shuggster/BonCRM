@@ -1,5 +1,5 @@
 import { Calendar, CheckSquare, Clock, Tag } from 'lucide-react'
-import { FormCard, FormCardSection } from '@/components/ui/form-card'
+import { Card } from '@/components/ui/card'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -50,7 +50,7 @@ export function TaskView({ task }: TaskViewProps) {
                 <h2 className="text-2xl font-semibold text-white">{task.title}</h2>
               </div>
 
-              <FormCardSection
+              <Card
                 title="Basic Information"
                 icon={<CheckSquare className="w-5 h-5 text-blue-500" />}
               >
@@ -62,9 +62,9 @@ export function TaskView({ task }: TaskViewProps) {
                     </div>
                   </div>
                 </div>
-              </FormCardSection>
+              </Card>
 
-              <FormCardSection
+              <Card
                 title="Task Details"
                 icon={<Calendar className="w-5 h-5 text-blue-500" />}
               >
@@ -105,7 +105,7 @@ export function TaskView({ task }: TaskViewProps) {
                     )}
                   </div>
                 </div>
-              </FormCardSection>
+              </Card>
             </div>
           </div>
         </motion.div>
@@ -126,7 +126,7 @@ export function TaskView({ task }: TaskViewProps) {
         >
           <div className="relative rounded-b-2xl overflow-hidden backdrop-blur-[16px]" style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <div className="relative z-10">
-              <FormCardSection
+              <Card
                 title="Scheduling"
                 icon={<Clock className="w-5 h-5 text-blue-500" />}
               >
@@ -156,7 +156,7 @@ export function TaskView({ task }: TaskViewProps) {
                     )}
                   </div>
                 </div>
-              </FormCardSection>
+              </Card>
             </div>
           </div>
         </motion.div>

@@ -82,7 +82,35 @@ export function ContactFormProvider({ children }: { children: React.ReactNode })
   }
 
   const resetForm = () => {
-    setFormData(defaultFormData)
+    setFormData({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      company: '',
+      job_title: '',
+      department: '',
+      website: '',
+      linkedin: '',
+      twitter: '',
+      facebook: '',
+      whatsapp: '',
+      address_line1: '',
+      address_line2: '',
+      city: '',
+      region: '',
+      postcode: '',
+      country: '',
+      lead_status: '',
+      lead_source: '',
+      conversion_status: '',
+      lead_score: 0,
+      expected_value: 0,
+      industry_id: '',
+      tags: [],
+      team_id: '',
+      team_type: undefined
+    })
     setError(null)
     setIsSubmitting(false)
   }

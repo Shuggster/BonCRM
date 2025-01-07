@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { User, Mail, Phone, Building2, Briefcase, MapPin, Calendar, Users, Tags, Globe, Twitter, Linkedin, DollarSign, Target, BarChart } from 'lucide-react'
 import { ContactTags } from './contact-tags'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card } from "@/components/ui/card"
 
 interface Contact {
   id: string
@@ -157,7 +158,7 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
 
           <TabsContent value="basic" className="space-y-6 mt-6">
             {/* Personal Information */}
-            <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] border border-[rgba(59,130,246,0.1)]">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] border border-[rgba(59,130,246,0.1)]">
               <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                 <User className="w-5 h-5 text-blue-500" />
                 Personal Information
@@ -188,10 +189,10 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
                   value={formData.phone}
                 />
               </div>
-            </div>
+            </Card>
 
             {/* Work Information */}
-            <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
               <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-indigo-500" />
                 Work Information
@@ -219,11 +220,11 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
                   value={formData.department}
                 />
               </div>
-            </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="social" className="space-y-6 mt-6">
-            <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
               <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                 <Globe className="w-5 h-5 text-indigo-500" />
                 Online Presence
@@ -251,11 +252,11 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
                   value={formData.twitter}
                 />
               </div>
-            </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="address" className="space-y-6 mt-6">
-            <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
               <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-indigo-500" />
                 Location Details
@@ -283,11 +284,11 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
                   value={formData.city}
                 />
               </div>
-            </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="sales" className="space-y-6 mt-6">
-            <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
               <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                 <Target className="w-5 h-5 text-indigo-500" />
                 Lead Information
@@ -324,12 +325,12 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
                   value={formData.expectedValue}
                 />
               </div>
-            </div>
+            </Card>
           </TabsContent>
         </Tabs>
 
         {/* Tags */}
-        <div className="rounded-xl p-6 bg-card relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
+        <Card className="relative overflow-hidden bg-gradient-to-br from-[rgba(99,102,241,0.1)] to-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.1)]">
           <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
             <Tags className="w-5 h-5 text-indigo-500" />
             Tags
@@ -340,7 +341,7 @@ export function AddNewContact({ onSuccess }: AddNewContactProps) {
               onTagsChange={(tags) => setSelectedTags(tags)} 
             />
           </div>
-        </div>
+        </Card>
 
         {/* Submit Button */}
         <motion.button

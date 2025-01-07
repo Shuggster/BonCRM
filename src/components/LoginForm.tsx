@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
+import { Input } from "@/components/ui/input"
 
 const LoginForm: React.FC = () => {
   const router = useRouter()
@@ -41,4 +42,4 @@ const LoginForm: React.FC = () => {
   )
 }
 
-export default LoginForm 
+export default LoginForm

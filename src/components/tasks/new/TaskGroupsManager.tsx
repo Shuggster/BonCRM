@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/Input'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { TaskGroup } from '@/types/tasks'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'

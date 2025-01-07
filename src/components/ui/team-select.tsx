@@ -110,7 +110,9 @@ export function TeamSelect({
     <Select 
       onValueChange={(value) => {
         console.log('Raw value:', value);
-        const [type, id] = value.split('-');
+        // Use a different separator that won't conflict with UUIDs
+        const type = value.startsWith('team:') ? 'team' : 'user';
+        const id = value.substring(value.indexOf(':') + 1);
         console.log('Split values:', { type, id });
         
         if (!id) {
@@ -118,8 +120,8 @@ export function TeamSelect({
           return;
         }
         
-        const selectedUser = users.find(u => u.id.includes(id));
-        const selectedTeam = teams.find(t => t.id.includes(id));
+        const selectedUser = users.find(u => u.id === id);
+        const selectedTeam = teams.find(t => t.id === id);
         
         console.log('Found entities:', { selectedUser, selectedTeam });
         
@@ -132,7 +134,7 @@ export function TeamSelect({
         console.log('Final selection:', selection);
         onSelect(selection);
       }}
-      defaultValue={defaultValue ? `${defaultValue.type}-${defaultValue.id.toString()}` : undefined}
+      defaultValue={defaultValue ? `${defaultValue.type}:${defaultValue.id}` : undefined}
       disabled={disabled}
     >
       <SelectTrigger className={cn("w-full bg-[#1C2333] border-white/10 focus:border-blue-500 h-10", className)}>
@@ -151,7 +153,7 @@ export function TeamSelect({
                 return (
                   <SelectItem 
                     key={team.id} 
-                    value={`team-${team.id.toString()}`}
+                    value={`team:${team.id}`}
                     className="border-l-2 border-blue-500/30 pl-3 mt-1 text-white/90 focus:bg-white/10 focus:text-white"
                   >
                     <div className="flex items-center justify-between w-full gap-2">
@@ -174,7 +176,7 @@ export function TeamSelect({
             return (
               <SelectItem 
                 key={user.id} 
-                value={`user-${user.id.toString()}`}
+                value={`user:${user.id}`}
                 className="text-white/90 focus:bg-white/10 focus:text-white"
               >
                 <div className="flex items-center justify-between w-full gap-2">

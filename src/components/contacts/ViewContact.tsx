@@ -69,10 +69,11 @@ interface ExpandableSectionProps {
   title: string
   icon: React.ElementType
   children: React.ReactNode
+  defaultExpanded?: boolean
 }
 
-function ExpandableSection({ title, icon: Icon, children }: ExpandableSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+function ExpandableSection({ title, icon: Icon, children, defaultExpanded = false }: ExpandableSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
   return (
     <div className="last:border-b-0 border-b border-white/[0.08]">
@@ -113,12 +114,6 @@ function ExpandableSection({ title, icon: Icon, children }: ExpandableSectionPro
   )
 }
 
-interface TeamAssignmentUser {
-  id: string
-  name: string
-  department: string
-}
-
 export function ViewContact({ contact: initialContact, section = 'upper', onEdit, onRefresh }: ViewContactProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
@@ -129,12 +124,18 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
   const [loadingActivities, setLoadingActivities] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   
+  // Update contact when initialContact changes
+  useEffect(() => {
+    setContact(initialContact)
+  }, [initialContact])
+
   // Activity scheduling state
   const [title, setTitle] = useState("")
   const [activityType, setActivityType] = useState<'call' | 'email' | 'meeting' | 'follow_up'>('call')
   const [notes, setNotes] = useState("")
-  const [scheduledFor, setScheduledFor] = useState<Date | null>(new Date())
+  const [scheduledFor, setScheduledFor] = useState<Date>(new Date())
   const [duration, setDuration] = useState(30)
+  const [assignedTo, setAssignedTo] = useState<string>('')
   
   const supabase = createClientComponentClient()
 
@@ -151,14 +152,48 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
 
   useEffect(() => {
     const fetchActivities = async () => {
-      if (!initialContact.id) return
+      if (!contact?.id) {
+        console.log('No contact ID available for fetching activities')
+        return
+      }
+      
+      console.log('Fetching activities for contact:', contact.id)
       setLoadingActivities(true)
       try {
-        const { data, error } = await activityCalendarService.getActivitiesByContactId(initialContact.id)
-        if (error) throw error
-        setActivities(data || [])
+        // Fetch activities from the calendar API
+        const response = await fetch(`/api/calendar/events?contact_id=${contact.id}`)
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || 'Failed to fetch activities')
+        }
+
+        const activitiesData = await response.json()
+        console.log('Fetched activities:', activitiesData)
+        
+        // Transform activities to match the expected format
+        const formattedActivities = activitiesData.map((activity: any) => ({
+          id: activity.id,
+          title: activity.title,
+          type: activity.type || 'calendar_event',
+          description: activity.description,
+          scheduled_for: activity.start,
+          status: activity.status || 'scheduled',
+          contact_id: contact.id,
+          activity_calendar_relations: [{
+            calendar_events: {
+              id: activity.id,
+              title: activity.title,
+              description: activity.description,
+              start_time: activity.start,
+              end_time: activity.end
+            }
+          }]
+        }))
+
+        console.log('Formatted activities:', formattedActivities)
+        setActivities(formattedActivities)
       } catch (err) {
-        console.error('Error fetching activities:', err)
+        console.error('Error in fetchActivities:', err)
       } finally {
         setLoadingActivities(false)
       }
@@ -199,7 +234,7 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
     fetchActivities()
     fetchUsers()
     fetchTags()
-  }, [])
+  }, [contact?.id, refreshKey])
 
   const handleScheduleActivity = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -216,6 +251,8 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
     setError(null)
 
     try {
+      console.log('Creating activity for contact:', contact.id)
+      
       // Create a minimal session object with just the required fields
       const userSession = {
         user: {
@@ -229,10 +266,14 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
         title: title.trim(),
         type: activityType,
         description: notes.trim() || undefined,
-        contact_id: initialContact.id,
+        contact_id: contact.id,
         scheduled_for: scheduledFor,
-        duration_minutes: duration
+        duration_minutes: duration,
+        assigned_to: assignedTo || session.user.id,
+        assigned_to_type: 'user'
       })
+
+      console.log('Activity created, fetching updated activities')
 
       // Clear form
       setTitle('')
@@ -240,10 +281,12 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
       setNotes('')
       setScheduledFor(new Date())
       setDuration(30)
+      setAssignedTo('')
       
-      // Refresh activities list
+      // Trigger a refresh of the activities list
       setRefreshKey(prev => prev + 1)
       
+      // Refresh dashboard
       if (onRefresh) {
         onRefresh()
       }
@@ -275,6 +318,52 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
       default:
         return <ArrowRight className={`w-5 h-5 ${activityColors['follow_up']}`} />
     }
+  }
+
+  const renderActivities = () => {
+    console.log('Rendering activities:', activities)
+
+    if (loadingActivities) {
+      return <div className="text-zinc-400 text-sm">Loading activities...</div>
+    }
+
+    if (!activities || activities.length === 0) {
+      return <div className="text-zinc-400 text-sm">No activities scheduled</div>
+    }
+
+    return activities.map((activity) => {
+      console.log('Rendering activity:', activity)
+      const event = activity.activity_calendar_relations?.[0]?.calendar_events
+      if (!event) {
+        console.log('No calendar event found for activity:', activity.id)
+        return null
+      }
+
+      return (
+        <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-black/20 border border-white/[0.05]">
+          {getActivityIcon(activity.type)}
+          <div className="flex-1">
+            <h4 className="font-medium">{activity.title}</h4>
+            <p className="text-sm text-zinc-400">
+              {new Date(activity.scheduled_for).toLocaleString()}
+              {activity.description && ` • ${activity.description}`}
+              {activity.assigned_to && users.find(u => u.id === activity.assigned_to) && 
+                ` • Assigned to ${users.find(u => u.id === activity.assigned_to)?.name}`}
+            </p>
+          </div>
+          <div className="text-sm">
+            <span className={cn(
+              "px-2 py-1 rounded-full",
+              activity.status === 'completed' ? "bg-green-500/20 text-green-400" :
+              activity.status === 'cancelled' ? "bg-red-500/20 text-red-400" :
+              "bg-blue-500/20 text-blue-400"
+            )}>
+              {activity.status}
+            </span>
+          </div>
+        </div>
+      )
+    })
   }
 
   // Remove the test data merge since we're using real data now
@@ -464,11 +553,6 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
     }
   }
 
-  // Update initialContact effect without triggering refresh
-  useEffect(() => {
-    setContact(initialContact)
-  }, [initialContact])
-
   // Upper section content
   if (section === 'upper') {
     return (
@@ -485,7 +569,6 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
               )}>
                 {initials}
               </div>
-              
               <div className="space-y-1">
                 <h2 className="text-xl font-semibold text-white">
                   {initialContact.first_name} {initialContact.last_name}
@@ -738,176 +821,107 @@ export function ViewContact({ contact: initialContact, section = 'upper', onEdit
   return (
     <div className="rounded-b-2xl bg-[#111111] border-t border-white/[0.08]">
       <div className="divide-y divide-white/[0.08]">
-        <ExpandableSection title="Scheduling & Activities" icon={Calendar}>
-          <div className="space-y-6">
-            {/* Activity Scheduling Form */}
-            <form onSubmit={handleScheduleActivity} className="space-y-6">
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-zinc-400 mb-2">
-                  Title <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Activity title"
-                  required
-                  className="w-full px-4 py-2 bg-[#111111] border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-white/20"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-zinc-400 mb-2">
-                  Type <span className="text-red-400">*</span>
-                </label>
-                <div className="grid grid-cols-4 gap-3">
-                  {['call', 'email', 'meeting', 'follow_up'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setActivityType(type as any)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-3 rounded-lg border border-white/10",
-                        type === activityType
-                          ? 'bg-blue-500/10 border-blue-500 text-blue-400'
-                          : 'bg-[#111111]'
-                      )}
-                    >
-                      {getActivityIcon(type)}
-                      <span className="text-xs capitalize">
-                        {type.replace('_', ' ')}
-                      </span>
-                    </button>
-                  ))}
+        <ExpandableSection title="Activities & Schedule" icon={Calendar} defaultExpanded={true}>
+          <div className="p-6 space-y-6">
+            {/* Activity Form */}
+            <form onSubmit={handleScheduleActivity} className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={activityType} onValueChange={(value) => setActivityType(value as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="call">Call</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="meeting">Meeting</SelectItem>
+                      <SelectItem value="follow_up">Follow Up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Assigned To</Label>
+                  <Select value={assignedTo} onValueChange={setAssignedTo}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-1">
-                  Schedule For
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <DatePicker
-                      selected={scheduledFor}
-                      onChange={(date) => setScheduledFor(date)}
-                      showTimeSelect
-                      dateFormat="MMMM d, yyyy h:mm aa"
-                      className="w-full px-3 py-2 bg-[#111111] border border-white/10 rounded-md text-white placeholder-white/40"
-                      popperClassName="react-datepicker-left"
-                      calendarClassName="bg-zinc-900 border border-white/10 rounded-lg shadow-xl"
-                      popperPlacement="top-start"
-                    />
-                  </div>
-                  <div className="w-24">
-                    <input
-                      type="number"
-                      value={duration}
-                      onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
-                      min="5"
-                      max="480"
-                      step="5"
-                      className="w-full px-3 py-2 bg-[#111111] border border-white/10 rounded-md text-white placeholder-white/40"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input 
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Activity title..."
+                    className="bg-black border-white/10 focus:border-blue-500"
+                  />
                 </div>
-                <p className="text-xs text-white/40 mt-1">Duration in minutes</p>
+                <div className="space-y-2">
+                  <Label>Schedule For</Label>
+                  <DatePicker
+                    selected={scheduledFor}
+                    onChange={(date) => setScheduledFor(date || new Date())}
+                    showTimeSelect
+                    timeFormat="HH:mm"
+                    timeIntervals={15}
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    className="w-full px-3 py-2 bg-black border border-white/10 rounded-md focus:border-blue-500 text-white"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add any notes or details..."
-                  rows={3}
-                  className="w-full px-3 py-2 bg-[#111111] border border-white/10 rounded-md text-white placeholder-white/40"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Duration (minutes)</Label>
+                  <Input 
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
+                    min={15}
+                    step={15}
+                    className="bg-black border-white/10 focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add any notes..."
+                    className="w-full h-24 px-3 py-2 bg-black border border-white/10 rounded-md focus:border-blue-500 text-white resize-none"
+                  />
+                </div>
               </div>
 
               {error && (
                 <div className="text-red-400 text-sm">{error}</div>
               )}
 
-              <div className="flex justify-end gap-2">
-                <Button 
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setTitle('')
-                    setActivityType('call')
-                    setNotes('')
-                    setScheduledFor(new Date())
-                    setDuration(30)
-                  }}
-                  className="text-white/70 hover:text-white/90"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={saving}
-                  className="bg-[#111111] hover:bg-[#1a1a1a] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
-                >
-                  {saving ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white/90 rounded-full animate-spin" />
-                      Saving...
-                    </div>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button 
+                type="submit" 
+                disabled={saving || !title.trim()}
+                className="w-full"
+              >
+                {saving ? 'Scheduling...' : 'Schedule Activity'}
+              </Button>
             </form>
 
-            <div className="border-t border-white/[0.08] pt-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-white/90">Upcoming Activities</h3>
-                {activities.length > 0 && (
-                  <span className="text-xs text-white/60">{activities.length} activities</span>
-                )}
-              </div>
-              {loadingActivities ? (
-                <div className="text-sm text-white/60">Loading activities...</div>
-              ) : activities.length > 0 ? (
-                <div className="space-y-3">
-                  {activities.map((activity) => (
-                    <div 
-                      key={activity.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-[#111111] border border-white/10 flex items-center justify-center">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white">{activity.title}</div>
-                        <div className="text-xs text-white/60 mt-0.5">
-                          {new Date(activity.scheduled_for).toLocaleString()}
-                        </div>
-                        {activity.description && (
-                          <div className="text-xs text-white/40 mt-1">{activity.description}</div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded-full bg-${activity.type === 'call' ? 'green' : activity.type === 'email' ? 'blue' : activity.type === 'meeting' ? 'purple' : 'orange'}-500/20 text-${activity.type === 'call' ? 'green' : activity.type === 'email' ? 'blue' : activity.type === 'meeting' ? 'purple' : 'orange'}-400`}>
-                          {activity.type.replace('_', ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-white/60">
-                  No upcoming activities
-                </div>
-              )}
+            {/* Activities List */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-zinc-400">Scheduled Activities</h4>
+              {renderActivities()}
             </div>
           </div>
         </ExpandableSection>

@@ -182,7 +182,8 @@ export function LeadScoringRules() {
                   onChange={e => setEditingRule({ ...editingRule, name: e.target.value })}
                 />
               </div>
-              
+　
+　
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
                 <Input
@@ -191,7 +192,8 @@ export function LeadScoringRules() {
                   onChange={e => setEditingRule({ ...editingRule, description: e.target.value })}
                 />
               </div>
-              
+　
+　
               <div className="grid gap-2">
                 <Label htmlFor="category">Category</Label>
                 <Select
@@ -209,7 +211,8 @@ export function LeadScoringRules() {
                   </SelectContent>
                 </Select>
               </div>
-              
+　
+　
               <div className="grid gap-2">
                 <Label htmlFor="points">Points</Label>
                 <Input

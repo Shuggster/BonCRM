@@ -99,221 +99,114 @@ export function EventDetails({ event, onClose, onEdit, onDelete }: EventDetailsP
   return (
     <>
       <motion.div
-        variants={splitContentVariants.top}
+        variants={splitContentVariants}
         initial="initial"
         animate="animate"
-        className="bg-[#111111] rounded-t-xl p-6"
+        exit="exit"
+        className="h-full overflow-y-auto bg-[#111111] border-l border-white/[0.08]"
       >
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-white">{event.title}</h2>
-              <div className="flex items-center gap-2">
-                {getEventTypeIcon()}
-                <span className="text-sm text-zinc-400 capitalize">{event.type}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onEdit}
-                      className="h-8 w-8 text-zinc-400 hover:text-white"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="z-50">
-                    <p>Edit Event</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onDelete}
-                      className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-red-500/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="z-50">
-                    <p>Delete Event</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="text-zinc-400 hover:text-white"
-              >
-                <span className="text-xl">×</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Status & Priority */}
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className={cn("capitalize", getStatusColor())}>
-              {event.status}
-            </Badge>
-            <Badge variant="outline" className={cn("capitalize", getPriorityColor())}>
-              {event.priority} priority
-            </Badge>
-            {event.recurrence && (
-              <Badge variant="outline" className="bg-purple-500/20 text-purple-400">
-                <Repeat className="h-3 w-3 mr-1" />
-                Recurring
-              </Badge>
-            )}
-          </div>
-
-          {/* Date & Time */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-zinc-400">
-              <CalendarIcon className="h-4 w-4" />
-              <span>{format(new Date(event.start), 'EEEE, MMMM d, yyyy')}</span>
-            </div>
-            <div className="flex items-center gap-2 text-zinc-400">
-              <Clock className="h-4 w-4" />
-              <span>
-                {format(new Date(event.start), 'h:mm a')} - {format(new Date(event.end), 'h:mm a')}
-              </span>
-            </div>
-          </div>
-
-          {/* Category */}
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white/5">
-            <span className={cn(
-              "w-2 h-2 rounded-full",
-              event.category === 'task' && "bg-emerald-500",
-              event.category === 'meeting' && "bg-blue-500",
-              event.category === 'reminder' && "bg-amber-500",
-              event.category === 'deadline' && "bg-red-500"
-            )} />
-            <span className="text-zinc-200 capitalize">{event.category}</span>
-          </div>
-        </div>
-      </motion.div>
-
-      <motion.div
-        variants={splitContentVariants.bottom}
-        initial="initial"
-        animate="animate"
-        className="bg-[#111111] rounded-b-xl border-t border-white/[0.08] p-6"
-      >
-        <ScrollArea className="h-[calc(100%-88px)]">
-          <div className="space-y-6">
-            {/* Description */}
-            {event.description && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-zinc-400">Description</h3>
-                <p className="text-sm text-zinc-300 whitespace-pre-wrap">{event.description}</p>
-              </div>
-            )}
-
-            <Separator className="bg-white/[0.08]" />
-
-            {/* Assignment & Department */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  {event.assigned_to_type === 'team' ? (
-                    <Users2 className="h-4 w-4" />
-                  ) : (
-                    <UserCircle className="h-4 w-4" />
-                  )}
-                  <h3 className="text-sm font-medium">Assigned To</h3>
+        <ScrollArea className="h-full">
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">{event.title}</h2>
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  {getEventTypeIcon()}
+                  <span>{event.type}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-zinc-300">
-                    {loading ? 'Loading...' : (
-                      <>
-                        {assignedUser?.name || 'Unassigned'}
-                        {event.assigned_to_type && (
-                          <span className="text-zinc-500 ml-1">
-                            ({event.assigned_to_type})
-                          </span>
-                        )}
-                      </>
-                    )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onEdit}
+                  className="hover:bg-white/5"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDelete}
+                  className="hover:bg-white/5"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-6">
+              {/* Date and Time */}
+              <div className="flex items-start gap-3">
+                <CalendarIcon className="h-4 w-4 mt-0.5 text-zinc-400" />
+                <div>
+                  <p className="font-medium">{format(new Date(event.start), 'MMMM d, yyyy')}</p>
+                  <p className="text-sm text-zinc-400">
+                    {format(new Date(event.start), 'h:mm a')} - {format(new Date(event.end), 'h:mm a')}
                   </p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <Building2 className="h-4 w-4" />
-                  <h3 className="text-sm font-medium">Department</h3>
+
+              {/* Assigned To */}
+              {!loading && (
+                <div className="flex items-start gap-3">
+                  <UserCircle className="h-4 w-4 mt-0.5 text-zinc-400" />
+                  <div>
+                    <p className="font-medium">Assigned To</p>
+                    <p className="text-sm text-zinc-400">
+                      {assignedUser ? assignedUser.name : 'Not assigned'}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-zinc-300">{event.department || 'Not specified'}</p>
+              )}
+
+              {/* Description */}
+              {event.description && (
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="h-4 w-4 mt-0.5 text-zinc-400" />
+                  <div>
+                    <p className="font-medium">Description</p>
+                    <p className="text-sm text-zinc-400">{event.description}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Status */}
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-4 w-4 text-zinc-400" />
+                <div>
+                  <p className="font-medium">Status</p>
+                  <Badge variant="secondary" className={cn("mt-1", getStatusColor())}>
+                    {event.status || 'Scheduled'}
+                  </Badge>
+                </div>
               </div>
-            </div>
 
-            {/* Location */}
-            {event.location && (
-              <>
-                <Separator className="bg-white/[0.08]" />
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <MapPin className="h-4 w-4" />
-                    <h3 className="text-sm font-medium">Location</h3>
-                  </div>
-                  <p className="text-sm text-zinc-300">{event.location}</p>
-                </div>
-              </>
-            )}
-
-            {/* Recurrence Details */}
-            {event.recurrence && (
-              <>
-                <Separator className="bg-white/[0.08]" />
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Repeat className="h-4 w-4" />
-                    <h3 className="text-sm font-medium">Recurrence</h3>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-zinc-300">{formatRecurrencePattern()}</p>
-                    {event.recurrence.exception_dates?.length > 0 && (
-                      <div className="text-sm text-zinc-500">
-                        <span>Except: </span>
-                        {event.recurrence.exception_dates.map((date, i) => (
-                          <span key={date}>
-                            {format(new Date(date), 'MMM d, yyyy')}
-                            {i < event.recurrence!.exception_dates!.length - 1 ? ', ' : ''}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+              {/* Priority */}
+              {event.priority && (
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="h-4 w-4 text-zinc-400" />
+                  <div>
+                    <p className="font-medium">Priority</p>
+                    <Badge variant="secondary" className={cn("mt-1", getPriorityColor())}>
+                      {event.priority}
+                    </Badge>
                   </div>
                 </div>
-              </>
-            )}
+              )}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 pt-4">
-              <Button
-                variant="outline"
-                className="flex-1 justify-center bg-black border-white/[0.08] hover:bg-white/5"
-                onClick={onEdit}
-              >
-                Edit Event
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 justify-center bg-black border-white/[0.08] hover:bg-white/5 text-red-400 hover:text-red-300"
-                onClick={onDelete}
-              >
-                Delete Event
-              </Button>
+              {/* Recurrence */}
+              {event.recurrence && (
+                <div className="flex items-start gap-3">
+                  <Repeat className="h-4 w-4 mt-0.5 text-zinc-400" />
+                  <div>
+                    <p className="font-medium">Recurrence</p>
+                    <p className="text-sm text-zinc-400">{formatRecurrencePattern()}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </ScrollArea>

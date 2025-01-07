@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from '@supabase/supabase-js'
 import { verifyPassword } from "@/lib/auth/bcrypt"
 
 declare module "next-auth" {
@@ -29,28 +28,43 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Missing credentials')
         }
 
-        const cookieStore = cookies()
-        const supabase = createRouteHandlerClient({ 
-          cookies: () => cookieStore
-        }, {
-          supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
-        })
-
         try {
-          // Get user from users table
+          // Create Supabase client with service role key
+          const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false
+              }
+            }
+          )
+
+          // Get user from custom users table
           const { data: user, error: userError } = await supabase
             .from('users')
             .select('*')
             .eq('email', credentials.email)
+            .eq('is_active', true)
             .single()
 
-          if (userError) throw new Error(userError.message)
-          if (!user) throw new Error('User not found')
+          if (userError) {
+            console.error('Database error:', userError)
+            return null
+          }
+          
+          if (!user) {
+            console.error('User not found')
+            return null
+          }
 
           // Verify password
           const passwordValid = await verifyPassword(credentials.password, user.password_hash)
-          if (!passwordValid) throw new Error('Invalid password')
+          if (!passwordValid) {
+            console.error('Invalid password')
+            return null
+          }
 
           // Return user data for session
           return {

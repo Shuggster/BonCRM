@@ -20,21 +20,40 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const start = searchParams.get('start')
     const end = searchParams.get('end')
+    const contactId = searchParams.get('contact_id')
 
-    if (!start || !end) {
+    let query = supabase
+      .from('scheduled_activities')
+      .select(`
+        *,
+        assigned_user:assigned_to(
+          id,
+          name,
+          email,
+          department
+        )
+      `)
+      .eq('user_id', session.user.id)
+
+    // If contact ID is provided, filter by it
+    if (contactId) {
+      query = query.eq('contact_id', contactId)
+    }
+    // If date range is provided, filter by it
+    else if (start && end) {
+      query = query
+        .gte('scheduled_for', start)
+        .lte('scheduled_for', end)
+    }
+    // If neither is provided, return error
+    else if (!contactId) {
       return NextResponse.json(
-        { error: 'Start and end dates are required' },
+        { error: 'Either contact_id or date range (start and end) is required' },
         { status: 400 }
       )
     }
 
-    // Fetch events directly (RLS disabled)
-    const { data: events, error } = await supabase
-      .from('scheduled_activities')
-      .select('*')
-      .gte('scheduled_for', start)
-      .lte('scheduled_for', end)
-      .eq('user_id', session.user.id)
+    const { data: events, error } = await query.order('scheduled_for', { ascending: false })
 
     if (error) throw error
 
@@ -44,7 +63,12 @@ export async function GET(request: Request) {
       title: event.title,
       start: event.scheduled_for,
       end: new Date(new Date(event.scheduled_for).getTime() + event.duration_minutes * 60000).toISOString(),
-      description: event.description
+      description: event.description,
+      type: event.type,
+      status: event.status,
+      assigned_to: event.assigned_to,
+      assigned_to_type: event.assigned_to_type,
+      assigned_user: event.assigned_user
     }))
 
     return NextResponse.json(calendarEvents)
@@ -78,10 +102,21 @@ export async function POST(request: Request) {
         description: body.description,
         scheduled_for: start.toISOString(),
         duration_minutes: durationMinutes,
-        type: 'calendar_event',
-        user_id: session.user.id
+        type: body.type || 'calendar_event',
+        user_id: session.user.id,
+        contact_id: body.contact_id,
+        assigned_to: body.assigned_to || session.user.id,
+        assigned_to_type: body.assigned_to_type || 'user'
       })
-      .select()
+      .select(`
+        *,
+        assigned_user:assigned_to(
+          id,
+          name,
+          email,
+          department
+        )
+      `)
       .single()
 
     if (error) throw error
@@ -91,7 +126,12 @@ export async function POST(request: Request) {
       title: event.title,
       start: event.scheduled_for,
       end: new Date(new Date(event.scheduled_for).getTime() + event.duration_minutes * 60000).toISOString(),
-      description: event.description
+      description: event.description,
+      type: event.type,
+      status: event.status,
+      assigned_to: event.assigned_to,
+      assigned_to_type: event.assigned_to_type,
+      assigned_user: event.assigned_user
     })
   } catch (error) {
     console.error('[ERROR] Server error in POST /api/calendar/events:', error)
