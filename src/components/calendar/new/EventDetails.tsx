@@ -46,9 +46,8 @@ export function EventDetails({ event, onClose, onEdit, onDelete }: EventDetailsP
     async function loadAssignedUser() {
       if (event.assigned_to) {
         try {
-          const users = await userService.getUsers()
-          const user = users.find(u => u.id === event.assigned_to)
-          setAssignedUser(user || null)
+          const user = await userService.getUserById(event.assigned_to)
+          setAssignedUser(user)
         } catch (error) {
           console.error('Error loading assigned user:', error)
         }

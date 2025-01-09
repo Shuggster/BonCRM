@@ -151,7 +151,7 @@ export default function CalendarClient({ session }: CalendarClientProps) {
           assigned_to_type: eventData.assigned_to_type || 'user',
           department: eventData.department || session.user.department,
           location: eventData.location || '',
-          recurrence: null,
+          recurrence: eventData.recurrence || null,
           type: eventData.type || 'meeting'
         }
         await calendarService.createEvent(newEvent, session)
@@ -226,8 +226,8 @@ export default function CalendarClient({ session }: CalendarClientProps) {
         let start: Date, end: Date
         switch (viewType) {
           case 'month':
-            start = startOfMonth(subMonths(currentDate, 1))
-            end = endOfMonth(addMonths(currentDate, 1))
+            start = startOfMonth(currentDate)
+            end = endOfMonth(currentDate)
             break
           case 'week':
             start = startOfWeek(currentDate)

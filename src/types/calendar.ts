@@ -9,9 +9,8 @@ export type RecurringEventDeleteOption = 'single' | 'future' | 'all'
 
 export interface RecurrenceRule {
   frequency: RecurrenceFrequency
-  interval?: number
-  endDate?: Date
-  exceptionDates?: Date[]
+  interval: number
+  endDate?: Date | null
   exception_dates?: string[]
 }
 
@@ -31,14 +30,17 @@ export interface CalendarEvent {
   end: Date
   category: EventCategory
   user_id: string
-  status: StatusType
-  priority: PriorityType
-  type?: 'call' | 'email' | 'meeting' | 'follow_up'
-  assigned_to?: string
-  assigned_to_type?: 'user' | 'department'
-  department?: string
-  location?: string
-  recurrence?: RecurrenceRule
+  status?: StatusType
+  priority?: PriorityType
+  type?: string
+  assigned_to?: string | null
+  assigned_to_type?: string | null
+  department?: string | null
+  location?: string | null
+  recurrence?: RecurrenceRule | null
+  is_recurring_instance?: boolean
+  original_event_id?: string
+  instance_date?: string
 }
 
 export interface EventWithLayout extends CalendarEvent {

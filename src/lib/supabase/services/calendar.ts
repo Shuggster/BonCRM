@@ -31,11 +31,11 @@ export const calendarService = {
         throw error
       }
 
-      console.log('Raw events from database:', data)
+      console.log('Raw events from database:', JSON.stringify(data, null, 2))
 
       const baseEvents = (data || []).map((event: CalendarEventRow) => {
-        console.log('Converting event:', event)
-        return ({
+        console.log('Converting event:', JSON.stringify(event, null, 2))
+        const convertedEvent = {
           id: event.id,
           title: event.title,
           description: event.description || '',
@@ -43,9 +43,9 @@ export const calendarService = {
           end: new Date(event.end_time),
           category: (event.category || 'default') as EventCategory,
           user_id: event.user_id,
-          status: event.status as StatusType,
-          priority: event.priority as PriorityType,
-          type: event.type || 'meeting',
+          status: 'scheduled' as StatusType,
+          priority: 'medium' as PriorityType,
+          type: 'meeting',
           assigned_to: event.assigned_to || undefined,
           assigned_to_type: (event.assigned_to_type === 'team' ? 'department' : event.assigned_to_type) || undefined,
           department: event.department || undefined,
@@ -56,10 +56,12 @@ export const calendarService = {
             endDate: event.recurrence.end_date ? new Date(event.recurrence.end_date) : undefined,
             exception_dates: event.recurrence.exception_dates || []
           } : undefined
-        } as CalendarEvent)
+        } as CalendarEvent
+        console.log('Converted event:', JSON.stringify(convertedEvent, null, 2))
+        return convertedEvent
       })
 
-      console.log('Converted base events:', baseEvents)
+      console.log('All converted base events:', JSON.stringify(baseEvents, null, 2))
 
       // Separate recurring and non-recurring events
       const [recurringEvents, nonRecurringEvents] = baseEvents.reduce<[CalendarEvent[], CalendarEvent[]]>(
@@ -74,15 +76,23 @@ export const calendarService = {
         [[], []]
       )
 
+      console.log('Recurring events before generation:', JSON.stringify(recurringEvents, null, 2))
+      console.log('Non-recurring events:', JSON.stringify(nonRecurringEvents, null, 2))
+
       // Generate instances only for recurring events
-      const recurringInstances = recurringEvents.flatMap(event => 
-        generateRecurringInstances(event, start, end)
-      )
+      const recurringInstances = recurringEvents.flatMap(event => {
+        console.log('Generating instances for event:', JSON.stringify(event, null, 2))
+        const instances = generateRecurringInstances(event, start, end)
+        console.log('Generated instances:', JSON.stringify(instances, null, 2))
+        return instances
+      })
+
+      console.log('All recurring instances:', JSON.stringify(recurringInstances, null, 2))
 
       // Combine recurring instances with non-recurring events
       const allEvents = [...nonRecurringEvents, ...recurringInstances]
 
-      console.log('Events with recurrences:', allEvents)
+      console.log('Final events with recurrences:', JSON.stringify(allEvents, null, 2))
       return allEvents
     } catch (err) {
       console.error('Error in getEvents:', err)
@@ -91,6 +101,17 @@ export const calendarService = {
   },
 
   async createEvent(event: Omit<CalendarEvent, 'id'>, session: UserSession): Promise<CalendarEvent> {
+    // Ensure recurrence end date is after event start date
+    const recurrenceData = event.recurrence ? {
+      frequency: event.recurrence.frequency,
+      interval: event.recurrence.interval || 1,
+      end_date: event.recurrence.endDate && event.recurrence.endDate > event.start ? 
+        event.recurrence.endDate.toISOString() : 
+        // If no end date or invalid end date, set it to 1 month after start
+        new Date(event.start.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      exception_dates: event.recurrence.exception_dates || []
+    } : null;
+
     const { data, error } = await supabaseAdmin
       .from('calendar_events')
       .insert({
@@ -103,12 +124,7 @@ export const calendarService = {
         assigned_to: event.assigned_to || null,
         assigned_to_type: event.assigned_to_type || null,
         department: event.department || null,
-        recurrence: event.recurrence ? {
-          frequency: event.recurrence.frequency,
-          interval: event.recurrence.interval || 1,
-          end_date: event.recurrence.endDate?.toISOString(),
-          exception_dates: event.recurrence.exception_dates || []
-        } : null
+        recurrence: recurrenceData
       })
       .select()
       .single()
@@ -127,9 +143,9 @@ export const calendarService = {
       end: new Date(data.end_time),
       category: (data.category || 'default') as EventCategory,
       user_id: data.user_id,
-      status: 'scheduled' as StatusType, // Default status
-      priority: 'medium' as PriorityType, // Default priority
-      type: 'meeting', // Default type
+      status: 'scheduled' as StatusType,
+      priority: 'medium' as PriorityType,
+      type: 'meeting',
       assigned_to: data.assigned_to || undefined,
       assigned_to_type: data.assigned_to_type || undefined,
       department: data.department || undefined,
@@ -157,11 +173,12 @@ export const calendarService = {
       if (event.start) updateData.start_time = event.start.toISOString()
       if (event.end) updateData.end_time = event.end.toISOString()
       if (event.category) updateData.category = event.category
-      if (event.recurring !== undefined) {
-        updateData.recurrence = event.recurring && event.recurring.frequency !== 'none' && event.recurring.frequency !== 'yearly' ? {
-          frequency: event.recurring.frequency,
-          interval: event.recurring.interval || 1,
-          end_date: event.recurring.endDate?.toISOString()
+      if (event.recurrence !== undefined) {
+        updateData.recurrence = event.recurrence ? {
+          frequency: event.recurrence.frequency,
+          interval: event.recurrence.interval || 1,
+          end_date: event.recurrence.endDate?.toISOString(),
+          exception_dates: event.recurrence.exception_dates || []
         } : null
       }
 
@@ -186,11 +203,17 @@ export const calendarService = {
         end: new Date(data.end_time),
         category: (data.category || 'default') as EventCategory,
         user_id: data.user_id,
-        recurring: data.recurrence ? {
+        status: 'scheduled' as StatusType,
+        priority: 'medium' as PriorityType,
+        type: 'meeting',
+        assigned_to: data.assigned_to || undefined,
+        assigned_to_type: data.assigned_to_type || undefined,
+        department: data.department || undefined,
+        recurrence: data.recurrence ? {
           frequency: data.recurrence.frequency,
           interval: data.recurrence.interval || 1,
-          endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : null,
-          weekdays: []
+          endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : undefined,
+          exception_dates: data.recurrence.exception_dates || []
         } : undefined
       }
     } catch (error) {
@@ -284,35 +307,5 @@ export const calendarService = {
     }
 
     throw new Error('Invalid delete option or missing instance date')
-  },
-
-  async getEventById(id: string, session: UserSession): Promise<CalendarEvent> {
-    const { data, error } = await supabaseAdmin
-      .from('calendar_events')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (error) {
-      console.error('Error fetching calendar event:', error)
-      throw error
-    }
-
-    return {
-      id: data.id,
-      title: data.title,
-      description: data.description || '',
-      start: new Date(data.start_time),
-      end: new Date(data.end_time),
-      category: (data.category || 'default') as EventCategory,
-      user_id: data.user_id,
-      recurring: data.recurrence ? {
-        frequency: data.recurrence.frequency,
-        interval: data.recurrence.interval || 1,
-        endDate: data.recurrence.end_date ? new Date(data.recurrence.end_date) : null,
-        weekdays: []
-      } : undefined
-    }
   }
 }

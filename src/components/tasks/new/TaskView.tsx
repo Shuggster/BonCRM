@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   CalendarIcon, Clock, CheckSquare, BarChart3, Pencil, 
-  Users, Tag, MessageSquare, History, Loader2, User as UserIcon, X, Plus
+  Users, Tag, MessageSquare, History, Loader2, User as UserIcon, X, Plus, Save
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -35,45 +35,44 @@ interface TaskViewProps {
   task: Task
   section: 'upper' | 'lower'
   onClose: () => void
-  onEdit?: (task: Task) => void
+  onEdit?: (task: Task) => Promise<Task>
+}
+
+interface TaskGroup {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface User {
+  id: string;
+  name?: string;
+  email: string;
+}
+
+interface EditedTask {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: 'low' | 'medium' | 'high';
+  due_date: string | null;
+  status: 'todo' | 'in-progress' | 'completed';
+  task_group_id: string | null;
+  assigned_to: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  task_groups: TaskGroup | null;
+  assigned_user?: User;
 }
 
 export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedTask, setEditedTask] = useState(task)
   const [activities, setActivities] = useState<TaskActivity[]>([])
   const [isLoadingActivities, setIsLoadingActivities] = useState(true)
-  const [users, setUsers] = useState<DbUser[]>([])
-  const [taskGroups, setTaskGroups] = useState<{ id: string; name: string; color: string }[]>([])
   const { session } = useSupabaseSession()
   const supabase = createClientComponentClient()
-
-  // Fetch users and task groups
-  useEffect(() => {
-    async function fetchData() {
-      const [usersResponse, groupsResponse] = await Promise.all([
-        supabase
-          .from('users')
-          .select('id, email, name')
-          .order('name'),
-        supabase
-          .from('task_groups')
-          .select('id, name, color')
-          .order('name')
-      ])
-      
-      if (!usersResponse.error && usersResponse.data) {
-        setUsers(usersResponse.data)
-      }
-      
-      if (!groupsResponse.error && groupsResponse.data) {
-        console.log('Task Groups Fetched:', groupsResponse.data)
-        setTaskGroups(groupsResponse.data)
-      }
-    }
-
-    fetchData()
-  }, [supabase])
 
   // Fetch activities
   useEffect(() => {
@@ -94,118 +93,6 @@ export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
     }
   }, [task.id, session, section])
 
-  // Add log when component receives initial task
-  useEffect(() => {
-    console.log('Initial Task Data:', {
-      task_group_id: task.task_group_id,
-      task_groups: task.task_groups,
-      full_task: task
-    });
-  }, [task]);
-
-  // Log activity when task is updated
-  const handleSaveChanges = async () => {
-    if (!session || !onEdit) return
-
-    console.log('Before Save - Task Data:', {
-      task_group_id: editedTask.task_group_id,
-      task_groups: editedTask.task_groups
-    })
-
-    console.log('Saving Task with Groups:', {
-      task_group_id: editedTask.task_group_id,
-      task_groups: editedTask.task_groups,
-      original_group_id: task.task_group_id,
-      original_groups: task.task_groups
-    })
-
-    // Check what fields have changed and log activities
-    if (editedTask.title !== task.title) {
-      await taskActivitiesService.logActivity({
-        taskId: task.id,
-        actionType: 'title_change',
-        previousValue: task.title,
-        newValue: editedTask.title
-      }, session)
-    }
-
-    if (editedTask.status !== task.status) {
-      await taskActivitiesService.logActivity({
-        taskId: task.id,
-        actionType: 'status_change',
-        previousValue: task.status,
-        newValue: editedTask.status
-      }, session)
-    }
-
-    if (editedTask.priority !== task.priority) {
-      await taskActivitiesService.logActivity({
-        taskId: task.id,
-        actionType: 'priority_change',
-        previousValue: task.priority,
-        newValue: editedTask.priority
-      }, session)
-    }
-
-    if (editedTask.description !== task.description) {
-      await taskActivitiesService.logActivity({
-        taskId: task.id,
-        actionType: 'description_change',
-        previousValue: task.description,
-        newValue: editedTask.description
-      }, session)
-    }
-
-    if (editedTask.assigned_to !== task.assigned_to) {
-      const previousUser = users.find(u => u.id === task.assigned_to)
-      const newUser = users.find(u => u.id === editedTask.assigned_to)
-      await taskActivitiesService.logActivity({
-        taskId: task.id,
-        actionType: 'assigned_to_change',
-        previousValue: previousUser ? (previousUser.name || previousUser.email) : 'Unassigned',
-        newValue: newUser ? (newUser.name || newUser.email) : 'Unassigned'
-      }, session)
-    }
-
-    if (editedTask.task_group_id !== task.task_group_id) {
-      const previousGroup = taskGroups.find(g => g.id === task.task_group_id)
-      const newGroup = taskGroups.find(g => g.id === editedTask.task_group_id)
-      await taskActivitiesService.logActivity({
-        taskId: task.id,
-        actionType: 'group_change',
-        previousValue: previousGroup ? previousGroup.name : 'No group',
-        newValue: newGroup ? newGroup.name : 'No group'
-      }, session)
-    }
-
-    // Call onEdit with updated task
-    const updatedTask = {
-      ...task,
-      title: editedTask.title,
-      description: editedTask.description,
-      priority: editedTask.priority,
-      status: editedTask.status,
-      due_date: editedTask.due_date,
-      assigned_to: editedTask.assigned_to,
-      task_group_id: editedTask.task_group_id,
-      task_groups: editedTask.task_groups
-    }
-    console.log('Sending Updated Task:', updatedTask);
-    
-    await onEdit(updatedTask)
-    console.log('After Save - Updated Task Sent');
-    
-    setIsEditing(false)
-  }
-
-  // Add log when editedTask state changes
-  useEffect(() => {
-    console.log('EditedTask State Changed:', {
-      task_group_id: editedTask.task_group_id,
-      task_groups: editedTask.task_groups
-    });
-  }, [editedTask]);
-
   // Upper section shows task details and quick actions
   if (section === 'upper') {
     return (
@@ -221,122 +108,21 @@ export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
                 <BarChart3 className="w-8 h-8" />
               </div>
               <div className="flex-1">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedTask.title}
-                    onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
-                    className="w-full bg-zinc-800/50 border border-white/[0.08] rounded-lg px-3 py-2 text-2xl font-semibold"
-                  />
-                ) : (
-                  <h2 className="text-2xl font-semibold">{task.title}</h2>
-                )}
+                <h2 className="text-2xl font-semibold">{task.title}</h2>
                 <p className="text-zinc-400 mt-1">Task Details</p>
               </div>
               {onEdit && (
                 <div className="flex items-center gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white/70 hover:text-white hover:bg-white/10"
-                        onClick={() => {
-                          setIsEditing(false)
-                          setEditedTask(task) // Reset to original task data
-                        }}
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-[#1a1a1a] hover:bg-[#222] text-white px-4 h-10 rounded-lg font-medium transition-colors border border-white/[0.08] flex items-center gap-2"
-                        onClick={handleSaveChanges}
-                      >
-                        <Plus className="w-4 h-4" />
-                        Save Changes
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-white/70 hover:text-white hover:bg-white/10"
-                      onClick={() => onEdit(task)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white/70 hover:text-white hover:bg-white/10"
+                    onClick={() => onEdit(task)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
-            </div>
-
-            {/* Task Status and Priority */}
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-orange-400" />
-                  <h3 className="text-sm font-medium text-zinc-400">Status</h3>
-                </div>
-                <div className="mt-1">
-                  {isEditing ? (
-                    <Select
-                      value={editedTask.status}
-                      onValueChange={(value) => setEditedTask({ ...editedTask, status: value as "todo" | "in-progress" | "completed" })}
-                    >
-                      <SelectTrigger className="w-full bg-zinc-800/50 border-white/[0.08]">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#111111] border-white/[0.08]">
-                        <SelectItem value="todo">To Do</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className={`text-sm px-2 py-1 rounded-full ${
-                      task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                      task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
-                      'bg-orange-500/20 text-orange-400'
-                    }`}>
-                      {task.status.replace('-', ' ')}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-blue-400" />
-                  <h3 className="text-sm font-medium text-zinc-400">Priority</h3>
-                </div>
-                <div className="mt-1">
-                  {isEditing ? (
-                    <Select
-                      value={editedTask.priority}
-                      onValueChange={(value) => setEditedTask({ ...editedTask, priority: value as "low" | "medium" | "high" })}
-                    >
-                      <SelectTrigger className="w-full bg-zinc-800/50 border-white/[0.08]">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#111111] border-white/[0.08]">
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className={`text-sm px-2 py-1 rounded-full ${
-                      task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                      task.priority === 'medium' ? 'bg-orange-500/20 text-orange-400' :
-                      'bg-green-500/20 text-green-400'
-                    }`}>
-                      {task.priority} priority
-                    </span>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Task Details */}
@@ -345,107 +131,95 @@ export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
               <div>
                 <h3 className="text-sm font-medium text-zinc-400 mb-2">Description</h3>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
-                  {isEditing ? (
-                    <textarea
-                      value={editedTask.description || ''}
-                      onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
-                      className="w-full bg-zinc-800/50 border border-white/[0.08] rounded-lg px-3 py-2 text-sm min-h-[100px]"
-                    />
-                  ) : (
-                    <p className="text-sm">{task.description || 'No description provided.'}</p>
-                  )}
+                  <p className="text-sm">{task.description || 'No description provided.'}</p>
+                </div>
+              </div>
+
+              {/* Status and Priority */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-400" />
+                    <h3 className="text-sm font-medium text-zinc-400">Status</h3>
+                  </div>
+                  <div className="mt-1">
+                    <span className={cn(
+                      "text-sm px-2 py-1 rounded-full",
+                      task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                      task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-orange-500/20 text-orange-400'
+                    )}>
+                      {task.status === 'todo' ? 'To Do' : 
+                       task.status === 'in-progress' ? 'In Progress' : 
+                       'Completed'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-red-400" />
+                    <h3 className="text-sm font-medium text-zinc-400">Priority</h3>
+                  </div>
+                  <div className="mt-1">
+                    <span className={cn(
+                      "text-sm px-2 py-1 rounded-full",
+                      task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                      task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-green-500/20 text-green-400'
+                    )}>
+                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Due Date */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4 text-blue-500" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-sm font-medium text-zinc-400">Due Date</h3>
                 </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-white/70">Due Date</div>
-                  {isEditing ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full justify-start text-left font-normal bg-[#111111] border-white/10',
-                            !editedTask.due_date && 'text-white/60'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4 text-white/70" />
-                          {editedTask.due_date ? format(new Date(editedTask.due_date), 'PPP') : <span>Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <MiniCalendar
-                          selectedDate={editedTask.due_date ? new Date(editedTask.due_date) : new Date()}
-                          onDateSelect={(date) => setEditedTask({ ...editedTask, due_date: date.toISOString().split('T')[0] })}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                    <div className="mt-1 text-sm">
-                      {task.due_date ? format(new Date(task.due_date), 'PPP') : 'No due date'}
-                    </div>
-                  )}
+                <div className="mt-1">
+                  <div className="text-sm">
+                    {task.due_date ? format(new Date(task.due_date), 'PPP') : 'No due date set'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned To */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-purple-400" />
+                  <h3 className="text-sm font-medium text-zinc-400">Assigned To</h3>
+                </div>
+                <div className="mt-1">
+                  <div className="text-sm">
+                    {task.assigned_to ? 'Assigned' : 'Unassigned'}
+                  </div>
                 </div>
               </div>
 
               {/* Task Group */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center shrink-0">
-                  <Tag className="w-4 h-4 text-blue-500" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05]">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-sm font-medium text-zinc-400">Task Group</h3>
                 </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-white/70">Task Group</div>
-                  {isEditing ? (
-                    <Select
-                      value={editedTask.task_group_id || "no-group"}
-                      onValueChange={(value) => {
-                        const newGroupId = value === 'no-group' ? null : value;
-                        const groupDetails = newGroupId ? taskGroups.find(g => g.id === newGroupId) : undefined;
-                        setEditedTask({
-                          ...editedTask,
-                          task_group_id: newGroupId,
-                          task_groups: groupDetails
-                        });
-                      }}
-                    >
-                      <SelectTrigger className="w-full bg-zinc-800/50 border-white/[0.08]">
-                        <SelectValue placeholder="Select group" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#111111] border-white/[0.08]">
-                        <SelectItem value="no-group">No group</SelectItem>
-                        {taskGroups.map(group => (
-                          <SelectItem key={group.id} value={group.id}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: group.color }}
-                              />
-                              {group.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="mt-1 text-sm flex items-center gap-2">
-                      {task.task_groups ? (
-                        <>
-                          <div 
-                            className="w-2 h-2 rounded-full" 
-                            style={{ backgroundColor: task.task_groups.color }}
-                          />
-                          {task.task_groups.name}
-                        </>
-                      ) : (
-                        'No group'
-                      )}
-                    </div>
-                  )}
+                <div className="mt-1">
+                  <div className="text-sm flex items-center gap-2">
+                    {task.task_groups ? (
+                      <>
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: task.task_groups.color }}
+                        />
+                        {task.task_groups.name}
+                      </>
+                    ) : (
+                      'No group'
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -513,9 +287,6 @@ export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
                 )}
               </div>
             </div>
-
-            {/* Comments Section */}
-            <CommentsSection task={task} />
           </div>
         </div>
       </div>

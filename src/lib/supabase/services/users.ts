@@ -29,6 +29,26 @@ export const userService = {
     }
   },
 
+  async getUserById(userId: string): Promise<DbUser | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, email, department, role')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching user:', error)
+        throw error
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error in getUserById:', error)
+      return null
+    }
+  },
+
   async getCurrentUserDepartment(userId: string): Promise<string | null> {
     try {
       const { data, error } = await supabase

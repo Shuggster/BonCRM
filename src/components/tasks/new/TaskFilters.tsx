@@ -7,11 +7,8 @@ import { DueDateFilter } from './DueDateFilter'
 import { AssignedToFilter } from './AssignedToFilter'
 import { GroupFilter } from './GroupFilter'
 import { Button } from '@/components/ui/button'
-import { LayoutGrid, BarChart2, Clock, CheckCircle2, ArrowRight } from 'lucide-react'
-import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
-import { motion } from 'framer-motion'
-import { TaskOverview } from './TaskOverview'
-import { PRIORITY_COLORS } from '@/lib/constants'
+import { LayoutGrid } from 'lucide-react'
+import { useTaskSplitView } from './hooks/useTaskSplitView'
 import {
   Tooltip,
   TooltipContent,
@@ -35,11 +32,19 @@ interface TaskFiltersProps {
   tasks: Task[]
   onViewTask: (task: Task) => void
   onEditTask: (task: Task) => void
-  setupInitialContent: () => void
+  isLoading: boolean
 }
 
-export function TaskFilters({ onFiltersChange, currentUserId, users, tasks, onViewTask, onEditTask, setupInitialContent }: TaskFiltersProps) {
-  const { hide, show, setContent } = useSplitViewStore()
+export function TaskFilters({ 
+  onFiltersChange, 
+  currentUserId, 
+  users, 
+  tasks,
+  onViewTask, 
+  onEditTask,
+  isLoading 
+}: TaskFiltersProps) {
+  const { showTaskOverview, hide } = useTaskSplitView()
   const [filters, setFilters] = useState({
     priority: null as 'high' | 'medium' | 'low' | null,
     status: null as 'todo' | 'in-progress' | 'completed' | null,
@@ -57,9 +62,9 @@ export function TaskFilters({ onFiltersChange, currentUserId, users, tasks, onVi
   const handleRefresh = () => {
     hide();
     setTimeout(() => {
-      setupInitialContent();
-    }, 100);
-  }
+      showTaskOverview(tasks, isLoading);
+    }, 300);
+  };
 
   return (
     <div className="flex items-center gap-2 px-6 py-3 border-b border-white/[0.08]">
@@ -99,7 +104,7 @@ export function TaskFilters({ onFiltersChange, currentUserId, users, tasks, onVi
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Return To Task Overview</p>
+              <p>View Overview</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

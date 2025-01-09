@@ -3,16 +3,18 @@ import { CalendarEvent } from '@/types/calendar'
 import { UserSession } from '@/types/users'
 
 export const calendarClient = {
-  async getEvents(session: UserSession) {
+  async getEvents(start: Date, end: Date, session: UserSession) {
     if (!session?.user?.id) {
       throw new Error('No user session found')
     }
 
-    // First get calendar events
+    // First get calendar events within the date range
     const { data: events, error } = await supabase
       .from('calendar_events')
       .select('*')
       .eq('user_id', session.user.id)
+      .gte('start_time', start.toISOString())
+      .lte('end_time', end.toISOString())
       .order('start_time', { ascending: true })
 
     if (error) {
@@ -20,7 +22,7 @@ export const calendarClient = {
       throw error
     }
 
-    // Then get assignments for these events
+    // Then get assignments for these events from assignments table
     const eventIds = events?.map(e => e.id) || []
     const { data: assignments, error: assignmentsError } = await supabase
       .from('assignments')
@@ -39,6 +41,7 @@ export const calendarClient = {
     )
 
     return events?.map(event => {
+      // Check both places for assignment data
       const assignment = assignmentMap.get(event.id)
       return {
         id: event.id,
@@ -48,9 +51,14 @@ export const calendarClient = {
         end: new Date(event.end_time),
         category: event.category,
         recurrence: event.recurrence,
-        assigned_to: assignment?.assigned_to || undefined,
-        assigned_to_type: assignment?.assigned_to_type || undefined,
-        department: event.department || undefined
+        // First try assignment table, then fall back to direct fields
+        assigned_to: assignment?.assigned_to || event.assigned_to || undefined,
+        assigned_to_type: assignment?.assigned_to_type || event.assigned_to_type || undefined,
+        department: event.department || undefined,
+        user_id: event.user_id,
+        status: 'scheduled',
+        priority: 'medium',
+        type: 'meeting'
       }
     }) || []
   },

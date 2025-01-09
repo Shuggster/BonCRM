@@ -1,23 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Clock, CheckCircle2, BarChart2, ArrowRight } from 'lucide-react'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts'
-import { Task } from '@/types/tasks'
 import { motion } from 'framer-motion'
+import { BarChart2, Clock, CheckCircle2, ArrowRight, Plus, Filter, LayoutGrid } from 'lucide-react'
+import { PieChart, Pie, Cell, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Bar } from 'recharts'
+import { Task } from '@/types/tasks'
+import { PRIORITY_COLORS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
-import { PRIORITY_COLORS, STATUS_COLORS } from '@/lib/constants'
-import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
-import { TaskView } from './TaskView'
 
 interface TaskOverviewProps {
   tasks: Task[]
-  onViewTask: (task: Task) => void
-  onEditTask: (task: Task) => void
+  section?: 'upper' | 'lower'
+  onViewDueToday: () => void
+  onViewCompleted: () => void
+  onCreateTask?: () => void
+  onViewAll?: () => void
+  onFilter?: () => void
 }
 
-export function TaskOverview({ tasks, onViewTask, onEditTask }: TaskOverviewProps) {
-  const { setContentAndShow, hide } = useSplitViewStore()
+export function TaskOverview({ 
+  tasks, 
+  section = 'upper', 
+  onViewDueToday, 
+  onViewCompleted,
+  onCreateTask,
+  onViewAll,
+  onFilter
+}: TaskOverviewProps) {
+  console.log('TaskOverview received tasks:', tasks)
 
   // Calculate metrics
   const dueToday = tasks.filter(task => {
@@ -28,6 +37,7 @@ export function TaskOverview({ tasks, onViewTask, onEditTask }: TaskOverviewProp
   }).length
 
   const completed = tasks.filter(t => t.status === 'completed').length
+  console.log('Completed tasks count:', completed)
 
   // Calculate priority distribution
   const priorityData = ['high', 'medium', 'low'].map(priority => {
@@ -40,346 +50,219 @@ export function TaskOverview({ tasks, onViewTask, onEditTask }: TaskOverviewProp
       fill: PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS]
     }
   })
+  console.log('Priority data:', priorityData)
 
-  // Calculate status distribution
-  const statusData = ['todo', 'in-progress', 'completed'].map(status => {
-    const count = tasks.filter(t => t.status === status).length
-    const percentage = tasks.length > 0 ? Math.round((count / tasks.length) * 100) : 0
+  // Calculate completion data for the last 7 days
+  const completionData = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - i)
+    
+    const completed = tasks.filter(task => {
+      if (task.status !== 'completed') return false
+      const taskDate = new Date(task.updated_at)
+      return taskDate.toDateString() === date.toDateString()
+    }).length
+
     return {
-      name: status,
-      value: count,
-      percentage,
-      fill: STATUS_COLORS[status as keyof typeof STATUS_COLORS]
+      day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+      completed
     }
-  })
+  }).reverse()
+  console.log('Completion data:', completionData)
 
-  const handleViewDueToday = () => {
-    hide()
-    const dueTodayTasks = tasks.filter(task => {
-      if (!task.due_date) return false
-      const dueDate = new Date(task.due_date)
-      const today = new Date()
-      return dueDate.toDateString() === today.toDateString()
-    })
-
-    setTimeout(() => {
-      const content = (
-        <div className="h-full bg-black">
-          <motion.div 
-            className="h-full"
-            initial={{ y: 0 }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
-          >
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold mb-6">Tasks Due Today</h2>
-              <div className="space-y-2">
-                {dueTodayTasks.map((task) => (
-                  <motion.div
-                    key={task.id}
-                    className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors cursor-pointer group"
-                    onClick={() => onViewTask(task)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] }}
-                        />
-                        <span>{task.title}</span>
-                      </div>
-                      <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+  // Upper section content
+  if (section === 'upper') {
+    return (
+      <div className="rounded-t-2xl bg-[#111111] p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+            <BarChart2 className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Task Overview</h2>
+            <p className="text-zinc-400 mt-1">Your task metrics and progress</p>
+          </div>
         </div>
-      )
 
-      setContentAndShow(content, null, 'due-today')
-    }, 100)
-  }
-
-  const handleViewCompleted = () => {
-    hide()
-    const completedTasks = tasks.filter(t => t.status === 'completed')
-
-    setTimeout(() => {
-      const content = (
-        <div className="h-full bg-black">
-          <motion.div 
-            className="h-full"
-            initial={{ y: 0 }}
-            animate={{ 
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 50,
-                damping: 15
-              }
-            }}
+        {/* Metrics */}
+        <div className="grid grid-cols-2 gap-4">
+          <div 
+            onClick={onViewDueToday}
+            className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors cursor-pointer group"
           >
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold mb-6">Completed Tasks</h2>
-              <div className="space-y-2">
-                {completedTasks.map((task) => (
-                  <motion.div
-                    key={task.id}
-                    className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors cursor-pointer group"
-                    onClick={() => onViewTask(task)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] }}
-                        />
-                        <span>{task.title}</span>
-                      </div>
-                      <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-orange-500" />
+              <span className="text-sm text-zinc-400">Due Today</span>
             </div>
-          </motion.div>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{dueToday}</div>
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </div>
+
+          <div 
+            onClick={onViewCompleted}
+            className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-zinc-400">Completed</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{completed}</div>
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </div>
         </div>
-      )
 
-      setContentAndShow(content, null, 'completed')
-    }, 100)
-  }
-
-  return (
-    <motion.div 
-      className="h-full"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ 
-        opacity: 1, 
-        y: 0,
-        transition: {
-          type: "spring",
-          stiffness: 50,
-          damping: 15
-        }
-      }}
-    >
-      <div className="relative rounded-2xl overflow-hidden backdrop-blur-[16px]" 
-        style={{ 
-          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))'
-        }}
-      >
-        <div className="relative z-10">
-          <div className="p-6 space-y-6">
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: {
-                  delay: 0.2,
-                  duration: 0.5
-                }
-              }}
-              className="flex items-center gap-4"
-            >
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
-                <BarChart2 className="w-8 h-8" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold">Task Overview</h2>
-                <p className="text-zinc-400 mt-1">Your task metrics and progress</p>
-              </div>
-            </motion.div>
-
-            {/* Metrics */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: {
-                  delay: 0.3,
-                  duration: 0.5
-                }
-              }}
-              className="grid grid-cols-2 gap-4"
-            >
-              <div 
-                onClick={handleViewDueToday}
-                className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm text-zinc-400">Due Today</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold">{dueToday}</div>
-                  <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </div>
-
-              <div 
-                onClick={handleViewCompleted}
-                className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] hover:bg-zinc-800/50 transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-zinc-400">Completed</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold">{completed}</div>
-                  <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Charts */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: {
-                  delay: 0.4,
-                  duration: 0.5
-                }
-              }}
-              className="grid grid-cols-2 gap-6"
-            >
-              {/* Priority Distribution */}
-              <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
-                <h3 className="text-sm font-medium text-zinc-400 mb-6">Priority Distribution</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={priorityData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={50}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {priorityData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex justify-center gap-4">
-                  {priorityData.map((entry) => (
-                    <div key={entry.name} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }} />
-                      <span className="text-xs text-zinc-400 capitalize">
-                        {entry.name} ({entry.percentage}%)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status Distribution */}
-              <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
-                <h3 className="text-sm font-medium text-zinc-400 mb-6">Status Distribution</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={statusData} layout="vertical">
-                      <XAxis type="number" hide />
-                      <Bar dataKey="value" barSize={24}>
-                        {statusData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.fill}
-                            radius={4}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex justify-center gap-4">
-                  {statusData.map((entry) => (
-                    <div key={entry.name} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }} />
-                      <span className="text-xs text-zinc-400 capitalize">
-                        {entry.name.replace('-', ' ')} ({entry.percentage}%)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Recent Tasks */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: {
-                  delay: 0.5,
-                  duration: 0.5
-                }
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-zinc-400">Recent Tasks</h3>
-                <Button 
-                  variant="ghost" 
-                  className="text-sm text-zinc-400 hover:text-white"
-                  onClick={() => hide()}
+        {/* Priority Distribution */}
+        <div className="p-6 rounded-xl bg-black border border-white/[0.05]">
+          <h3 className="text-sm font-medium text-zinc-400 mb-6">Priority Distribution</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={priorityData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={30}
+                  outerRadius={50}
+                  paddingAngle={5}
+                  dataKey="value"
                 >
-                  View all
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                  {priorityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-4">
+            {priorityData.map((entry) => (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }} />
+                <span className="text-xs text-zinc-400 capitalize">
+                  {entry.name} ({entry.percentage}%)
+                </span>
               </div>
-              <div className="space-y-2">
-                {tasks.slice(0, 5).map((task, index) => (
-                  <motion.div 
-                    key={task.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ 
-                      opacity: 1, 
-                      x: 0,
-                      transition: {
-                        delay: 0.6 + (index * 0.1),
-                        duration: 0.3
-                      }
-                    }}
-                    onClick={() => onViewTask(task)}
-                    className="p-3 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] flex items-center justify-between hover:bg-zinc-800/50 transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ 
-                          backgroundColor: PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] 
-                        }}
-                      />
-                      <span className="text-sm">{task.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-zinc-400 capitalize">{task.status.replace('-', ' ')}</span>
-                      <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+            ))}
           </div>
         </div>
       </div>
-    </motion.div>
+    )
+  }
+
+  // Lower section content
+  return (
+    <div className="rounded-b-2xl bg-[#111111] p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-medium text-zinc-400">Task Completion History</h3>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-zinc-400 hover:text-white"
+            onClick={onCreateTask}
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            New Task
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-zinc-400 hover:text-white"
+            onClick={onFilter}
+          >
+            <Filter className="w-4 h-4 mr-1" />
+            Filter
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-zinc-400 hover:text-white"
+            onClick={onViewAll}
+          >
+            <LayoutGrid className="w-4 h-4 mr-1" />
+            View All
+          </Button>
+        </div>
+      </div>
+
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={completionData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+            <XAxis 
+              dataKey="day" 
+              stroke="#71717a"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              dy={10}
+            />
+            <YAxis 
+              stroke="#71717a"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
+              dx={-10}
+              domain={[0, 'auto']}
+              ticks={[0, 1, 2, 3, 4, 5]}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#18181b',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem'
+              }}
+              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+              formatter={(value) => [`${value} tasks`, 'Completed']}
+              labelFormatter={(label) => `${label}`}
+            />
+            <Bar 
+              dataKey="completed" 
+              fill="#22c55e"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={40}
+              minPointSize={2}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Recent Tasks */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-zinc-400">Recent Tasks</h3>
+          {tasks.length > 0 && (
+            <span className="text-xs text-zinc-500">{tasks.length} total tasks</span>
+          )}
+        </div>
+        <div className="space-y-2">
+          {tasks.slice(0, 5).map((task) => (
+            <div 
+              key={task.id}
+              className="p-3 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] flex items-center justify-between hover:bg-zinc-800/50 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ 
+                    backgroundColor: PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] 
+                  }}
+                />
+                <span className="text-sm">{task.title}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-400 capitalize">{task.status.replace('-', ' ')}</span>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 } 

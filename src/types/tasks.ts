@@ -10,26 +10,17 @@ export interface TaskComment {
 export interface Task {
   id: string
   title: string
-  description: string | null
+  description?: string
   status: 'todo' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
-  due_date: string | null
-  task_group_id: string | null
-  user_id: string
-  assigned_to: string | null
+  due_date?: string
+  completed_at?: string
   created_at: string
   updated_at: string
-  task_groups?: {
-    id: string
-    name: string
-    color: string
-  }
-  assigned_user?: {
-    id: string
-    name: string | null
-    email: string
-  }
-  comments_count?: number
+  user_id: string
+  assigned_to?: string
+  task_group_id?: string | null
+  task_groups?: TaskGroup | null
 }
 
 export interface TaskGroup {

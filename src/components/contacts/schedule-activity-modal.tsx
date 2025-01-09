@@ -68,9 +68,9 @@ export function ScheduleActivityModal({
       const session: UserSession = {
         user: {
           id: nextAuthSession.user.id,
-          email: nextAuthSession.user.email,
-          name: nextAuthSession.user.name,
-          role: nextAuthSession.user.role,
+          email: nextAuthSession.user.email || '',
+          name: nextAuthSession.user.name || '',
+          role: nextAuthSession.user.role || 'user',
           department: nextAuthSession.user.department
         }
       }

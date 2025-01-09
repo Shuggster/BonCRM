@@ -1,5 +1,157 @@
 # Calendar System Documentation
 
+## Quick Start Guide
+
+### Basic Operations
+```typescript
+// 1. Create a simple event
+const simpleEvent = await calendarService.createEvent({
+  title: "Team Meeting",
+  description: "Weekly sync",
+  start: new Date('2024-01-15T10:00:00Z'),
+  end: new Date('2024-01-15T11:00:00Z'),
+  category: "work"
+});
+
+// 2. Create a recurring event
+const recurringEvent = await calendarService.createEvent({
+  title: "Weekly Team Sync",
+  description: "Regular team catch-up",
+  start: new Date('2024-01-15T10:00:00Z'),
+  end: new Date('2024-01-15T11:00:00Z'),
+  category: "work",
+  recurrence: {
+    frequency: "weekly",
+    interval: 1,
+    endDate: new Date('2024-12-31')  // Optional
+  }
+});
+
+// 3. Delete an instance of a recurring event
+await calendarService.deleteEvent(
+  eventId,
+  session,
+  'single',
+  new Date('2024-01-22T10:00:00Z')
+);
+
+// 4. Update an event
+await calendarService.updateEvent({
+  id: eventId,
+  title: "Updated Meeting Title",
+  description: "New description"
+});
+
+// 5. Fetch events for a date range
+const events = await calendarService.getEvents(
+  new Date('2024-01-01'),
+  new Date('2024-01-31')
+);
+```
+
+### Common Gotchas and Solutions
+
+1. **Timezone Issues**
+```typescript
+// ❌ WRONG: Using local timezone
+const startDate = new Date('2024-01-15');  // Uses local timezone
+
+// ✅ CORRECT: Always use explicit UTC
+const startDate = new Date('2024-01-15T00:00:00Z');  // Explicit UTC
+// OR
+const startDate = toUTC(new Date('2024-01-15'));
+```
+
+2. **Date Format Mismatches**
+```typescript
+// ❌ WRONG: Inconsistent formats
+const event = {
+  recurrence: {
+    end_date: "2024/01/15",  // Wrong format
+    exception_dates: ["01-15-2024"]  // Wrong format
+  }
+};
+
+// ✅ CORRECT: Consistent YYYY-MM-DD format
+const event = {
+  recurrence: {
+    end_date: "2024-01-15",  // Correct format
+    exception_dates: ["2024-01-15"]  // Correct format
+  }
+};
+```
+
+3. **Recurrence Validation**
+```typescript
+// ❌ WRONG: Missing required fields
+const invalid = {
+  frequency: "weekly",  // Missing interval
+};
+
+// ✅ CORRECT: All required fields
+const valid = {
+  frequency: "weekly",
+  interval: 1
+};
+```
+
+4. **DST Transitions**
+```typescript
+// ❌ WRONG: Not handling DST
+const nextOccurrence = addDays(event.start, 7);  // Might be off by an hour
+
+// ✅ CORRECT: Use UTC consistently
+const nextOccurrence = new Date(
+  addDays(toUTC(event.start), 7).toISOString()
+);
+```
+
+## Database Schema
+
+### calendar_events Table
+```sql
+CREATE TABLE calendar_events (
+    -- Primary Fields
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    description TEXT,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    category TEXT,
+    
+    -- User and Assignment
+    user_id UUID NOT NULL REFERENCES auth.users(id),
+    assigned_to UUID REFERENCES users(id),
+    assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
+    department TEXT,
+    
+    -- Recurrence
+    recurrence JSONB,  -- Stores recurrence rule
+    
+    -- Metadata
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_calendar_events_user_id ON calendar_events(user_id);
+CREATE INDEX idx_calendar_events_start_time ON calendar_events(start_time);
+CREATE INDEX idx_calendar_events_assigned_to ON calendar_events(assigned_to);
+```
+
+### JSONB Recurrence Structure
+```json
+{
+  "frequency": "daily | weekly | monthly | yearly",
+  "interval": 1,  // Required, positive integer
+  "end_date": "2024-01-15",  // Optional, YYYY-MM-DD
+  "exception_dates": [  // Optional
+    "2024-01-01",
+    "2024-01-15"
+  ]
+}
+```
+
 ## Overview
 The calendar system implements a recurring event management system with:
 - Single and recurring event support
@@ -20,221 +172,443 @@ graph TD
     G --> H[Fetch Base Events]
     H --> I[Generate Recurring Instances]
     I --> J[Combine & Display]
+
+    %% Data transformation flow
+    K[Form Data] -->|Transform| L[API Model]
+    L -->|Transform| M[Database Model]
+    M -->|Transform| N[UI Model]
 ```
 
-## UI Integration
+## Data Models & Transformations
 
-### 1. Calendar Views
-- **Month View**: 
-  - Full month grid layout
-  - Event previews with overflow indicators
-  - Quick date navigation
-
-- **Week View**:
-  - 7-day detailed timeline
-  - Hour-by-hour event slots
-  - Drag-to-create support
-
-- **Day View**:
-  - Single day detailed schedule
-  - Full event details visible
-  - Time-block visualization
-
-### 2. Event Creation
-- **Split View Form**:
-  - Upper card: Basic details (title, dates)
-  - Lower card: Advanced options
-  - Real-time validation
-
-- **Recurrence Options**:
-  - Frequency selection
-  - Interval configuration
-  - End date setting
-  - Exception date handling
-
-- **Assignment Features**:
-  - User assignment
-  - Team assignment
-  - Department selection
-
-### 3. Event Display
-- Color coding by category
-- Drag-and-drop rescheduling
-- Recurring event indicators
-- Status and priority badges
-
-## Database Schema
-
-### calendar_events Table
-Primary table for calendar events:
-
-```sql
-CREATE TABLE calendar_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT NOT NULL,
-    description TEXT,
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ NOT NULL,
-    category TEXT,
-    user_id UUID NOT NULL REFERENCES auth.users(id),
-    assigned_to UUID REFERENCES users(id),
-    assigned_to_type TEXT CHECK (assigned_to_type IN ('user', 'team')),
-    department TEXT,
-    recurrence JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```
-
-## Type Definitions
-
+### 1. Form to API Transformation
 ```typescript
-export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly'
-
-export interface RecurrenceRule {
-  frequency: RecurrenceFrequency
-  interval?: number
-  endDate?: Date
-  exception_dates?: string[]
+// Form Data (what user inputs)
+interface EventFormData {
+  title: string;
+  description: string;
+  start: Date;
+  end: Date;
+  recurrence?: {
+    frequency: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval: number;
+    endDate?: Date;  // Browser date picker format
+  }
 }
 
-export interface CalendarEvent {
-  id: string
-  title: string
-  description: string
-  start: Date
-  end: Date
-  category: EventCategory
-  user_id: string
-  status: StatusType      // UI-only field, defaults to 'scheduled'
-  priority: PriorityType  // UI-only field, defaults to 'medium'
-  type?: 'call' | 'email' | 'meeting' | 'follow_up'  // UI-only field, defaults to 'meeting'
-  assigned_to?: string
-  assigned_to_type?: 'user' | 'team'
-  department?: string
-  recurrence?: RecurrenceRule
+// Transforms to API Model
+interface RecurrenceRule {
+  frequency: RecurrenceFrequency;  // 'none' removed
+  interval: number;
+  endDate?: Date | null;  // camelCase
+  exception_dates?: string[];  // YYYY-MM-DD format
 }
 ```
 
-## Recurring Events System
-
-### 1. Creating Recurring Events
-- Events can be set to repeat daily, weekly, or monthly
-- Each recurrence has:
-  - Frequency (daily/weekly/monthly)
-  - Interval (every X days/weeks/months)
-  - Optional end date
-  - Optional exception dates
-
-### 2. Handling Recurring Instances
-- Original event stored in database
-- Instances generated on-the-fly when fetching events
-- Each instance has unique ID: `${originalId}_${yyyyMMddHHmmss}`
-- Instances track their original event ID and instance date
-
-### 3. Deleting Recurring Events
-
-#### Delete Single Instance
-- **Option**: 'single'
-- **Behavior**:
-  - Adds instance date to exception_dates array
-  - Instance no longer appears in generated events
-  - Other instances remain unchanged
-
-#### Delete Future Instances
-- **Option**: 'future'
-- **Behavior**:
-  - Updates original event's end_date
-  - No instances generated after this date
-
-#### Delete Entire Series
-- **Option**: 'all'
-- **Behavior**:
-  - Deletes the original event
-  - All instances are removed
-
-## Implementation Details
-
+### 2. API to Database Transformation
 ```typescript
-// Calendar Service Interface
-interface CalendarService {
-  getEvents(start: Date, end: Date, session: UserSession): Promise<CalendarEvent[]>
-  createEvent(event: Omit<CalendarEvent, 'id'>, session: UserSession): Promise<CalendarEvent>
-  updateEvent(event: Partial<CalendarEvent>, session: UserSession): Promise<CalendarEvent>
-  deleteEvent(id: string, session: UserSession, deleteOption?: RecurringEventDeleteOption, instanceDate?: Date): Promise<void>
-  getEventById(id: string, session: UserSession): Promise<CalendarEvent>
+// API Model transforms to Database Model
+interface DatabaseRecurrence {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number;
+  end_date?: string;  // snake_case, YYYY-MM-DD format
+  exception_dates?: string[];  // YYYY-MM-DD format
 }
 
-// Example Usage:
-// Create Event
-const event = await calendarService.createEvent({
-  title: "Meeting",
-  description: "Team sync",
-  start: new Date(),
-  end: new Date(),
-  category: "work",
+// Example transformation:
+const toDatabase = (apiModel: RecurrenceRule): DatabaseRecurrence => ({
+  frequency: apiModel.frequency,
+  interval: apiModel.interval,
+  end_date: apiModel.endDate ? format(apiModel.endDate, 'yyyy-MM-dd') : undefined,
+  exception_dates: apiModel.exception_dates
+});
+```
+
+### 3. Database to UI Transformation
+```typescript
+// Database Model transforms to UI Model (CalendarEvent)
+interface CalendarEvent {
+  // ... other fields ...
+  recurrence?: RecurrenceRule | null;
+  is_recurring_instance?: boolean;
+  original_event_id?: string;
+  instance_date?: string;  // ISO string for UI
+}
+
+// Example transformation:
+const toUI = (dbEvent: DatabaseEvent): CalendarEvent => ({
+  ...dbEvent,
+  recurrence: dbEvent.recurrence ? {
+    frequency: dbEvent.recurrence.frequency,
+    interval: dbEvent.recurrence.interval,
+    endDate: dbEvent.recurrence.end_date ? parseISO(dbEvent.recurrence.end_date) : null,
+    exception_dates: dbEvent.recurrence.exception_dates || []
+  } : null
+});
+```
+
+## Validation Rules
+
+### 1. Form Validation
+```typescript
+const validateEventForm = (formData: EventFormData): ValidationError[] => {
+  const errors = [];
+  
+  // Required fields
+  if (!formData.title) errors.push('Title is required');
+  if (!formData.start) errors.push('Start date is required');
+  if (!formData.end) errors.push('End date is required');
+  
+  // Date validation
+  if (formData.end < formData.start) {
+    errors.push('End date must be after start date');
+  }
+  
+  // Recurrence validation
+  if (formData.recurrence && formData.recurrence.frequency !== 'none') {
+    if (!formData.recurrence.interval || formData.recurrence.interval < 1) {
+      errors.push('Interval must be a positive number');
+    }
+    
+    if (formData.recurrence.endDate && formData.recurrence.endDate < formData.start) {
+      errors.push('Recurrence end date must be after event start date');
+    }
+  }
+  
+  return errors;
+}
+```
+
+### 2. Database Validation
+```typescript
+const validateDatabaseModel = (event: DatabaseEvent): void => {
+  // Required fields
+  if (!event.title) throw new Error('Title is required');
+  if (!event.start_time) throw new Error('Start time is required');
+  if (!event.end_time) throw new Error('End time is required');
+  if (!event.user_id) throw new Error('User ID is required');
+  
+  // Recurrence validation
+  if (event.recurrence) {
+    if (!['daily', 'weekly', 'monthly', 'yearly'].includes(event.recurrence.frequency)) {
+      throw new Error('Invalid recurrence frequency');
+    }
+    
+    if (!Number.isInteger(event.recurrence.interval) || event.recurrence.interval < 1) {
+      throw new Error('Interval must be a positive integer');
+    }
+    
+    // Validate date formats
+    if (event.recurrence.end_date && !/^\d{4}-\d{2}-\d{2}$/.test(event.recurrence.end_date)) {
+      throw new Error('Invalid end_date format. Must be YYYY-MM-DD');
+    }
+    
+    if (event.recurrence.exception_dates) {
+      event.recurrence.exception_dates.forEach(date => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          throw new Error('Invalid exception date format. Must be YYYY-MM-DD');
+        }
+      });
+    }
+  }
+}
+```
+
+## Instance Generation
+
+### 1. Instance ID Format
+```typescript
+// Format: originalId_yyyyMMddHHmmss
+// Example: 123e4567-e89b-12d3-a456-426614174000_20240115093000
+
+const generateInstanceId = (originalId: string, instanceDate: Date): string => {
+  const timestamp = format(instanceDate, 'yyyyMMddHHmmss');
+  return `${originalId}_${timestamp}`;
+};
+
+// Parsing instance ID
+const parseInstanceId = (instanceId: string): { originalId: string, instanceDate: Date } => {
+  const [originalId, timestamp] = instanceId.split('_');
+  return {
+    originalId,
+    instanceDate: parse(timestamp, 'yyyyMMddHHmmss', new Date())
+  };
+};
+```
+
+### 2. Instance Generation Rules
+```typescript
+const generateInstances = (
+  event: CalendarEvent,
+  rangeStart: Date,
+  rangeEnd: Date
+): CalendarEvent[] => {
+  if (!event.recurrence) return [event];
+  
+  const instances: CalendarEvent[] = [];
+  let currentDate = startOfDay(event.start);
+  const endDate = event.recurrence.endDate 
+    ? startOfDay(event.recurrence.endDate)
+    : addYears(rangeEnd, 1); // Limit infinite recurrence
+    
+  while (currentDate <= endDate && currentDate <= rangeEnd) {
+    // Skip if date is in exceptions
+    if (!event.recurrence.exception_dates?.includes(
+      format(currentDate, 'yyyy-MM-dd')
+    )) {
+      instances.push({
+        ...event,
+        id: generateInstanceId(event.id, currentDate),
+        start: currentDate,
+        end: addMinutes(
+          currentDate,
+          differenceInMinutes(event.end, event.start)
+        ),
+        is_recurring_instance: true,
+        original_event_id: event.id,
+        instance_date: format(currentDate, "yyyy-MM-dd'T'HH:mm:ss'Z'")
+      });
+    }
+    
+    // Advance to next instance
+    switch (event.recurrence.frequency) {
+      case 'daily':
+        currentDate = addDays(currentDate, event.recurrence.interval);
+        break;
+      case 'weekly':
+        currentDate = addWeeks(currentDate, event.recurrence.interval);
+        break;
+      case 'monthly':
+        currentDate = addMonths(currentDate, event.recurrence.interval);
+        break;
+      case 'yearly':
+        currentDate = addYears(currentDate, event.recurrence.interval);
+        break;
+    }
+  }
+  
+  return instances;
+};
+```
+
+## Troubleshooting Guide
+
+### 1. Event Creation Issues
+
+#### Problem: Event Not Saving
+```typescript
+// Common causes:
+// 1. Missing required fields
+await calendarService.createEvent({
+  title: "Meeting",  // Required
+  description: "Optional",
+  start: new Date(),  // Required
+  end: new Date(),  // Required
+  category: "work"
+});
+
+// 2. Invalid recurrence data
+const event = {
+  // ... event data ...
+  recurrence: {
+    frequency: "weekly",
+    interval: 0  // Error: must be > 0
+  }
+};
+```
+
+#### Problem: Recurrence Not Working
+```typescript
+// Common causes:
+// 1. Incorrect date formats
+const badFormat = {
+  frequency: "weekly",
+  interval: 1,
+  end_date: "2024/01/15"  // Wrong format
+};
+
+const correctFormat = {
+  frequency: "weekly",
+  interval: 1,
+  end_date: "2024-01-15"  // Correct YYYY-MM-DD
+};
+
+// 2. End date before start date
+const invalidDates = {
+  start: new Date('2024-01-15'),
+  end: new Date('2024-01-14'),  // Error: end before start
+  recurrence: {
+    frequency: "weekly",
+    interval: 1
+  }
+};
+```
+
+### 2. Instance Issues
+
+#### Problem: Missing Instances
+```typescript
+// Common causes:
+// 1. Date in exception_dates
+const event = {
+  // ... event data ...
   recurrence: {
     frequency: "weekly",
     interval: 1,
-    endDate: new Date("2024-12-31")
+    exception_dates: ["2024-01-15"]  // This date will be skipped
   }
-}, session);
+};
 
-// Delete Instance
-await calendarService.deleteEvent(eventId, session, 'single', instanceDate);
+// 2. Outside date range
+const tooNarrow = await calendarService.getEvents(
+  new Date('2024-01-01'),
+  new Date('2024-01-07')  // Won't show instances after this
+);
+
+// 3. End date reached
+const ended = {
+  // ... event data ...
+  recurrence: {
+    frequency: "weekly",
+    interval: 1,
+    end_date: "2024-01-01"  // No instances after this
+  }
+};
 ```
 
-## Common Issues & Solutions
+#### Problem: Duplicate Instances
+```typescript
+// Common cause: Overlapping date ranges in multiple calls
+const range1 = await calendarService.getEvents(
+  new Date('2024-01-01'),
+  new Date('2024-01-31')
+);
 
-### 1. Event Not Showing
-- **Check Date Range**:
-  ```typescript
-  // Ensure date range is correct
-  const start = startOfDay(new Date())
-  const end = endOfDay(new Date())
-  ```
-- **Verify Permissions**:
-  ```typescript
-  // Events are filtered by user_id
-  // Check session.user.id matches event.user_id
-  ```
-- **Recurring Event Issues**:
-  ```typescript
-  // Check exception_dates array
-  // Verify end_date hasn't passed
-  // Confirm recurrence rule is valid
-  ```
+const range2 = await calendarService.getEvents(
+  new Date('2024-01-15'),  // Overlaps with range1
+  new Date('2024-02-15')
+);
 
-### 2. Recurring Event Updates
-- Changes to original affect all future instances
-- Exception dates prevent specific instances
-- End date limits instance generation
-- Be careful with timezone handling
+// Solution: Use non-overlapping ranges or merge results
+```
 
-### 3. Performance Considerations
-- Recurring events generated on-the-fly
-- Large date ranges can slow performance
-- Consider limiting initial fetch range
-- Use pagination for event lists
+### 3. Deletion Issues
 
-## Important Notes
+#### Problem: Instance Not Deleted
+```typescript
+// Common causes:
+// 1. Wrong delete option
+await calendarService.deleteEvent(
+  eventId,
+  session,
+  'single'  // Needs instanceDate
+);
 
-1. **Database vs UI Fields**
-   - Some fields exist only in UI layer (status, priority, type)
-   - These have default values when converting from DB to UI
+// Correct usage:
+await calendarService.deleteEvent(
+  eventId,
+  session,
+  'single',
+  new Date('2024-01-15')
+);
 
-2. **Recurrence Handling**
-   - Recurrence stored as JSONB in database
-   - Instances generated dynamically
-   - Exception dates stored in ISO format
+// 2. Wrong instance date format
+const wrongFormat = new Date('2024/01/15');  // Use ISO string
+const correctFormat = new Date('2024-01-15T00:00:00Z');
+```
 
-3. **Session Validation**
-   - All operations require valid user session
-   - Events filtered by user_id
-   - Session validated before any database operation
+#### Problem: Unexpected Deletions
+```typescript
+// Common cause: Wrong delete option
+await calendarService.deleteEvent(
+  eventId,
+  session,
+  'all'  // Deletes entire series
+);
 
-4. **Best Practices**
-   - Always use date-fns for date manipulation
-   - Validate recurrence rules before saving
-   - Handle timezone differences explicitly
-   - Use proper error handling for all operations
+// To delete single instance:
+await calendarService.deleteEvent(
+  eventId,
+  session,
+  'single',
+  instanceDate
+);
+```
+
+## Best Practices
+
+1. **Date Handling**
+```typescript
+// Always use UTC for storage
+const toUTC = (date: Date) => {
+  return new Date(date.toISOString());
+};
+
+// Use consistent format for database
+const toDBFormat = (date: Date) => {
+  return format(date, 'yyyy-MM-dd');
+};
+
+// Parse dates safely
+const parseDate = (dateString: string) => {
+  const parsed = parseISO(dateString);
+  if (!isValid(parsed)) {
+    throw new Error('Invalid date format');
+  }
+  return parsed;
+};
+```
+
+2. **Validation**
+```typescript
+// Always validate before database operations
+const validateEvent = async (event: CalendarEvent) => {
+  const errors = validateEventForm(event);
+  if (errors.length > 0) {
+    throw new Error(`Validation failed: ${errors.join(', ')}`);
+  }
+  await validateDatabaseModel(event);
+};
+```
+
+3. **Error Handling**
+```typescript
+try {
+  await calendarService.createEvent(event);
+} catch (error) {
+  if (error.message.includes('Validation')) {
+    // Handle validation errors
+    showValidationError(error.message);
+  } else if (error.code === '23505') {
+    // Handle duplicate key errors
+    showDuplicateError();
+  } else {
+    // Handle other errors
+    showGeneralError();
+  }
+}
+```
+
+4. **Performance**
+```typescript
+// Limit date ranges
+const MAX_RANGE_MONTHS = 3;
+
+const getEvents = async (start: Date, end: Date) => {
+  if (differenceInMonths(end, start) > MAX_RANGE_MONTHS) {
+    throw new Error('Date range too large');
+  }
+  // ... fetch events
+};
+
+// Cache recurring event calculations
+const eventCache = new Map<string, CalendarEvent[]>();
+```
+
+Remember:
+- Always validate input data
+- Use consistent date formats
+- Handle timezone differences
+- Cache recurring calculations
+- Limit date ranges for performance
+- Test edge cases thoroughly

@@ -91,7 +91,8 @@ function EventFormProvider({ children, onSubmit, onCancel, initialData }: EventF
       assigned_to: initialData?.assigned_to || '',
       assigned_to_type: initialData?.assigned_to_type || 'user',
       department: initialData?.department || '',
-      user_id: initialData?.user_id || ''
+      user_id: initialData?.user_id || '',
+      recurrence: initialData?.recurrence
     }
 
     return baseEvent
@@ -118,7 +119,41 @@ function EventFormProvider({ children, onSubmit, onCancel, initialData }: EventF
         setIsSubmitting(false)
         return
       }
-      onSubmit(formData)
+
+      // Validate required fields
+      if (!formData.title) {
+        setError('Title is required')
+        setIsSubmitting(false)
+        return
+      }
+
+      // Ensure all dates are valid
+      if (formData.recurrence?.endDate && formData.recurrence.endDate <= formData.start) {
+        setError('Recurrence end date must be after event start date')
+        setIsSubmitting(false)
+        return
+      }
+
+      // Convert RecurringOptions to RecurrenceRule
+      const recurrenceRule = formData.recurrence && formData.recurrence.frequency !== 'none' ? {
+        frequency: formData.recurrence.frequency,
+        interval: formData.recurrence.interval || 1,
+        endDate: formData.recurrence.endDate,
+        exception_dates: formData.recurrence.exception_dates || []
+      } : undefined
+
+      // Format the data for submission
+      const eventData = {
+        ...formData,
+        description: formData.description || '',
+        status: formData.status || 'scheduled',
+        priority: formData.priority || 'medium',
+        type: formData.type || 'meeting',
+        recurrence: recurrenceRule
+      }
+
+      console.log('Submitting formatted data:', eventData)
+      onSubmit(eventData)
     } catch (err: any) {
       setError(err.message || 'An error occurred')
     } finally {
@@ -397,9 +432,10 @@ function BottomSection({ onCancel }: { onCancel: () => void }) {
     if (checked) {
       setFormData({
         recurrence: {
-          frequency: 'daily' as RecurrenceFrequency,
+          frequency: 'daily',
           interval: 1,
-          endDate: undefined
+          endDate: undefined,
+          exception_dates: []
         }
       })
     } else {

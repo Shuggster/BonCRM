@@ -14,6 +14,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { EVENT_CATEGORIES } from '@/lib/constants/categories'
 import { Input } from '@/components/ui/input'
 import { motion, AnimatePresence } from 'framer-motion'
+import { startOfMonth, endOfMonth, addMonths } from 'date-fns'
 
 interface CalendarClientProps {
   session: UserSession
@@ -36,7 +37,11 @@ export function CalendarClient({ session }: CalendarClientProps) {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const events = await calendarService.getEvents(session)
+        // Calculate a broader range to ensure we get all needed events
+        const start = startOfMonth(selectedDate)
+        const end = endOfMonth(addMonths(selectedDate, 2)) // Fetch 3 months worth
+        
+        const events = await calendarService.getEvents(start, end, session)
         console.log('Raw events from service:', events)
         setEvents(events)
       } catch (error) {
@@ -59,7 +64,7 @@ export function CalendarClient({ session }: CalendarClientProps) {
       window.removeEventListener('calendar:refresh', handleRefresh)
       window.removeEventListener('refresh', handleRefresh)
     }
-  }, [session])
+  }, [session, selectedDate])
 
   // Fetch available departments and users
   useEffect(() => {
