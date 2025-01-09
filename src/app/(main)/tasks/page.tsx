@@ -88,8 +88,10 @@ export default function TasksPage() {
       setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? updatedTask : t))
       hide()
       showTaskOverview(tasks.map(t => t.id === task.id ? updatedTask : t), false)
+      return updatedTask
     } catch (error) {
       console.error('Error updating task:', error)
+      throw error
     }
   }
 
@@ -151,6 +153,7 @@ export default function TasksPage() {
                   hide()
                   setSelectedTask(null)
                 }}
+                onEdit={handleUpdateTask}
               />
             </motion.div>
           )
@@ -176,6 +179,7 @@ export default function TasksPage() {
                   hide()
                   setSelectedTask(null)
                 }}
+                onEdit={handleUpdateTask}
               />
             </motion.div>
           )

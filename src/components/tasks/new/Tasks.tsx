@@ -162,11 +162,9 @@ export function Tasks({
               };
               
               try {
-                const result = await onUpdateTask(updatedTask);
-                if (result) {
-                  hide();
-                  handleViewTask(result);
-                }
+                await onUpdateTask(updatedTask);
+                hide();
+                handleViewTask(updatedTask);
               } catch (error) {
                 console.error('Error updating task:', error);
               }
@@ -298,9 +296,22 @@ export function Tasks({
       >
         <div className="h-full flex flex-col rounded-b-2xl">
           <TaskFormProvider
-            onSubmit={async (data) => {
+            onSubmit={async (formData) => {
               try {
-                await onCreateTask(data);
+                const newTask: Task = {
+                  id: crypto.randomUUID(),
+                  title: formData.title,
+                  description: formData.description || undefined,
+                  priority: formData.priority,
+                  due_date: formData.due_date || undefined,
+                  status: formData.status,
+                  task_group_id: formData.task_group_id,
+                  user_id: currentUserId,
+                  assigned_to: formData.assigned_to || undefined,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                };
+                await onCreateTask(newTask);
                 hide();
               } catch (error) {
                 console.error('Error creating task:', error);
@@ -324,7 +335,7 @@ export function Tasks({
     );
 
     setContentAndShow(topContent, null, 'create-task');
-  }, [hide, onCreateTask, setContentAndShow]);
+  }, [hide, onCreateTask, setContentAndShow, currentUserId]);
 
   const filteredTasks = tasks.filter(task => {
     if (!task) return false;  // Skip null or undefined tasks

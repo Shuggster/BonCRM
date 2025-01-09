@@ -3,29 +3,16 @@ import { Card } from '@/components/ui/card'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import type { Task } from '@/types/tasks'
 
 interface TaskViewProps {
-  task: {
-    id: string
-    title: string
-    description: string
-    priority: 'low' | 'medium' | 'high'
-    due_date: string | null
-    task_group_id: string | null
-    status: 'todo' | 'in-progress' | 'completed'
-    assigned_to: string | null
-    task_group?: {
-      name: string
-      color: string
-    }
-    assigned_user?: {
-      name: string
-      email: string
-    }
-  }
+  task: Task
+  section: 'upper' | 'lower'
+  onClose: () => void
+  onEdit?: (task: Task) => Promise<Task>
 }
 
-export function TaskView({ task }: TaskViewProps) {
+export function TaskView({ task, section, onClose, onEdit }: TaskViewProps) {
   return (
     <div className="h-full flex flex-col rounded-b-2xl">
       <div className="flex-1 flex flex-col min-h-0">
@@ -60,49 +47,6 @@ export function TaskView({ task }: TaskViewProps) {
                     <div className="text-white/90 whitespace-pre-wrap">
                       {task.description || 'No description provided'}
                     </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card
-                title="Task Details"
-                icon={<Calendar className="w-5 h-5 text-blue-500" />}
-              >
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <div className="text-sm font-medium text-white/70 mb-2">Priority</div>
-                      <div className={cn(
-                        "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium",
-                        task.priority === 'high' && "bg-red-500/10 text-red-500",
-                        task.priority === 'medium' && "bg-yellow-500/10 text-yellow-500",
-                        task.priority === 'low' && "bg-green-500/10 text-green-500"
-                      )}>
-                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-sm font-medium text-white/70 mb-2">Due Date</div>
-                      <div className="text-white/90">
-                        {task.due_date ? format(new Date(task.due_date), 'PPP') : 'No due date'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm font-medium text-white/70 mb-2">Task Group</div>
-                    {task.task_group ? (
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: task.task_group.color }}
-                        />
-                        <span className="text-white/90">{task.task_group.name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-white/60">No group</span>
-                    )}
                   </div>
                 </div>
               </Card>

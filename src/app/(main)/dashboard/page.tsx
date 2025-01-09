@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar, Phone, Mail, Video, ArrowRight, ListTodo, Building2 } from 'lucide-react'
+import { Users, CheckSquare, Target, BarChart3, MessageSquare, Calendar, Phone, Mail, Video, ArrowRight, ListTodo, Building2, XCircle } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
@@ -57,7 +57,7 @@ interface Notification {
   id: string;
   message: string;
   description?: string;
-  type: 'success' | 'info';
+  type: 'success' | 'info' | 'error';
   icon?: React.ReactNode;
 }
 
@@ -85,6 +85,41 @@ export default function DashboardPage() {
       minute: '2-digit'
     })
   }, [])
+
+  // Add helper function for due dates
+  const getTaskDueStatus = useCallback((dueDate: string | null) => {
+    if (!dueDate) return null;
+    
+    const due = new Date(dueDate);
+    const now = new Date();
+    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return { label: 'Overdue', class: 'bg-red-500/20 text-red-400' };
+    if (diffDays === 0) return { label: 'Due today', class: 'bg-yellow-500/20 text-yellow-400' };
+    if (diffDays === 1) return { label: 'Due tomorrow', class: 'bg-orange-500/20 text-orange-400' };
+    if (diffDays <= 7) return { label: `Due in ${diffDays} days`, class: 'bg-blue-500/20 text-blue-400' };
+    return { label: formatDate(dueDate), class: 'bg-zinc-500/20 text-zinc-400' };
+  }, [formatDate]);
+
+  const getPriorityIndicator = useCallback((priority: string | null) => {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+        return { color: 'bg-red-500', label: 'High Priority' };
+      case 'medium':
+        return { color: 'bg-yellow-500', label: 'Medium Priority' };
+      case 'low':
+        return { color: 'bg-green-500', label: 'Low Priority' };
+      default:
+        return { color: 'bg-zinc-500', label: 'No Priority Set' };
+    }
+  }, []);
+
+  // Add helper function for calculating week-over-week changes
+  const calculateWeeklyChange = useCallback((currentCount: number, previousCount: number) => {
+    if (previousCount === 0) return '+100%';
+    const percentChange = ((currentCount - previousCount) / previousCount) * 100;
+    return `${percentChange > 0 ? '+' : ''}${Math.round(percentChange)}%`;
+  }, []);
 
   const handleMetricClick = useCallback(
     (metric: DashboardMetric) => {
@@ -202,7 +237,23 @@ export default function DashboardPage() {
                                   </div>
                                   <div>
                                     <h3 className="font-medium">{contact.first_name} {contact.last_name}</h3>
-                                    <p className="text-sm text-zinc-400">{contact.job_title}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {contact.company && (
+                                        <p className="text-sm text-zinc-400 flex items-center gap-1">
+                                          <Building2 className="w-3 h-3" />
+                                          {contact.company}
+                                        </p>
+                                      )}
+                                      {contact.job_title && (
+                                        <p className="text-sm text-zinc-400">{contact.job_title}</p>
+                                      )}
+                                    </div>
+                                    {contact.scheduled_activities?.[0] && (
+                                      <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        Last interaction: {formatDate(contact.scheduled_activities[0].created_at)}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                                 
@@ -247,7 +298,23 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex-1">
                             <h3 className="font-medium">{contact.first_name} {contact.last_name}</h3>
-                            <p className="text-sm text-zinc-400">{contact.job_title}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {contact.company && (
+                                <p className="text-sm text-zinc-400 flex items-center gap-1">
+                                  <Building2 className="w-3 h-3" />
+                                  {contact.company}
+                                </p>
+                              )}
+                              {contact.job_title && (
+                                <p className="text-sm text-zinc-400">{contact.job_title}</p>
+                              )}
+                            </div>
+                            {contact.scheduled_activities?.[0] && (
+                              <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Last interaction: {formatDate(contact.scheduled_activities[0].created_at)}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -265,10 +332,35 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
                       >
-                        <h3 className="font-medium">{task.title}</h3>
-                        <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">completed</span>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{task.title}</h3>
+                              {task.priority && (
+                                <div 
+                                  className={`w-2 h-2 rounded-full ${getPriorityIndicator(task.priority).color}`} 
+                                  title={getPriorityIndicator(task.priority).label}
+                                />
+                              )}
+                            </div>
+                            <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">completed</span>
+                            {task.due_date && (
+                              <span className={`text-xs px-2 py-1 rounded-full ${getTaskDueStatus(task.due_date)?.class}`}>
+                                {getTaskDueStatus(task.due_date)?.label}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleTaskStatusUpdate(task.id, 'in-progress')}
+                            className="text-xs px-2 py-1 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                          >
+                            Move to In Progress
+                          </button>
                         </div>
                       </motion.div>
                     ))}
@@ -285,10 +377,43 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.1 + 0.6 }}
                       >
-                        <h3 className="font-medium">{task.title}</h3>
-                        <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">in progress</span>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{task.title}</h3>
+                              {task.priority && (
+                                <div 
+                                  className={`w-2 h-2 rounded-full ${getPriorityIndicator(task.priority).color}`} 
+                                  title={getPriorityIndicator(task.priority).label}
+                                />
+                              )}
+                            </div>
+                            <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">in progress</span>
+                            {task.due_date && (
+                              <span className={`text-xs px-2 py-1 rounded-full ${getTaskDueStatus(task.due_date)?.class}`}>
+                                {getTaskDueStatus(task.due_date)?.label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleTaskStatusUpdate(task.id, 'completed')}
+                              className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
+                            >
+                              Mark Complete
+                            </button>
+                            <button
+                              onClick={() => handleTaskStatusUpdate(task.id, 'todo')}
+                              className="text-xs px-2 py-1 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors"
+                            >
+                              Move to Todo
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -311,9 +436,71 @@ export default function DashboardPage() {
                             <activity.icon className="w-5 h-5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium">{activity.title}</p>
-                            <p className="text-sm text-zinc-400 mt-0.5">{activity.type}</p>
-                            <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.scheduled_for)}</p>
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium truncate">{activity.title}</p>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                activity.type === 'call' ? 'bg-emerald-500/20 text-emerald-400' :
+                                activity.type === 'email' ? 'bg-blue-500/20 text-blue-400' :
+                                'bg-purple-500/20 text-purple-400'
+                              }`}>
+                                {activity.type}
+                              </span>
+                            </div>
+                            {activity.contact && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1 text-sm text-zinc-400">
+                                  <Users className="w-3 h-3" />
+                                  {activity.contact.first_name} {activity.contact.last_name}
+                                </div>
+                                {activity.contact.company && (
+                                  <div className="flex items-center gap-1 text-sm text-zinc-400">
+                                    <Building2 className="w-3 h-3" />
+                                    {activity.contact.company}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-xs text-zinc-500">{formatDate(activity.scheduled_for)}</p>
+                              <div className="flex items-center gap-1">
+                                {activity.type === 'call' && activity.contact?.phone && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `tel:${activity.contact.phone}`;
+                                    }}
+                                    className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                                    title="Call contact"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {activity.type === 'email' && activity.contact?.email && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `mailto:${activity.contact.email}`;
+                                    }}
+                                    className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                    title="Send email"
+                                  >
+                                    <Mail className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {activity.type === 'meeting' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open('https://meet.google.com/new', '_blank');
+                                    }}
+                                    className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                                    title="Start meeting"
+                                  >
+                                    <Video className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
@@ -378,44 +565,89 @@ export default function DashboardPage() {
       }
 
       console.log('Fetching dashboard data...', { sessionId: session?.user?.id });
-      setIsLoading(true)
-      
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
+      setIsLoading(true);
 
-      console.log('Contacts data:', { contactsData, contactsError });
+      // Get current date ranges
+      const now = new Date();
+      const startOfThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+      const startOfLastWeek = new Date(startOfThisWeek);
+      startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
 
+      // Fetch contacts with weekly comparison
+      const [currentContacts, previousContacts] = await Promise.all([
+        supabase
+          .from('contacts')
+          .select(`
+            *,
+            scheduled_activities (
+              id,
+              type,
+              scheduled_for,
+              created_at
+            )
+          `)
+          .gte('created_at', startOfThisWeek.toISOString())
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('contacts')
+          .select('id')
+          .gte('created_at', startOfLastWeek.toISOString())
+          .lt('created_at', startOfThisWeek.toISOString())
+      ]);
+
+      // Fetch tasks with completion rates
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
-        .in('status', ['todo', 'in-progress'])
-        .order('due_date', { ascending: true })
-        .limit(3);
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(15);
 
-      console.log('Tasks data:', { tasksData, tasksError });
-
+      // Fetch activities with engagement metrics
       const { data: activitiesData, error: activitiesError } = await supabase
         .from('scheduled_activities')
-        .select('*')
-        .gte('scheduled_for', new Date().toISOString())
-        .order('scheduled_for', { ascending: true })
-        .limit(3);
+        .select(`
+          *,
+          contacts (
+            id,
+            first_name,
+            last_name,
+            company,
+            job_title,
+            email,
+            phone
+          )
+        `)
+        .gte('scheduled_for', startOfThisWeek.toISOString())
+        .order('scheduled_for', { ascending: true });
 
-      console.log('Activities data:', { activitiesData, activitiesError });
-
-      if (contactsError) throw contactsError;
+      if (currentContacts.error) throw currentContacts.error;
       if (tasksError) throw tasksError;
       if (activitiesError) throw activitiesError;
 
-      // Update contacts data
-      setContacts(contactsData || []);
+      // Calculate metrics
+      const thisWeekContacts = currentContacts.data?.length || 0;
+      const lastWeekContacts = previousContacts.data?.length || 0;
+      const contactsChange = calculateWeeklyChange(thisWeekContacts, lastWeekContacts);
 
-      // Update all the other data
-      setTasks(tasksData?.slice(0, 3) || []);
-      setActivities(activitiesData?.slice(0, 3).map(activity => {
+      const tasks = tasksData || [];
+      const completedTasks = tasks.filter(t => t.status === 'completed').length;
+      const totalTasks = tasks.length;
+      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      const activeTasks = tasks.filter(t => t.status === 'in-progress').length;
+      const pendingTasks = tasks.filter(t => t.status === 'todo').length;
+
+      const activities = activitiesData || [];
+      const upcomingActivities = activities.filter(a => new Date(a.scheduled_for) > now).length;
+      const todayActivities = activities.filter(a => {
+        const activityDate = new Date(a.scheduled_for);
+        return activityDate.toDateString() === now.toDateString();
+      }).length;
+
+      // Update states
+      setContacts(currentContacts.data || []);
+      setTasks(tasks);
+      setActivities(activities?.slice(0, 3).map(activity => {
         let icon;
         switch (activity.type) {
           case 'call':
@@ -436,54 +668,52 @@ export default function DashboardPage() {
           title: activity.title,
           type: activity.type,
           scheduled_for: activity.scheduled_for,
-          icon
+          icon,
+          contact: activity.contacts
         };
       }) || []);
 
-      // Update metrics last
+      // Update metrics with enhanced data
       setMetrics(prev => prev.map(metric => {
         if (metric.name === "Total Contacts") {
           return {
             ...metric,
-            value: contactsData?.length.toString() || '0',
-            change: '+0 this week'
+            value: thisWeekContacts.toString(),
+            change: `${contactsChange} this week`
           };
         }
         if (metric.name === "Tasks Completed") {
-          const total = tasksData?.length || 0;
-          const completed = tasksData?.filter(t => t.status === 'completed').length || 0;
           return {
             ...metric,
-            value: `${completed}/${total}`,
-            change: `${Math.round((completed / total) * 100)}%`
+            value: `${completedTasks}/${totalTasks}`,
+            change: `${completionRate}% completion rate`
           };
         }
         if (metric.name === "Active Tasks") {
           return {
             ...metric,
-            value: tasksData?.filter(t => t.status === 'in-progress').length.toString() || '0',
-            change: `${tasksData?.filter(t => t.status === 'todo').length || 0} pending`
+            value: activeTasks.toString(),
+            change: `${pendingTasks} pending`
           };
         }
         if (metric.name === "Scheduled Activities") {
           return {
             ...metric,
-            value: (activitiesData?.length || 0).toString(),
-            change: 'upcoming'
+            value: upcomingActivities.toString(),
+            change: `${todayActivities} today`
           };
         }
         return metric;
       }));
 
-      setIsLoading(false)
-      // Only set data ready after everything is updated
-      setIsDataReady(true)
+      setIsLoading(false);
+      setIsDataReady(true);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setIsLoading(false)
-      setIsDataReady(true) // Still set ready to show error states
+      setIsLoading(false);
+      setIsDataReady(true);
     }
-  }, [supabase, session]); // Remove session?.user?.id from dependencies
+  }, [supabase, session, calculateWeeklyChange]);
 
   // Update subscription handlers
   useEffect(() => {
@@ -654,9 +884,71 @@ export default function DashboardPage() {
                         <activity.icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium">{activity.title}</p>
-                        <p className="text-sm text-zinc-400 mt-0.5">{activity.type}</p>
-                        <p className="text-xs text-zinc-500 mt-1">{formatDate(activity.scheduled_for)}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium truncate">{activity.title}</p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            activity.type === 'call' ? 'bg-emerald-500/20 text-emerald-400' :
+                            activity.type === 'email' ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-purple-500/20 text-purple-400'
+                          }`}>
+                            {activity.type}
+                          </span>
+                        </div>
+                        {activity.contact && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1 text-sm text-zinc-400">
+                              <Users className="w-3 h-3" />
+                              {activity.contact.first_name} {activity.contact.last_name}
+                            </div>
+                            {activity.contact.company && (
+                              <div className="flex items-center gap-1 text-sm text-zinc-400">
+                                <Building2 className="w-3 h-3" />
+                                {activity.contact.company}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-xs text-zinc-500">{formatDate(activity.scheduled_for)}</p>
+                          <div className="flex items-center gap-1">
+                            {activity.type === 'call' && activity.contact?.phone && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `tel:${activity.contact.phone}`;
+                                }}
+                                className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                                title="Call contact"
+                              >
+                                <Phone className="w-3 h-3" />
+                              </button>
+                            )}
+                            {activity.type === 'email' && activity.contact?.email && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `mailto:${activity.contact.email}`;
+                                }}
+                                className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                title="Send email"
+                              >
+                                <Mail className="w-3 h-3" />
+                              </button>
+                            )}
+                            {activity.type === 'meeting' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open('https://meet.google.com/new', '_blank');
+                                }}
+                                className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                                title="Start meeting"
+                              >
+                                <Video className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -765,7 +1057,23 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="font-medium">{contact.first_name} {contact.last_name}</h3>
-                <p className="text-sm text-zinc-400">{contact.job_title}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {contact.company && (
+                    <p className="text-sm text-zinc-400 flex items-center gap-1">
+                      <Building2 className="w-3 h-3" />
+                      {contact.company}
+                    </p>
+                  )}
+                  {contact.job_title && (
+                    <p className="text-sm text-zinc-400">{contact.job_title}</p>
+                  )}
+                </div>
+                {contact.scheduled_activities?.[0] && (
+                  <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Last interaction: {formatDate(contact.scheduled_activities[0].created_at)}
+                  </p>
+                )}
               </div>
             </div>
             
@@ -797,6 +1105,139 @@ export default function DashboardPage() {
       console.error('Error loading contact details:', error);
     }
   }, [supabase, setContentAndShow]);
+
+  const handleDashboardTaskClick = useCallback((task: any) => {
+    const topContent = (
+      <motion.div 
+        className="h-full bg-[#111111] rounded-t-xl p-6"
+        initial={{ y: "-100%" }}
+        animate={{ y: 0 }}
+        transition={{ type: "tween", duration: 0.4 }}
+      >
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold text-white">{task.title}</h2>
+            <div className="flex items-center gap-2">
+              <ListTodo className="w-4 h-4 text-zinc-400" />
+              <span className={`text-sm px-2 py-0.5 rounded-full ${
+                task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
+                'bg-orange-500/20 text-orange-400'
+              }`}>
+                {task.status}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-4">
+          {task.assigned_to && (
+            <button 
+              className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
+              title="Send email"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `mailto:${task.assigned_to}`;
+              }}
+            >
+              <Mail className="w-5 h-5 text-blue-500 group-hover:text-blue-400" />
+            </button>
+          )}
+        </div>
+      </motion.div>
+    );
+
+    const bottomContent = (
+      <motion.div 
+        className="h-full bg-[#111111] rounded-b-xl p-6 border-t border-white/[0.08]"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        transition={{ type: "tween", duration: 0.4 }}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
+              <ListTodo className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="font-medium">Task Details</h3>
+              <p className="text-sm text-zinc-400">{task.description || 'No description provided'}</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+              <Calendar className="w-5 h-5 text-blue-500" />
+              <div>
+                <div className="text-sm text-zinc-400">Due Date</div>
+                <div className="text-white">{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/10">
+              <Target className="w-5 h-5 text-blue-500" />
+              <div>
+                <div className="text-sm text-zinc-400">Priority</div>
+                <div className="text-white capitalize">{task.priority || 'Not set'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+
+    setContentAndShow(topContent, bottomContent, `dashboard-task-${task.id}`);
+  }, [setContentAndShow]);
+
+  const handleTaskStatusUpdate = useCallback(async (taskId: string, newStatus: string) => {
+    if (!session?.user?.id) return;
+
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const { data: updatedTask, error } = await supabase
+        .from('tasks')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Log the status change activity
+      await supabase
+        .from('task_activities')
+        .insert({
+          task_id: taskId,
+          action_type: 'status_change',
+          previous_value: task.status,
+          new_value: newStatus,
+          created_by: session.user.id
+        });
+
+      // Update local state
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+
+      // Show success notification
+      addNotification({
+        message: 'Task status updated',
+        description: `Task "${task.title}" marked as ${newStatus}`,
+        type: 'success',
+        icon: <CheckSquare className="w-4 h-4" />
+      });
+
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      addNotification({
+        message: 'Failed to update task',
+        description: 'There was an error updating the task status',
+        type: 'error',
+        icon: <XCircle className="w-4 h-4" />
+      });
+    }
+  }, [session?.user?.id, tasks, supabase, addNotification]);
 
   return (
     <PageTransition>
@@ -953,21 +1394,62 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="mt-8 space-y-4">
-                    {tasks.length > 0 ? tasks.map((task, index) => (
+                    {tasks.length > 0 ? tasks.slice(0, 15).map((task, index) => (
                       <div 
                         key={task.id} 
-                        className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1}`}
+                        className={`p-4 rounded-xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/[0.05] stagger-${index + 1} cursor-pointer hover:bg-white/[0.02] transition-colors`}
+                        onClick={() => handleDashboardTaskClick(task)}
                       >
-                        <h3 className="font-medium">{task.title}</h3>
-                        <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                            task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
-                            'bg-orange-500/20 text-orange-400'
-                          }`}>
-                            {task.status}
-                          </span>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{task.title}</h3>
+                              {task.priority && (
+                                <div 
+                                  className={`w-2 h-2 rounded-full ${getPriorityIndicator(task.priority).color}`} 
+                                  title={getPriorityIndicator(task.priority).label}
+                                />
+                              )}
+                            </div>
+                            <p className="text-sm text-zinc-400 mt-1">{task.description}</p>
+                            <p className="text-xs text-zinc-500 mt-1">
+                              {new Date(task.updated_at).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                              task.status === 'in-progress' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-orange-500/20 text-orange-400'
+                            }`}>
+                              {task.status}
+                            </span>
+                            {task.due_date && (
+                              <span className={`text-xs px-2 py-1 rounded-full ${getTaskDueStatus(task.due_date)?.class}`}>
+                                {getTaskDueStatus(task.due_date)?.label}
+                              </span>
+                            )}
+                          </div>
+                          {task.status !== 'completed' && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskStatusUpdate(task.id, 'completed');
+                                }}
+                                className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
+                              >
+                                Mark Complete
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )) : (
@@ -1012,14 +1494,74 @@ export default function DashboardPage() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/[0.05] flex items-center justify-center">
-                            {activity.type === 'call' && <Phone className="w-5 h-5" />}
-                            {activity.type === 'email' && <Mail className="w-5 h-5" />}
-                            {activity.type === 'meeting' && <Video className="w-5 h-5" />}
+                            <activity.icon className="w-5 h-5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{activity.title}</h3>
-                            <p className="text-sm text-zinc-400 mt-1">{activity.description}</p>
-                            <p className="text-xs text-zinc-500 mt-2">{formatDate(activity.scheduled_for)}</p>
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium truncate">{activity.title}</p>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                activity.type === 'call' ? 'bg-emerald-500/20 text-emerald-400' :
+                                activity.type === 'email' ? 'bg-blue-500/20 text-blue-400' :
+                                'bg-purple-500/20 text-purple-400'
+                              }`}>
+                                {activity.type}
+                              </span>
+                            </div>
+                            {activity.contact && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1 text-sm text-zinc-400">
+                                  <Users className="w-3 h-3" />
+                                  {activity.contact.first_name} {activity.contact.last_name}
+                                </div>
+                                {activity.contact.company && (
+                                  <div className="flex items-center gap-1 text-sm text-zinc-400">
+                                    <Building2 className="w-3 h-3" />
+                                    {activity.contact.company}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-xs text-zinc-500">{formatDate(activity.scheduled_for)}</p>
+                              <div className="flex items-center gap-1">
+                                {activity.type === 'call' && activity.contact?.phone && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `tel:${activity.contact.phone}`;
+                                    }}
+                                    className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                                    title="Call contact"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {activity.type === 'email' && activity.contact?.email && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `mailto:${activity.contact.email}`;
+                                    }}
+                                    className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                    title="Send email"
+                                  >
+                                    <Mail className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {activity.type === 'meeting' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open('https://meet.google.com/new', '_blank');
+                                    }}
+                                    className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                                    title="Start meeting"
+                                  >
+                                    <Video className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
