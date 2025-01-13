@@ -312,7 +312,7 @@ export type Database = {
           id: string
           name: string | null
           email: string
-          role: 'admin' | 'user'
+          role: 'admin' | 'manager' | 'operational'
           department: string | null
           created_at: string
           updated_at: string
@@ -321,7 +321,7 @@ export type Database = {
           id?: string
           name?: string | null
           email: string
-          role?: 'admin' | 'user'
+          role?: 'admin' | 'manager' | 'operational'
           department?: string | null
           created_at?: string
           updated_at?: string
@@ -330,12 +330,55 @@ export type Database = {
           id?: string
           name?: string | null
           email?: string
-          role?: 'admin' | 'user'
+          role?: 'admin' | 'manager' | 'operational'
           department?: string | null
           created_at?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      team_members: {
+        Row: {
+          id: string
+          team_id: string
+          user_id: string
+          role: 'leader' | 'member'
+          joined_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          user_id: string
+          role: 'leader' | 'member'
+          joined_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          user_id?: string
+          role?: 'leader' | 'member'
+          joined_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

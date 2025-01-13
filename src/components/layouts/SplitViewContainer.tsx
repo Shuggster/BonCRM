@@ -47,21 +47,23 @@ export function SplitViewContainer() {
       {isVisible && (
         <motion.div 
           key={selectedId || 'container'}
-          className="fixed right-0 top-0 bottom-0 w-[600px] flex items-center bg-black/80 pointer-events-auto"
+          className="fixed right-0 top-0 bottom-0 w-[600px] flex items-center bg-black/80 pointer-events-auto z-50"
           variants={splitContainerVariants}
           initial="initial"
           animate="animate"
           exit="exit"
+          style={{ pointerEvents: 'auto' }}
         >
-          <div className="w-full h-[calc(100%-8rem)] relative overflow-y-auto pointer-events-auto">
+          <div className="w-full h-[calc(100%-8rem)] relative overflow-y-auto pointer-events-auto" style={{ pointerEvents: 'auto' }}>
             {provider}
-            <div className="min-h-full pointer-events-auto">
+            <div className="min-h-full pointer-events-auto" style={{ pointerEvents: 'auto' }}>
               {/* Top Card */}
               <motion.div
                 variants={splitContentVariants.top}
                 initial="initial"
                 animate="animate"
                 className="h-[50%] pointer-events-auto"
+                style={{ pointerEvents: 'auto' }}
               >
                 {topContent}
               </motion.div>
@@ -72,6 +74,7 @@ export function SplitViewContainer() {
                 initial="initial"
                 animate="animate"
                 className="h-[50%] pointer-events-auto"
+                style={{ pointerEvents: 'auto' }}
               >
                 {bottomContent}
               </motion.div>

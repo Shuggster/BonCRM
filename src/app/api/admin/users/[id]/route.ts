@@ -4,6 +4,105 @@ import { authOptions } from "@/app/(auth)/lib/auth-options"
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 
+interface TeamMember {
+  id: string;
+  role: string;
+  team: {
+    id: string;
+    name: string;
+  };
+}
+
+// Add OPTIONS handler for CORS
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200 })
+}
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // 1. Verify admin session
+    const session = await getServerSession(authOptions)
+    if (!session?.user || session.user.role !== 'admin') {
+      return NextResponse.json({ 
+        error: 'Unauthorized - Admin access required' 
+      }, { status: 401 })
+    }
+
+    // 2. Initialize Supabase with service role
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ 
+      cookies: () => cookieStore 
+    }, {
+      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
+    })
+
+    // 3. Fetch user with proper error handling
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, email, name, role, department')
+      .eq('id', params.id)
+      .single()
+
+    if (userError) {
+      console.error('Error fetching user:', userError)
+      return NextResponse.json({ 
+        error: 'Failed to fetch user',
+        details: userError.message 
+      }, { status: 500 })
+    }
+
+    if (!userData) {
+      return NextResponse.json({ 
+        error: 'User not found' 
+      }, { status: 404 })
+    }
+
+    // 4. Fetch team memberships separately
+    let teams: { id: string; name: string; role: string }[] = []
+    
+    const { data: teamData, error: teamError } = await supabase
+      .from('team_members')
+      .select(`
+        id,
+        role,
+        team:teams (
+          id,
+          name
+        )
+      `)
+      .eq('user_id', params.id)
+
+    if (teamError) {
+      console.error('Error fetching teams:', teamError)
+    } else if (teamData) {
+      teams = teamData.map((t: TeamMember) => ({
+        id: t.team.id,
+        name: t.team.name,
+        role: t.role
+      }))
+    }
+
+    // 5. Transform and return the data
+    const user = {
+      ...userData,
+      teams
+    }
+
+    return NextResponse.json({ user })
+
+  } catch (error) {
+    console.error('Error in GET /api/admin/users/[id]:', error)
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
+
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }

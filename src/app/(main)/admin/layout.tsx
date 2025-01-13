@@ -13,21 +13,5 @@ export default async function AdminLayout({
     redirect('/login')
   }
 
-  return (
-    <div className="flex-1 flex">
-      {/* Column 2: Main Content */}
-      <div className="flex-1 min-w-0 bg-zinc-950">
-        <div className="h-full flex flex-col">
-          {children}
-        </div>
-      </div>
-
-      {/* Column 3: Split View */}
-      <div className="w-[400px] border-l border-white/[0.08] bg-black/20">
-        <div className="h-full flex flex-col">
-          {/* Split view content will be rendered by pages */}
-        </div>
-      </div>
-    </div>
-  )
+  return children
 } 

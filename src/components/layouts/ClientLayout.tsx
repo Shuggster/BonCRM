@@ -17,9 +17,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <Providers>
-      <div className="fixed inset-0 overflow-hidden">
+      <div className="fixed inset-0 overflow-hidden pointer-events-auto">
         <AnimatePresence mode="wait">
-          <div key={pathname}>
+          <div key={pathname} className="pointer-events-auto">
             {children}
           </div>
         </AnimatePresence>

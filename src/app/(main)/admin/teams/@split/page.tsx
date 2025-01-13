@@ -21,14 +21,9 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
-import { Team } from "@/types/teams"
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import { Team, TeamMember } from "@/types/teams"
+import { AddMemberDialog } from "../components/AddMemberDialog"
+import { TeamMemberCard } from "../components/TeamMemberCard"
 
 interface TeamFormData {
   id?: string;
@@ -42,13 +37,15 @@ function TeamDetailsForm({
   setFormData, 
   loading, 
   onSubmit, 
-  onCancel 
+  onCancel,
+  onDelete 
 }: { 
   formData: TeamFormData;
   setFormData: (data: TeamFormData) => void;
   loading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
@@ -94,7 +91,7 @@ function TeamDetailsForm({
       </div>
 
       <motion.div 
-        className="flex justify-end gap-2"
+        className="flex justify-between gap-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ 
           opacity: 1, 
@@ -105,77 +102,68 @@ function TeamDetailsForm({
           }
         }}
       >
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : formData.id ? 'Save Changes' : 'Create Team'}
-        </Button>
+        {formData.id && onDelete && (
+          <Button 
+            type="button" 
+            variant="destructive"
+            onClick={onDelete}
+          >
+            Delete Team
+          </Button>
+        )}
+        <div className="flex gap-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : formData.id ? 'Save Changes' : 'Create Team'}
+          </Button>
+        </div>
       </motion.div>
     </form>
-  )
-}
-
-function TeamMemberCard({ member, onRemove }: { member: TeamMember; onRemove: () => void }) {
-  return (
-    <div className="flex items-center justify-between p-4 rounded-lg bg-card">
-      <div className="flex flex-col">
-        <span className="font-medium">{member.name}</span>
-        <span className="text-sm text-muted-foreground">{member.email}</span>
-      </div>
-      <Button 
-        variant="ghost" 
-        size="sm"
-        onClick={onRemove}
-      >
-        Remove
-      </Button>
-    </div>
   )
 }
 
 function TeamMembersManagement({ teamId }: { teamId: string }) {
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<TeamMember[]>([])
+  const [dialogOpen, setDialogOpen] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    async function loadMembers() {
-      try {
-        const response = await fetch(`/api/teams/${teamId}/members`)
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load team members')
-        }
-
-        setMembers(data.members)
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load team members",
-          variant: "destructive"
-        })
-      } finally {
-        setLoading(false)
+  async function loadMembers() {
+    try {
+      const response = await fetch(`/api/teams/${teamId}/members`)
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load team members')
       }
-    }
 
+      setMembers(data.members)
+    } catch (error) {
+      console.error('Error loading members:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load team members"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     if (teamId !== 'new') {
       loadMembers()
     }
   }, [teamId])
 
-  const handleAddMember = async () => {
-    // TODO: Implement add member dialog
-    toast({
-      title: "Coming Soon",
-      description: "Add member functionality will be implemented soon"
-    })
+  const handleAddMember = () => {
+    setDialogOpen(true)
   }
 
   const handleRemoveMember = async (memberId: string) => {
@@ -194,10 +182,11 @@ function TeamMembersManagement({ teamId }: { teamId: string }) {
         description: "Member removed successfully"
       })
     } catch (error) {
+      console.error('Error removing member:', error)
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "Failed to remove member",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Failed to remove member"
       })
     }
   }
@@ -234,6 +223,13 @@ function TeamMembersManagement({ teamId }: { teamId: string }) {
           ))}
         </div>
       )}
+
+      <AddMemberDialog
+        teamId={teamId}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onMemberAdded={loadMembers}
+      />
     </div>
   )
 }
@@ -246,126 +242,127 @@ export default function TeamSplitView() {
   const { toast } = useToast()
   
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TeamFormData>({
     name: '',
     description: '',
     department: ''
   })
 
-  // Load team data if editing
   useEffect(() => {
-    async function loadTeam() {
-      if (!isNew && teamId) {
-        try {
-          const response = await fetch(`/api/teams/${teamId}`)
-          const data = await response.json()
-          
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to load team')
-          }
-
-          setFormData({
-            name: data.team.name,
-            description: data.team.description || '',
-            department: data.team.department
-          })
-        } catch (error: any) {
-          toast("Failed to load team")
-          router.push('/admin/teams')
-        }
-      }
+    if (teamId && teamId !== 'new') {
+      loadTeam()
     }
+  }, [teamId])
 
-    loadTeam()
-  }, [teamId, isNew])
+  async function loadTeam() {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/teams/${teamId}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load team')
+      }
+
+      setFormData({
+        id: data.team.id,
+        name: data.team.name,
+        description: data.team.description || '',
+        department: data.team.department
+      })
+    } catch (error) {
+      toast("Failed to load team")
+      router.push('/admin/teams')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleClose = () => {
     router.push('/admin/teams')
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
+  async function handleDelete() {
+    if (!teamId || teamId === 'new') return
 
     try {
+      setLoading(true)
+      const response = await fetch(`/api/teams/${teamId}`, {
+        method: 'DELETE'
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete team')
+      }
+
+      toast("Team deleted successfully")
+      router.push('/admin/teams')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Failed to delete team")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!formData.name || !formData.department) return
+
+    try {
+      setLoading(true)
       const url = isNew ? '/api/teams' : `/api/teams/${teamId}`
       const method = isNew ? 'POST' : 'PATCH'
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          ...formData,
-          id: isNew ? undefined : teamId
+          name: formData.name.trim(),
+          description: formData.description?.trim() || '',
+          department: formData.department
         })
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || `Failed to ${isNew ? 'create' : 'update'} team`)
+        throw new Error(data.error || data.details || `Failed to ${isNew ? 'create' : 'update'} team`)
+      }
+
+      if (isNew) {
+        router.push(`/admin/teams?teamId=${data.team.id}`)
+      } else {
+        // Force a refresh of the page to update the teams list
+        router.refresh()
+        // Reload team data after update
+        await loadTeam()
       }
 
       toast(isNew ? "Team created successfully" : "Team updated successfully")
-      router.push('/admin/teams')
-      router.refresh()
-    } catch (error: any) {
-      toast(error.message || `Failed to ${isNew ? 'create' : 'update'} team`)
+    } catch (error) {
+      console.error('Error in handleSubmit:', error)
+      toast(error instanceof Error ? error.message : `Failed to ${isNew ? 'create' : 'update'} team`)
     } finally {
       setLoading(false)
     }
   }
 
   if (!teamId) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        Select a team to view details
-      </div>
-    )
+    return null
   }
 
   return (
-    <motion.div 
-      className="flex-1 flex flex-col"
-      initial={{ x: "100%" }}
-      animate={{ 
-        x: 0,
-        transition: {
-          type: "spring",
-          stiffness: 50,
-          damping: 15
-        }
-      }}
-      exit={{ x: "100%" }}
-    >
-      <motion.div 
-        className="border-b border-white/[0.08] p-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ 
-          opacity: 1, 
-          y: 0,
-          transition: {
-            delay: 0.1,
-            duration: 0.2
-          }
-        }}
-      >
+    <div className="w-[480px] border-l border-white/[0.08] overflow-auto">
+      <div className="border-b border-white/[0.08] p-6">
         <h2 className="text-lg font-semibold">
           {isNew ? "Create New Team" : "Edit Team"}
         </h2>
-      </motion.div>
+      </div>
 
-      <motion.div 
-        className="flex-1 min-h-0 p-6"
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: 1,
-          transition: {
-            delay: 0.2,
-            duration: 0.2
-          }
-        }}
-      >
+      <div className="p-6">
         <Tabs defaultValue="details" className="h-full flex flex-col">
           <TabsList>
             <TabsTrigger value="details">Team Details</TabsTrigger>
@@ -378,13 +375,14 @@ export default function TeamSplitView() {
               loading={loading}
               onSubmit={handleSubmit}
               onCancel={handleClose}
+              onDelete={!isNew ? handleDelete : undefined}
             />
           </TabsContent>
           <TabsContent value="members" className="flex-1 mt-6">
-            <TeamMembersManagement teamId={teamId} />
+            {!isNew && <TeamMembersManagement teamId={teamId} />}
           </TabsContent>
         </Tabs>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 } 

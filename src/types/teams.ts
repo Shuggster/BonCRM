@@ -11,13 +11,19 @@ export interface Team {
 }
 
 export interface TeamMember {
-  team_id: string;
-  user_id: string;
+  id: string;
+  name: string;
+  email: string;
   role: 'leader' | 'member';
-  joined_at: string;
 }
 
 export interface TeamWithMembers extends Team {
   members: TeamMember[];
   member_count: number;
+}
+
+export interface TeamFormData {
+  name: string;
+  description: string;
+  department: string;
 } 
