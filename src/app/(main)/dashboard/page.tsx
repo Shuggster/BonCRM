@@ -574,7 +574,7 @@ export default function DashboardPage() {
       startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
 
       // Fetch contacts with weekly comparison
-      const [currentContacts, previousContacts] = await Promise.all([
+      const [currentContacts, previousContacts, totalContactsCount] = await Promise.all([
         supabase
           .from('contacts')
           .select(`
@@ -592,7 +592,10 @@ export default function DashboardPage() {
           .from('contacts')
           .select('id')
           .gte('created_at', startOfLastWeek.toISOString())
-          .lt('created_at', startOfThisWeek.toISOString())
+          .lt('created_at', startOfThisWeek.toISOString()),
+        supabase
+          .from('contacts')
+          .select('count', { count: 'exact', head: true })
       ]);
 
       // Fetch tasks with completion rates
@@ -629,6 +632,7 @@ export default function DashboardPage() {
       const thisWeekContacts = currentContacts.data?.length || 0;
       const lastWeekContacts = previousContacts.data?.length || 0;
       const contactsChange = calculateWeeklyChange(thisWeekContacts, lastWeekContacts);
+      const totalContacts = totalContactsCount.count || 0;
 
       const tasks = tasksData || [];
       const completedTasks = tasks.filter(t => t.status === 'completed').length;
@@ -678,7 +682,7 @@ export default function DashboardPage() {
         if (metric.name === "Total Contacts") {
           return {
             ...metric,
-            value: thisWeekContacts.toString(),
+            value: totalContacts.toString(),
             change: `${contactsChange} this week`
           };
         }

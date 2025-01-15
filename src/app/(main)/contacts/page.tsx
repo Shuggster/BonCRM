@@ -671,28 +671,43 @@ export default function ContactsPage() {
       setLoading(true);
       setError(null);
       
-      const { data: contactsData, error: contactsError } = await supabase
+      // First get the total count
+      const { count } = await supabase
         .from('contacts')
-        .select(`
-          *,
-          industries!industry_id (
-            id,
-            name
-          ),
-          contact_tag_relations!contact_id (
-            tag_id,
-            contact_tags!tag_id (
+        .select('*', { count: 'exact', head: true });
+
+      // Calculate number of pages
+      const pageSize = 1000;
+      const pages = Math.ceil((count || 0) / pageSize);
+      let allContacts: any[] = [];
+
+      // Fetch all pages
+      for (let i = 0; i < pages; i++) {
+        const { data: contactsData, error: contactsError } = await supabase
+          .from('contacts')
+          .select(`
+            *,
+            industries!industry_id (
               id,
-              name,
-              color
+              name
+            ),
+            contact_tag_relations!contact_id (
+              tag_id,
+              contact_tags!tag_id (
+                id,
+                name,
+                color
+              )
             )
-          )
-        `)
-        .order('first_name', { ascending: sortDirection === 'asc' });
+          `)
+          .range(i * pageSize, (i + 1) * pageSize - 1)
+          .order('first_name', { ascending: sortDirection === 'asc' });
+        
+        if (contactsError) throw contactsError;
+        if (contactsData) allContacts = [...allContacts, ...contactsData];
+      }
       
-      if (contactsError) throw contactsError;
-      
-      const contacts = (contactsData as ContactWithTags[])?.map(contact => ({
+      const contacts = (allContacts as ContactWithTags[])?.map(contact => ({
         ...contact,
         tags: contact.contact_tag_relations?.map((rel: ContactTagRelation) => rel.tag_id) || [],
       })) || [];
@@ -735,24 +750,14 @@ export default function ContactsPage() {
       const topContent = (
         <ContactFormProvider>
           <QuickAddContact 
-            onSuccess={handleSubmit}  // Pass handleSubmit instead
+            onSuccess={handleSubmit}
             onCancel={hide}
             section="upper"
           />
         </ContactFormProvider>
       );
       
-      const bottomContent = (
-        <ContactFormProvider>
-          <QuickAddContact 
-            onSuccess={handleCreateContact}
-            onCancel={hide}
-            section="lower"
-          />
-        </ContactFormProvider>
-      );
-      
-      setContentAndShow(topContent, bottomContent, 'create-contact');
+      setContentAndShow(topContent, null, 'create-contact');
     }, 100);
   }, [hide, setContentAndShow]);
 
@@ -979,7 +984,10 @@ export default function ContactsPage() {
                 <Users className="w-12 h-12 text-text-muted mb-4" />
                 <h3 className="text-lg font-medium mb-2">No contacts yet</h3>
                 <p className="text-text-secondary mb-4">Get started by adding your first contact</p>
-                <Button className="bg-blue-500 hover:bg-blue-600">
+                <Button 
+                  onClick={handleCreateContact}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Contact
                 </Button>
