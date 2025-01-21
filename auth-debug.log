@@ -1,0 +1,928 @@
+2025-01-15T20:39:14.162Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:39:14.163Z: Auth Secret exists: true
+2025-01-15T20:39:14.171Z: JWT Callback started
+2025-01-15T20:39:14.172Z: Session Callback started
+2025-01-15T20:39:14.173Z: Session updated with token data
+2025-01-15T20:44:28.766Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:44:28.768Z: Auth Secret exists: true
+2025-01-15T20:44:28.792Z: JWT Callback started
+2025-01-15T20:44:28.793Z: Session Callback started
+2025-01-15T20:44:28.794Z: Session updated with token data
+2025-01-15T20:44:43.244Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:44:43.244Z: Auth Secret exists: true
+2025-01-15T20:44:48.466Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:44:48.467Z: Auth Secret exists: true
+2025-01-15T20:45:00.274Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:45:00.275Z: Auth Secret exists: true
+2025-01-15T20:45:05.829Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:45:05.829Z: Auth Secret exists: true
+2025-01-15T20:45:13.985Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:45:13.985Z: Auth Secret exists: true
+2025-01-15T20:45:13.992Z: JWT Callback started
+2025-01-15T20:45:13.992Z: Session Callback started
+2025-01-15T20:45:14.007Z: Session updated with token data
+2025-01-15T20:46:39.277Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:46:39.277Z: Auth Secret exists: true
+2025-01-15T20:46:39.294Z: JWT Callback started
+2025-01-15T20:46:39.295Z: Session Callback started
+2025-01-15T20:46:39.295Z: Session updated with token data
+2025-01-15T20:48:10.781Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:48:10.782Z: Auth Secret exists: true
+2025-01-15T20:48:10.798Z: JWT Callback started
+2025-01-15T20:48:10.799Z: Session Callback started
+2025-01-15T20:48:10.800Z: Session updated with token data
+2025-01-15T20:48:11.685Z: JWT Callback started
+2025-01-15T20:48:11.686Z: Session Callback started
+2025-01-15T20:48:11.687Z: Session updated with token data
+2025-01-15T20:48:46.459Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:48:46.459Z: Auth Secret exists: true
+2025-01-15T20:48:46.489Z: JWT Callback started
+2025-01-15T20:48:46.490Z: Session Callback started
+2025-01-15T20:48:46.492Z: Session updated with token data
+2025-01-15T20:50:44.538Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:50:44.538Z: Auth Secret exists: true
+2025-01-15T20:50:44.553Z: JWT Callback started
+2025-01-15T20:50:44.553Z: Session Callback started
+2025-01-15T20:50:44.554Z: Session updated with token data
+2025-01-15T20:55:03.141Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T20:55:03.142Z: Auth Secret exists: true
+2025-01-15T20:55:03.152Z: JWT Callback started
+2025-01-15T20:55:03.152Z: Session Callback started
+2025-01-15T20:55:03.153Z: Session updated with token data
+2025-01-15T21:01:57.249Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:01:57.249Z: Auth Secret exists: true
+2025-01-15T21:01:57.259Z: JWT Callback started
+2025-01-15T21:01:57.260Z: Session Callback started
+2025-01-15T21:01:57.260Z: Session updated with token data
+2025-01-15T21:02:03.663Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:02:03.664Z: Auth Secret exists: true
+2025-01-15T21:02:03.674Z: JWT Callback started
+2025-01-15T21:02:03.674Z: Session Callback started
+2025-01-15T21:02:03.675Z: Session updated with token data
+2025-01-15T21:02:03.835Z: JWT Callback started
+2025-01-15T21:02:03.836Z: Session Callback started
+2025-01-15T21:02:03.837Z: Session updated with token data
+2025-01-15T21:02:58.902Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:02:58.902Z: Auth Secret exists: true
+2025-01-15T21:02:58.915Z: JWT Callback started
+2025-01-15T21:02:58.915Z: Session Callback started
+2025-01-15T21:02:58.916Z: Session updated with token data
+2025-01-15T21:03:26.281Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:03:26.282Z: Auth Secret exists: true
+2025-01-15T21:03:26.309Z: JWT Callback started
+2025-01-15T21:03:26.310Z: Session Callback started
+2025-01-15T21:03:26.311Z: Session updated with token data
+2025-01-15T21:03:26.314Z: JWT Callback started
+2025-01-15T21:03:26.314Z: Session Callback started
+2025-01-15T21:03:26.316Z: Session updated with token data
+2025-01-15T21:03:37.192Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:03:37.192Z: Auth Secret exists: true
+2025-01-15T21:03:37.202Z: JWT Callback started
+2025-01-15T21:03:37.203Z: Session Callback started
+2025-01-15T21:03:37.205Z: Session updated with token data
+2025-01-15T21:03:37.298Z: JWT Callback started
+2025-01-15T21:03:37.299Z: Session Callback started
+2025-01-15T21:03:37.301Z: Session updated with token data
+2025-01-15T21:04:33.765Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:04:33.766Z: Auth Secret exists: true
+2025-01-15T21:04:33.776Z: JWT Callback started
+2025-01-15T21:04:33.776Z: Session Callback started
+2025-01-15T21:04:33.777Z: Session updated with token data
+2025-01-15T21:05:23.305Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:05:23.306Z: Auth Secret exists: true
+2025-01-15T21:05:23.335Z: JWT Callback started
+2025-01-15T21:05:23.336Z: Session Callback started
+2025-01-15T21:05:23.337Z: Session updated with token data
+2025-01-15T21:07:11.008Z: JWT Callback started
+2025-01-15T21:07:11.009Z: Session Callback started
+2025-01-15T21:07:11.009Z: Session updated with token data
+2025-01-15T21:07:40.671Z: JWT Callback started
+2025-01-15T21:07:40.671Z: Session Callback started
+2025-01-15T21:07:40.672Z: Session updated with token data
+2025-01-15T21:07:58.327Z: JWT Callback started
+2025-01-15T21:07:58.328Z: Session Callback started
+2025-01-15T21:07:58.328Z: Session updated with token data
+2025-01-15T21:08:06.025Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:08:06.025Z: Auth Secret exists: true
+2025-01-15T21:08:10.240Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:08:10.241Z: Auth Secret exists: true
+2025-01-15T21:08:10.257Z: JWT Callback started
+2025-01-15T21:08:10.258Z: Session Callback started
+2025-01-15T21:08:10.259Z: Session updated with token data
+2025-01-15T21:08:10.401Z: JWT Callback started
+2025-01-15T21:08:10.402Z: Session Callback started
+2025-01-15T21:08:10.403Z: Session updated with token data
+2025-01-15T21:09:00.272Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:09:00.273Z: Auth Secret exists: true
+2025-01-15T21:09:00.285Z: JWT Callback started
+2025-01-15T21:09:00.285Z: Session Callback started
+2025-01-15T21:09:00.286Z: Session updated with token data
+2025-01-15T21:09:17.933Z: JWT Callback started
+2025-01-15T21:09:17.934Z: Session Callback started
+2025-01-15T21:09:17.934Z: Session updated with token data
+2025-01-15T21:09:22.589Z: JWT Callback started
+2025-01-15T21:09:22.590Z: Session Callback started
+2025-01-15T21:09:22.592Z: Session updated with token data
+2025-01-15T21:09:30.085Z: JWT Callback started
+2025-01-15T21:09:30.086Z: Session Callback started
+2025-01-15T21:09:30.087Z: Session updated with token data
+2025-01-15T21:10:24.354Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:10:24.354Z: Auth Secret exists: true
+2025-01-15T21:10:24.363Z: JWT Callback started
+2025-01-15T21:10:24.363Z: Session Callback started
+2025-01-15T21:10:24.364Z: Session updated with token data
+2025-01-15T21:10:50.515Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:10:50.516Z: Auth Secret exists: true
+2025-01-15T21:10:50.542Z: JWT Callback started
+2025-01-15T21:10:50.543Z: Session Callback started
+2025-01-15T21:10:50.544Z: Session updated with token data
+2025-01-15T21:11:05.825Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:11:05.825Z: Auth Secret exists: true
+2025-01-15T21:11:05.830Z: JWT Callback started
+2025-01-15T21:11:05.830Z: Session Callback started
+2025-01-15T21:11:05.831Z: Session updated with token data
+2025-01-15T21:11:05.884Z: JWT Callback started
+2025-01-15T21:11:05.884Z: Session Callback started
+2025-01-15T21:11:05.884Z: Session updated with token data
+2025-01-15T21:12:00.335Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:12:00.335Z: Auth Secret exists: true
+2025-01-15T21:12:00.346Z: JWT Callback started
+2025-01-15T21:12:00.347Z: Session Callback started
+2025-01-15T21:12:00.348Z: Session updated with token data
+2025-01-15T21:12:13.103Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:12:13.103Z: Auth Secret exists: true
+2025-01-15T21:12:13.113Z: JWT Callback started
+2025-01-15T21:12:13.114Z: Session Callback started
+2025-01-15T21:12:13.115Z: Session updated with token data
+2025-01-15T21:12:23.088Z: JWT Callback started
+2025-01-15T21:12:23.088Z: Session Callback started
+2025-01-15T21:12:23.089Z: Session updated with token data
+2025-01-15T21:12:25.634Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:12:25.635Z: Auth Secret exists: true
+2025-01-15T21:12:25.649Z: JWT Callback started
+2025-01-15T21:12:25.650Z: Session Callback started
+2025-01-15T21:12:25.652Z: Session updated with token data
+2025-01-15T21:13:18.186Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:13:18.186Z: Auth Secret exists: true
+2025-01-15T21:13:18.199Z: JWT Callback started
+2025-01-15T21:13:18.199Z: Session Callback started
+2025-01-15T21:13:18.200Z: Session updated with token data
+2025-01-15T21:13:24.448Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:13:24.448Z: Auth Secret exists: true
+2025-01-15T21:13:24.457Z: JWT Callback started
+2025-01-15T21:13:24.457Z: Session Callback started
+2025-01-15T21:13:24.458Z: Session updated with token data
+2025-01-15T21:13:39.026Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:13:39.026Z: Auth Secret exists: true
+2025-01-15T21:13:39.037Z: JWT Callback started
+2025-01-15T21:13:39.037Z: Session Callback started
+2025-01-15T21:13:39.038Z: Session updated with token data
+2025-01-15T21:13:42.193Z: JWT Callback started
+2025-01-15T21:13:42.194Z: Session Callback started
+2025-01-15T21:13:42.195Z: Session updated with token data
+2025-01-15T21:13:48.924Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:13:48.924Z: Auth Secret exists: true
+2025-01-15T21:13:48.935Z: JWT Callback started
+2025-01-15T21:13:48.935Z: Session Callback started
+2025-01-15T21:13:48.936Z: Session updated with token data
+2025-01-15T21:13:53.660Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:13:53.661Z: Auth Secret exists: true
+2025-01-15T21:13:53.671Z: JWT Callback started
+2025-01-15T21:13:53.672Z: Session Callback started
+2025-01-15T21:13:53.673Z: Session updated with token data
+2025-01-15T21:13:53.786Z: JWT Callback started
+2025-01-15T21:13:53.786Z: Session Callback started
+2025-01-15T21:13:53.788Z: Session updated with token data
+2025-01-15T21:14:53.097Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:14:53.098Z: Auth Secret exists: true
+2025-01-15T21:14:53.111Z: JWT Callback started
+2025-01-15T21:14:53.112Z: Session Callback started
+2025-01-15T21:14:53.113Z: Session updated with token data
+2025-01-15T21:15:05.117Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:15:05.117Z: Auth Secret exists: true
+2025-01-15T21:15:05.132Z: JWT Callback started
+2025-01-15T21:15:05.132Z: Session Callback started
+2025-01-15T21:15:05.133Z: Session updated with token data
+2025-01-15T21:15:11.029Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:15:11.029Z: Auth Secret exists: true
+2025-01-15T21:15:11.036Z: JWT Callback started
+2025-01-15T21:15:11.037Z: Session Callback started
+2025-01-15T21:15:11.037Z: Session updated with token data
+2025-01-15T21:15:15.050Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:15:15.051Z: Auth Secret exists: true
+2025-01-15T21:15:15.064Z: JWT Callback started
+2025-01-15T21:15:15.064Z: Session Callback started
+2025-01-15T21:15:15.065Z: Session updated with token data
+2025-01-15T21:15:20.002Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:15:20.003Z: Auth Secret exists: true
+2025-01-15T21:15:20.012Z: JWT Callback started
+2025-01-15T21:15:20.012Z: Session Callback started
+2025-01-15T21:15:20.014Z: Session updated with token data
+2025-01-15T21:16:33.392Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:16:33.393Z: Auth Secret exists: true
+2025-01-15T21:16:33.420Z: JWT Callback started
+2025-01-15T21:16:33.421Z: Session Callback started
+2025-01-15T21:16:33.422Z: Session updated with token data
+2025-01-15T21:16:49.432Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:16:49.432Z: Auth Secret exists: true
+2025-01-15T21:16:49.454Z: JWT Callback started
+2025-01-15T21:16:49.455Z: Session Callback started
+2025-01-15T21:16:49.456Z: Session updated with token data
+2025-01-15T21:18:17.232Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:18:17.232Z: Auth Secret exists: true
+2025-01-15T21:18:17.238Z: JWT Callback started
+2025-01-15T21:18:17.238Z: Session Callback started
+2025-01-15T21:18:17.239Z: Session updated with token data
+2025-01-15T21:18:17.289Z: JWT Callback started
+2025-01-15T21:18:17.290Z: Session Callback started
+2025-01-15T21:18:17.290Z: Session updated with token data
+2025-01-15T21:19:34.142Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:19:34.143Z: Auth Secret exists: true
+2025-01-15T21:19:34.155Z: JWT Callback started
+2025-01-15T21:19:34.156Z: Session Callback started
+2025-01-15T21:19:34.157Z: Session updated with token data
+2025-01-15T21:20:43.038Z: JWT Callback started
+2025-01-15T21:20:43.038Z: Session Callback started
+2025-01-15T21:20:43.039Z: Session updated with token data
+2025-01-15T21:20:52.123Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:20:52.123Z: Auth Secret exists: true
+2025-01-15T21:20:52.139Z: JWT Callback started
+2025-01-15T21:20:52.140Z: Session Callback started
+2025-01-15T21:20:52.140Z: Session updated with token data
+2025-01-15T21:20:57.430Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:20:57.430Z: Auth Secret exists: true
+2025-01-15T21:20:57.445Z: JWT Callback started
+2025-01-15T21:20:57.445Z: Session Callback started
+2025-01-15T21:20:57.446Z: Session updated with token data
+2025-01-15T21:20:57.553Z: JWT Callback started
+2025-01-15T21:20:57.554Z: Session Callback started
+2025-01-15T21:20:57.556Z: Session updated with token data
+2025-01-15T21:23:00.431Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:23:00.431Z: Auth Secret exists: true
+2025-01-15T21:23:00.446Z: JWT Callback started
+2025-01-15T21:23:00.446Z: Session Callback started
+2025-01-15T21:23:00.447Z: Session updated with token data
+2025-01-15T21:23:14.596Z: JWT Callback started
+2025-01-15T21:23:14.596Z: Session Callback started
+2025-01-15T21:23:14.597Z: Session updated with token data
+2025-01-15T21:23:19.543Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:23:19.543Z: Auth Secret exists: true
+2025-01-15T21:23:19.555Z: JWT Callback started
+2025-01-15T21:23:19.555Z: Session Callback started
+2025-01-15T21:23:19.556Z: Session updated with token data
+2025-01-15T21:23:23.545Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:23:23.546Z: Auth Secret exists: true
+2025-01-15T21:23:23.570Z: JWT Callback started
+2025-01-15T21:23:23.572Z: Session Callback started
+2025-01-15T21:23:23.572Z: Session updated with token data
+2025-01-15T21:23:23.762Z: JWT Callback started
+2025-01-15T21:23:23.763Z: Session Callback started
+2025-01-15T21:23:23.765Z: Session updated with token data
+2025-01-15T21:26:52.679Z: JWT Callback started
+2025-01-15T21:26:52.680Z: Session Callback started
+2025-01-15T21:26:52.681Z: Session updated with token data
+2025-01-15T21:26:57.054Z: JWT Callback started
+2025-01-15T21:26:57.056Z: Session Callback started
+2025-01-15T21:26:57.057Z: Session updated with token data
+2025-01-15T21:27:57.587Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:27:57.587Z: Auth Secret exists: true
+2025-01-15T21:27:57.620Z: JWT Callback started
+2025-01-15T21:27:57.620Z: Session Callback started
+2025-01-15T21:27:57.621Z: Session updated with token data
+2025-01-15T21:29:56.547Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:29:56.547Z: Auth Secret exists: true
+2025-01-15T21:29:56.561Z: JWT Callback started
+2025-01-15T21:29:56.561Z: Session Callback started
+2025-01-15T21:29:56.562Z: Session updated with token data
+2025-01-15T21:30:13.918Z: JWT Callback started
+2025-01-15T21:30:13.918Z: Session Callback started
+2025-01-15T21:30:13.919Z: Session updated with token data
+2025-01-15T21:30:17.244Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:30:17.245Z: Auth Secret exists: true
+2025-01-15T21:30:17.265Z: JWT Callback started
+2025-01-15T21:30:17.265Z: Session Callback started
+2025-01-15T21:30:17.266Z: Session updated with token data
+2025-01-15T21:30:31.832Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:30:31.833Z: Auth Secret exists: true
+2025-01-15T21:30:31.880Z: JWT Callback started
+2025-01-15T21:30:31.881Z: Session Callback started
+2025-01-15T21:30:31.883Z: Session updated with token data
+2025-01-15T21:32:24.445Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:32:24.445Z: Auth Secret exists: true
+2025-01-15T21:32:24.464Z: JWT Callback started
+2025-01-15T21:32:24.464Z: Session Callback started
+2025-01-15T21:32:24.465Z: Session updated with token data
+2025-01-15T21:33:05.407Z: JWT Callback started
+2025-01-15T21:33:05.408Z: Session Callback started
+2025-01-15T21:33:05.409Z: Session updated with token data
+2025-01-15T21:33:27.364Z: JWT Callback started
+2025-01-15T21:33:27.365Z: Session Callback started
+2025-01-15T21:33:27.366Z: Session updated with token data
+2025-01-15T21:33:31.500Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:33:31.501Z: Auth Secret exists: true
+2025-01-15T21:33:31.518Z: JWT Callback started
+2025-01-15T21:33:31.520Z: Session Callback started
+2025-01-15T21:33:31.521Z: Session updated with token data
+2025-01-15T21:33:31.687Z: JWT Callback started
+2025-01-15T21:33:31.687Z: Session Callback started
+2025-01-15T21:33:31.689Z: Session updated with token data
+2025-01-15T21:34:41.612Z: JWT Callback started
+2025-01-15T21:34:41.612Z: Session Callback started
+2025-01-15T21:34:41.613Z: Session updated with token data
+2025-01-15T21:35:12.900Z: JWT Callback started
+2025-01-15T21:35:12.900Z: Session Callback started
+2025-01-15T21:35:12.901Z: Session updated with token data
+2025-01-15T21:35:32.171Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:35:32.173Z: Auth Secret exists: true
+2025-01-15T21:35:32.202Z: JWT Callback started
+2025-01-15T21:35:32.203Z: Session Callback started
+2025-01-15T21:35:32.205Z: Session updated with token data
+2025-01-15T21:37:42.827Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:37:42.827Z: Auth Secret exists: true
+2025-01-15T21:37:42.839Z: JWT Callback started
+2025-01-15T21:37:42.839Z: Session Callback started
+2025-01-15T21:37:42.840Z: Session updated with token data
+2025-01-15T21:37:54.267Z: JWT Callback started
+2025-01-15T21:37:54.268Z: Session Callback started
+2025-01-15T21:37:54.269Z: Session updated with token data
+2025-01-15T21:38:03.234Z: JWT Callback started
+2025-01-15T21:38:03.234Z: Session Callback started
+2025-01-15T21:38:03.235Z: Session updated with token data
+2025-01-15T21:38:20.931Z: JWT Callback started
+2025-01-15T21:38:20.931Z: Session Callback started
+2025-01-15T21:38:20.932Z: Session updated with token data
+2025-01-15T21:38:22.717Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:38:22.717Z: Auth Secret exists: true
+2025-01-15T21:38:22.731Z: JWT Callback started
+2025-01-15T21:38:22.732Z: Session Callback started
+2025-01-15T21:38:22.733Z: Session updated with token data
+2025-01-15T21:38:42.040Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:38:42.041Z: Auth Secret exists: true
+2025-01-15T21:38:42.085Z: JWT Callback started
+2025-01-15T21:38:42.086Z: Session Callback started
+2025-01-15T21:38:42.087Z: Session updated with token data
+2025-01-15T21:40:08.388Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:40:08.389Z: Auth Secret exists: true
+2025-01-15T21:40:08.402Z: JWT Callback started
+2025-01-15T21:40:08.402Z: Session Callback started
+2025-01-15T21:40:08.403Z: Session updated with token data
+2025-01-15T21:40:29.609Z: JWT Callback started
+2025-01-15T21:40:29.609Z: Session Callback started
+2025-01-15T21:40:29.610Z: Session updated with token data
+2025-01-15T21:40:46.353Z: JWT Callback started
+2025-01-15T21:40:46.353Z: Session Callback started
+2025-01-15T21:40:46.354Z: Session updated with token data
+2025-01-15T21:40:52.296Z: JWT Callback started
+2025-01-15T21:40:52.296Z: Session Callback started
+2025-01-15T21:40:52.297Z: Session updated with token data
+2025-01-15T21:41:24.269Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:41:24.269Z: Auth Secret exists: true
+2025-01-15T21:41:24.285Z: JWT Callback started
+2025-01-15T21:41:24.285Z: Session Callback started
+2025-01-15T21:41:24.286Z: Session updated with token data
+2025-01-15T21:41:32.634Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:41:32.634Z: Auth Secret exists: true
+2025-01-15T21:41:32.662Z: JWT Callback started
+2025-01-15T21:41:32.662Z: Session Callback started
+2025-01-15T21:41:32.663Z: Session updated with token data
+2025-01-15T21:43:15.955Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:43:15.955Z: Auth Secret exists: true
+2025-01-15T21:43:15.972Z: JWT Callback started
+2025-01-15T21:43:15.973Z: Session Callback started
+2025-01-15T21:43:15.974Z: Session updated with token data
+2025-01-15T21:44:54.304Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:44:54.304Z: Auth Secret exists: true
+2025-01-15T21:44:54.315Z: JWT Callback started
+2025-01-15T21:44:54.316Z: Session Callback started
+2025-01-15T21:44:54.316Z: Session updated with token data
+2025-01-15T21:45:47.369Z: JWT Callback started
+2025-01-15T21:45:47.369Z: Session Callback started
+2025-01-15T21:45:47.370Z: Session updated with token data
+2025-01-15T21:46:04.461Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:46:04.462Z: Auth Secret exists: true
+2025-01-15T21:46:04.490Z: JWT Callback started
+2025-01-15T21:46:04.491Z: Session Callback started
+2025-01-15T21:46:04.493Z: Session updated with token data
+2025-01-15T21:46:17.018Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:46:17.019Z: Auth Secret exists: true
+2025-01-15T21:46:17.057Z: JWT Callback started
+2025-01-15T21:46:17.059Z: Session Callback started
+2025-01-15T21:46:17.060Z: Session updated with token data
+2025-01-15T21:47:08.901Z: JWT Callback started
+2025-01-15T21:47:08.901Z: Session Callback started
+2025-01-15T21:47:08.902Z: Session updated with token data
+2025-01-15T21:47:27.989Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:47:27.990Z: Auth Secret exists: true
+2025-01-15T21:47:28.002Z: JWT Callback started
+2025-01-15T21:47:28.002Z: Session Callback started
+2025-01-15T21:47:28.003Z: Session updated with token data
+2025-01-15T21:48:28.057Z: JWT Callback started
+2025-01-15T21:48:28.057Z: Session Callback started
+2025-01-15T21:48:28.058Z: Session updated with token data
+2025-01-15T21:48:40.340Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:48:40.340Z: Auth Secret exists: true
+2025-01-15T21:48:40.352Z: JWT Callback started
+2025-01-15T21:48:40.353Z: Session Callback started
+2025-01-15T21:48:40.353Z: Session updated with token data
+2025-01-15T21:49:54.079Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:49:54.080Z: Auth Secret exists: true
+2025-01-15T21:49:54.096Z: JWT Callback started
+2025-01-15T21:49:54.096Z: Session Callback started
+2025-01-15T21:49:54.097Z: Session updated with token data
+2025-01-15T21:50:07.727Z: JWT Callback started
+2025-01-15T21:50:07.727Z: Session Callback started
+2025-01-15T21:50:07.728Z: Session updated with token data
+2025-01-15T21:50:09.603Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:50:09.603Z: Auth Secret exists: true
+2025-01-15T21:50:09.619Z: JWT Callback started
+2025-01-15T21:50:09.619Z: Session Callback started
+2025-01-15T21:50:09.620Z: Session updated with token data
+2025-01-15T21:50:28.261Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:50:28.261Z: Auth Secret exists: true
+2025-01-15T21:50:28.303Z: JWT Callback started
+2025-01-15T21:50:28.303Z: Session Callback started
+2025-01-15T21:50:28.305Z: Session updated with token data
+2025-01-15T21:50:45.639Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:50:45.640Z: Auth Secret exists: true
+2025-01-15T21:50:45.677Z: JWT Callback started
+2025-01-15T21:50:45.678Z: Session Callback started
+2025-01-15T21:50:45.679Z: Session updated with token data
+2025-01-15T21:53:50.757Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:53:50.757Z: Auth Secret exists: true
+2025-01-15T21:53:50.770Z: JWT Callback started
+2025-01-15T21:53:50.771Z: Session Callback started
+2025-01-15T21:53:50.772Z: Session updated with token data
+2025-01-15T21:54:06.594Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:54:06.594Z: Auth Secret exists: true
+2025-01-15T21:54:06.607Z: JWT Callback started
+2025-01-15T21:54:06.607Z: Session Callback started
+2025-01-15T21:54:06.608Z: Session updated with token data
+2025-01-15T21:54:10.779Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:54:10.779Z: Auth Secret exists: true
+2025-01-15T21:54:10.794Z: JWT Callback started
+2025-01-15T21:54:10.796Z: Session Callback started
+2025-01-15T21:54:10.797Z: Session updated with token data
+2025-01-15T21:54:23.439Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:54:23.439Z: Auth Secret exists: true
+2025-01-15T21:54:23.488Z: JWT Callback started
+2025-01-15T21:54:23.488Z: Session Callback started
+2025-01-15T21:54:23.489Z: Session updated with token data
+2025-01-15T21:57:21.784Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:57:21.784Z: Auth Secret exists: true
+2025-01-15T21:57:21.801Z: JWT Callback started
+2025-01-15T21:57:21.801Z: Session Callback started
+2025-01-15T21:57:21.802Z: Session updated with token data
+2025-01-15T21:57:33.003Z: JWT Callback started
+2025-01-15T21:57:33.003Z: Session Callback started
+2025-01-15T21:57:33.004Z: Session updated with token data
+2025-01-15T21:58:17.045Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:58:17.045Z: Auth Secret exists: true
+2025-01-15T21:58:17.059Z: JWT Callback started
+2025-01-15T21:58:17.060Z: Session Callback started
+2025-01-15T21:58:17.061Z: Session updated with token data
+2025-01-15T21:58:32.633Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T21:58:32.633Z: Auth Secret exists: true
+2025-01-15T21:58:32.670Z: JWT Callback started
+2025-01-15T21:58:32.672Z: Session Callback started
+2025-01-15T21:58:32.673Z: Session updated with token data
+2025-01-15T22:01:39.750Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:01:39.750Z: Auth Secret exists: true
+2025-01-15T22:01:39.767Z: JWT Callback started
+2025-01-15T22:01:39.768Z: Session Callback started
+2025-01-15T22:01:39.768Z: Session updated with token data
+2025-01-15T22:02:13.771Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:02:13.771Z: Auth Secret exists: true
+2025-01-15T22:02:13.785Z: JWT Callback started
+2025-01-15T22:02:13.785Z: Session Callback started
+2025-01-15T22:02:13.786Z: Session updated with token data
+2025-01-15T22:02:25.341Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:02:25.342Z: Auth Secret exists: true
+2025-01-15T22:02:25.364Z: JWT Callback started
+2025-01-15T22:02:25.365Z: Session Callback started
+2025-01-15T22:02:25.366Z: Session updated with token data
+2025-01-15T22:04:02.591Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:04:02.592Z: Auth Secret exists: true
+2025-01-15T22:04:02.610Z: JWT Callback started
+2025-01-15T22:04:02.611Z: Session Callback started
+2025-01-15T22:04:02.611Z: Session updated with token data
+2025-01-15T22:04:31.936Z: JWT Callback started
+2025-01-15T22:04:31.938Z: Session Callback started
+2025-01-15T22:04:31.940Z: Session updated with token data
+2025-01-15T22:05:08.747Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:05:08.747Z: Auth Secret exists: true
+2025-01-15T22:05:08.774Z: JWT Callback started
+2025-01-15T22:05:08.775Z: Session Callback started
+2025-01-15T22:05:08.776Z: Session updated with token data
+2025-01-15T22:07:15.386Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:07:15.387Z: Auth Secret exists: true
+2025-01-15T22:07:15.399Z: JWT Callback started
+2025-01-15T22:07:15.400Z: Session Callback started
+2025-01-15T22:07:15.400Z: Session updated with token data
+2025-01-15T22:15:29.901Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:15:29.902Z: Auth Secret exists: true
+2025-01-15T22:15:29.955Z: JWT Callback started
+2025-01-15T22:15:29.956Z: Session Callback started
+2025-01-15T22:15:29.958Z: Session updated with token data
+2025-01-15T22:16:35.663Z: JWT Callback started
+2025-01-15T22:16:35.664Z: Session Callback started
+2025-01-15T22:16:35.665Z: Session updated with token data
+2025-01-15T22:16:53.563Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:16:53.564Z: Auth Secret exists: true
+2025-01-15T22:16:53.612Z: JWT Callback started
+2025-01-15T22:16:53.613Z: Session Callback started
+2025-01-15T22:16:53.614Z: Session updated with token data
+2025-01-15T22:17:05.754Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:17:05.755Z: Auth Secret exists: true
+2025-01-15T22:17:05.780Z: JWT Callback started
+2025-01-15T22:17:05.782Z: Session Callback started
+2025-01-15T22:17:05.783Z: Session updated with token data
+2025-01-15T22:19:20.286Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:19:20.286Z: Auth Secret exists: true
+2025-01-15T22:19:20.321Z: JWT Callback started
+2025-01-15T22:19:20.322Z: Session Callback started
+2025-01-15T22:19:20.336Z: Session updated with token data
+2025-01-15T22:19:29.308Z: JWT Callback started
+2025-01-15T22:19:29.309Z: Session Callback started
+2025-01-15T22:19:29.310Z: Session updated with token data
+2025-01-15T22:19:41.783Z: JWT Callback started
+2025-01-15T22:19:41.783Z: Session Callback started
+2025-01-15T22:19:41.784Z: Session updated with token data
+2025-01-15T22:19:56.292Z: JWT Callback started
+2025-01-15T22:19:56.293Z: Session Callback started
+2025-01-15T22:19:56.294Z: Session updated with token data
+2025-01-15T22:24:20.656Z: JWT Callback started
+2025-01-15T22:24:20.656Z: Session Callback started
+2025-01-15T22:24:20.657Z: Session updated with token data
+2025-01-15T22:24:24.600Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:24:24.601Z: Auth Secret exists: true
+2025-01-15T22:24:24.638Z: JWT Callback started
+2025-01-15T22:24:24.638Z: Session Callback started
+2025-01-15T22:24:24.639Z: Session updated with token data
+2025-01-15T22:25:18.590Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:25:18.591Z: Auth Secret exists: true
+2025-01-15T22:25:18.608Z: JWT Callback started
+2025-01-15T22:25:18.608Z: Session Callback started
+2025-01-15T22:25:18.609Z: Session updated with token data
+2025-01-15T22:25:45.175Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:25:45.176Z: Auth Secret exists: true
+2025-01-15T22:25:45.216Z: JWT Callback started
+2025-01-15T22:25:45.217Z: Session Callback started
+2025-01-15T22:25:45.218Z: Session updated with token data
+2025-01-15T22:27:02.952Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:27:02.953Z: Auth Secret exists: true
+2025-01-15T22:27:02.969Z: JWT Callback started
+2025-01-15T22:27:02.969Z: Session Callback started
+2025-01-15T22:27:02.970Z: Session updated with token data
+2025-01-15T22:28:25.684Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:28:25.684Z: Auth Secret exists: true
+2025-01-15T22:28:25.703Z: JWT Callback started
+2025-01-15T22:28:25.703Z: Session Callback started
+2025-01-15T22:28:25.703Z: Session updated with token data
+2025-01-15T22:28:34.818Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:28:34.818Z: Auth Secret exists: true
+2025-01-15T22:28:34.834Z: JWT Callback started
+2025-01-15T22:28:34.834Z: Session Callback started
+2025-01-15T22:28:34.834Z: Session updated with token data
+2025-01-15T22:28:42.334Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:28:42.335Z: Auth Secret exists: true
+2025-01-15T22:28:42.353Z: JWT Callback started
+2025-01-15T22:28:42.353Z: Session Callback started
+2025-01-15T22:28:42.354Z: Session updated with token data
+2025-01-15T22:33:50.962Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:33:50.963Z: Auth Secret exists: true
+2025-01-15T22:33:50.982Z: JWT Callback started
+2025-01-15T22:33:50.982Z: Session Callback started
+2025-01-15T22:33:50.983Z: Session updated with token data
+2025-01-15T22:34:12.648Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:34:12.648Z: Auth Secret exists: true
+2025-01-15T22:34:12.664Z: JWT Callback started
+2025-01-15T22:34:12.664Z: Session Callback started
+2025-01-15T22:34:12.665Z: Session updated with token data
+2025-01-15T22:34:36.722Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:34:36.723Z: Auth Secret exists: true
+2025-01-15T22:34:36.757Z: JWT Callback started
+2025-01-15T22:34:36.757Z: Session Callback started
+2025-01-15T22:34:36.758Z: Session updated with token data
+2025-01-15T22:38:06.252Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:38:06.252Z: Auth Secret exists: true
+2025-01-15T22:38:06.269Z: JWT Callback started
+2025-01-15T22:38:06.270Z: Session Callback started
+2025-01-15T22:38:06.270Z: Session updated with token data
+2025-01-15T22:39:12.156Z: JWT Callback started
+2025-01-15T22:39:12.157Z: Session Callback started
+2025-01-15T22:39:12.157Z: Session updated with token data
+2025-01-15T22:39:46.980Z: JWT Callback started
+2025-01-15T22:39:46.981Z: Session Callback started
+2025-01-15T22:39:46.982Z: Session updated with token data
+2025-01-15T22:40:18.584Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:40:18.585Z: Auth Secret exists: true
+2025-01-15T22:40:18.610Z: JWT Callback started
+2025-01-15T22:40:18.611Z: Session Callback started
+2025-01-15T22:40:18.612Z: Session updated with token data
+2025-01-15T22:42:16.818Z: JWT Callback started
+2025-01-15T22:42:16.819Z: Session Callback started
+2025-01-15T22:42:16.820Z: Session updated with token data
+2025-01-15T22:42:39.263Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:42:39.264Z: Auth Secret exists: true
+2025-01-15T22:42:39.292Z: JWT Callback started
+2025-01-15T22:42:39.293Z: Session Callback started
+2025-01-15T22:42:39.293Z: Session updated with token data
+2025-01-15T22:47:29.814Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:47:29.815Z: Auth Secret exists: true
+2025-01-15T22:47:29.831Z: JWT Callback started
+2025-01-15T22:47:29.831Z: Session Callback started
+2025-01-15T22:47:29.832Z: Session updated with token data
+2025-01-15T22:52:13.157Z: JWT Callback started
+2025-01-15T22:52:13.158Z: Session Callback started
+2025-01-15T22:52:13.159Z: Session updated with token data
+2025-01-15T22:52:18.067Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:52:18.067Z: Auth Secret exists: true
+2025-01-15T22:52:18.082Z: JWT Callback started
+2025-01-15T22:52:18.083Z: Session Callback started
+2025-01-15T22:52:18.084Z: Session updated with token data
+2025-01-15T22:53:42.218Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:53:42.218Z: Auth Secret exists: true
+2025-01-15T22:53:42.238Z: JWT Callback started
+2025-01-15T22:53:42.239Z: Session Callback started
+2025-01-15T22:53:42.239Z: Session updated with token data
+2025-01-15T22:53:47.255Z: JWT Callback started
+2025-01-15T22:53:47.255Z: Session Callback started
+2025-01-15T22:53:47.256Z: Session updated with token data
+2025-01-15T22:53:50.068Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:53:50.068Z: Auth Secret exists: true
+2025-01-15T22:53:50.084Z: JWT Callback started
+2025-01-15T22:53:50.085Z: Session Callback started
+2025-01-15T22:53:50.085Z: Session updated with token data
+2025-01-15T22:54:04.667Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:54:04.668Z: Auth Secret exists: true
+2025-01-15T22:54:04.700Z: JWT Callback started
+2025-01-15T22:54:04.701Z: Session Callback started
+2025-01-15T22:54:04.702Z: Session updated with token data
+2025-01-15T22:57:34.418Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T22:57:34.418Z: Auth Secret exists: true
+2025-01-15T22:57:34.443Z: JWT Callback started
+2025-01-15T22:57:34.443Z: Session Callback started
+2025-01-15T22:57:34.444Z: Session updated with token data
+2025-01-15T22:57:34.618Z: JWT Callback started
+2025-01-15T22:57:34.619Z: Session Callback started
+2025-01-15T22:57:34.619Z: Session updated with token data
+2025-01-15T22:57:50.270Z: JWT Callback started
+2025-01-15T22:57:50.270Z: Session Callback started
+2025-01-15T22:57:50.271Z: Session updated with token data
+2025-01-15T23:02:13.054Z: JWT Callback started
+2025-01-15T23:02:13.054Z: Session Callback started
+2025-01-15T23:02:13.055Z: Session updated with token data
+2025-01-15T23:02:25.294Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:02:25.295Z: Auth Secret exists: true
+2025-01-15T23:02:25.310Z: JWT Callback started
+2025-01-15T23:02:25.310Z: Session Callback started
+2025-01-15T23:02:25.311Z: Session updated with token data
+2025-01-15T23:02:34.968Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:02:34.969Z: Auth Secret exists: true
+2025-01-15T23:02:35.004Z: JWT Callback started
+2025-01-15T23:02:35.004Z: Session Callback started
+2025-01-15T23:02:35.005Z: Session updated with token data
+2025-01-15T23:04:30.490Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:04:30.491Z: Auth Secret exists: true
+2025-01-15T23:04:30.510Z: JWT Callback started
+2025-01-15T23:04:30.510Z: Session Callback started
+2025-01-15T23:04:30.511Z: Session updated with token data
+2025-01-15T23:04:45.224Z: JWT Callback started
+2025-01-15T23:04:45.224Z: Session Callback started
+2025-01-15T23:04:45.225Z: Session updated with token data
+2025-01-15T23:05:04.148Z: JWT Callback started
+2025-01-15T23:05:04.149Z: Session Callback started
+2025-01-15T23:05:04.149Z: Session updated with token data
+2025-01-15T23:05:15.099Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:05:15.099Z: Auth Secret exists: true
+2025-01-15T23:05:15.115Z: JWT Callback started
+2025-01-15T23:05:15.115Z: Session Callback started
+2025-01-15T23:05:15.116Z: Session updated with token data
+2025-01-15T23:05:24.274Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:05:24.274Z: Auth Secret exists: true
+2025-01-15T23:05:24.310Z: JWT Callback started
+2025-01-15T23:05:24.310Z: Session Callback started
+2025-01-15T23:05:24.311Z: Session updated with token data
+2025-01-15T23:07:10.208Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:07:10.209Z: Auth Secret exists: true
+2025-01-15T23:07:10.226Z: JWT Callback started
+2025-01-15T23:07:10.227Z: Session Callback started
+2025-01-15T23:07:10.227Z: Session updated with token data
+2025-01-15T23:07:31.312Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:07:31.312Z: Auth Secret exists: true
+2025-01-15T23:07:31.332Z: JWT Callback started
+2025-01-15T23:07:31.332Z: Session Callback started
+2025-01-15T23:07:31.333Z: Session updated with token data
+2025-01-15T23:08:03.293Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:08:03.293Z: Auth Secret exists: true
+2025-01-15T23:08:03.324Z: JWT Callback started
+2025-01-15T23:08:03.325Z: Session Callback started
+2025-01-15T23:08:03.326Z: Session updated with token data
+2025-01-15T23:09:36.814Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:09:36.814Z: Auth Secret exists: true
+2025-01-15T23:09:36.832Z: JWT Callback started
+2025-01-15T23:09:36.832Z: Session Callback started
+2025-01-15T23:09:36.833Z: Session updated with token data
+2025-01-15T23:09:47.612Z: JWT Callback started
+2025-01-15T23:09:47.612Z: Session Callback started
+2025-01-15T23:09:47.613Z: Session updated with token data
+2025-01-15T23:10:18.064Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:10:18.064Z: Auth Secret exists: true
+2025-01-15T23:10:18.081Z: JWT Callback started
+2025-01-15T23:10:18.081Z: Session Callback started
+2025-01-15T23:10:18.082Z: Session updated with token data
+2025-01-15T23:10:28.850Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:10:28.851Z: Auth Secret exists: true
+2025-01-15T23:10:28.882Z: JWT Callback started
+2025-01-15T23:10:28.882Z: Session Callback started
+2025-01-15T23:10:28.883Z: Session updated with token data
+2025-01-15T23:13:26.304Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:13:26.304Z: Auth Secret exists: true
+2025-01-15T23:13:26.323Z: JWT Callback started
+2025-01-15T23:13:26.324Z: Session Callback started
+2025-01-15T23:13:26.324Z: Session updated with token data
+2025-01-15T23:13:44.711Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:13:44.712Z: Auth Secret exists: true
+2025-01-15T23:13:44.728Z: JWT Callback started
+2025-01-15T23:13:44.728Z: Session Callback started
+2025-01-15T23:13:44.729Z: Session updated with token data
+2025-01-15T23:13:53.377Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:13:53.378Z: Auth Secret exists: true
+2025-01-15T23:13:53.421Z: JWT Callback started
+2025-01-15T23:13:53.422Z: Session Callback started
+2025-01-15T23:13:53.423Z: Session updated with token data
+2025-01-15T23:15:31.716Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:15:31.716Z: Auth Secret exists: true
+2025-01-15T23:15:31.734Z: JWT Callback started
+2025-01-15T23:15:31.735Z: Session Callback started
+2025-01-15T23:15:31.736Z: Session updated with token data
+2025-01-15T23:15:43.413Z: JWT Callback started
+2025-01-15T23:15:43.413Z: Session Callback started
+2025-01-15T23:15:43.414Z: Session updated with token data
+2025-01-15T23:15:54.861Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:15:54.862Z: Auth Secret exists: true
+2025-01-15T23:15:54.877Z: JWT Callback started
+2025-01-15T23:15:54.877Z: Session Callback started
+2025-01-15T23:15:54.878Z: Session updated with token data
+2025-01-15T23:16:02.524Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:16:02.524Z: Auth Secret exists: true
+2025-01-15T23:16:02.553Z: JWT Callback started
+2025-01-15T23:16:02.554Z: Session Callback started
+2025-01-15T23:16:02.554Z: Session updated with token data
+2025-01-15T23:17:49.819Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:17:49.819Z: Auth Secret exists: true
+2025-01-15T23:17:49.836Z: JWT Callback started
+2025-01-15T23:17:49.837Z: Session Callback started
+2025-01-15T23:17:49.837Z: Session updated with token data
+2025-01-15T23:17:56.286Z: JWT Callback started
+2025-01-15T23:17:56.286Z: Session Callback started
+2025-01-15T23:17:56.287Z: Session updated with token data
+2025-01-15T23:18:05.246Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:18:05.247Z: Auth Secret exists: true
+2025-01-15T23:18:05.264Z: JWT Callback started
+2025-01-15T23:18:05.264Z: Session Callback started
+2025-01-15T23:18:05.265Z: Session updated with token data
+2025-01-15T23:18:13.887Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:18:13.887Z: Auth Secret exists: true
+2025-01-15T23:18:13.917Z: JWT Callback started
+2025-01-15T23:18:13.918Z: Session Callback started
+2025-01-15T23:18:13.919Z: Session updated with token data
+2025-01-15T23:20:13.403Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:20:13.403Z: Auth Secret exists: true
+2025-01-15T23:20:13.425Z: JWT Callback started
+2025-01-15T23:20:13.425Z: Session Callback started
+2025-01-15T23:20:13.426Z: Session updated with token data
+2025-01-15T23:20:23.222Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:20:23.223Z: Auth Secret exists: true
+2025-01-15T23:20:23.236Z: JWT Callback started
+2025-01-15T23:20:23.236Z: Session Callback started
+2025-01-15T23:20:23.237Z: Session updated with token data
+2025-01-15T23:21:27.412Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:21:27.412Z: Auth Secret exists: true
+2025-01-15T23:21:27.433Z: JWT Callback started
+2025-01-15T23:21:27.433Z: Session Callback started
+2025-01-15T23:21:27.435Z: Session updated with token data
+2025-01-15T23:21:43.362Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:21:43.363Z: Auth Secret exists: true
+2025-01-15T23:21:43.380Z: JWT Callback started
+2025-01-15T23:21:43.381Z: Session Callback started
+2025-01-15T23:21:43.382Z: Session updated with token data
+2025-01-15T23:22:00.996Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:22:00.996Z: Auth Secret exists: true
+2025-01-15T23:22:01.036Z: JWT Callback started
+2025-01-15T23:22:01.037Z: Session Callback started
+2025-01-15T23:22:01.038Z: Session updated with token data
+2025-01-15T23:24:06.963Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:24:06.963Z: Auth Secret exists: true
+2025-01-15T23:24:06.983Z: JWT Callback started
+2025-01-15T23:24:06.983Z: Session Callback started
+2025-01-15T23:24:06.984Z: Session updated with token data
+2025-01-15T23:24:26.333Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:24:26.333Z: Auth Secret exists: true
+2025-01-15T23:24:26.348Z: JWT Callback started
+2025-01-15T23:24:26.348Z: Session Callback started
+2025-01-15T23:24:26.349Z: Session updated with token data
+2025-01-15T23:24:38.668Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:24:38.668Z: Auth Secret exists: true
+2025-01-15T23:24:38.705Z: JWT Callback started
+2025-01-15T23:24:38.706Z: Session Callback started
+2025-01-15T23:24:38.708Z: Session updated with token data
+2025-01-15T23:29:31.889Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:29:31.889Z: Auth Secret exists: true
+2025-01-15T23:29:31.907Z: JWT Callback started
+2025-01-15T23:29:31.907Z: Session Callback started
+2025-01-15T23:29:31.908Z: Session updated with token data
+2025-01-15T23:29:57.253Z: JWT Callback started
+2025-01-15T23:29:57.253Z: Session Callback started
+2025-01-15T23:29:57.254Z: Session updated with token data
+2025-01-15T23:30:33.948Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:30:33.948Z: Auth Secret exists: true
+2025-01-15T23:30:33.969Z: JWT Callback started
+2025-01-15T23:30:33.969Z: Session Callback started
+2025-01-15T23:30:33.970Z: Session updated with token data
+2025-01-15T23:30:41.706Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:30:41.706Z: Auth Secret exists: true
+2025-01-15T23:30:41.746Z: JWT Callback started
+2025-01-15T23:30:41.746Z: Session Callback started
+2025-01-15T23:30:41.747Z: Session updated with token data
+2025-01-15T23:33:44.843Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:33:44.843Z: Auth Secret exists: true
+2025-01-15T23:33:44.859Z: JWT Callback started
+2025-01-15T23:33:44.859Z: Session Callback started
+2025-01-15T23:33:44.860Z: Session updated with token data
+2025-01-15T23:34:05.053Z: JWT Callback started
+2025-01-15T23:34:05.053Z: Session Callback started
+2025-01-15T23:34:05.054Z: Session updated with token data
+2025-01-15T23:34:38.807Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-15T23:34:38.808Z: Auth Secret exists: true
+2025-01-15T23:34:38.823Z: JWT Callback started
+2025-01-15T23:34:38.823Z: Session Callback started
+2025-01-15T23:34:38.825Z: Session updated with token data
+2025-01-16T15:46:04.261Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-16T15:46:04.262Z: Auth Secret exists: true
+2025-01-16T15:57:47.556Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-16T15:57:47.558Z: Auth Secret exists: true
+2025-01-16T16:24:00.642Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-16T16:24:00.643Z: Auth Secret exists: true
+2025-01-16T16:24:00.771Z: JWT Callback started
+2025-01-16T16:24:00.773Z: Session Callback started
+2025-01-16T16:24:00.775Z: Session updated with token data
+2025-01-16T19:21:20.695Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-16T19:21:20.696Z: Auth Secret exists: true
+2025-01-16T19:21:20.723Z: JWT Callback started
+2025-01-16T19:21:20.724Z: Session Callback started
+2025-01-16T19:21:20.725Z: Session updated with token data
+2025-01-17T12:25:49.916Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-17T12:25:49.916Z: Auth Secret exists: true
+2025-01-17T12:25:49.929Z: JWT Callback started
+2025-01-17T12:25:49.929Z: Session Callback started
+2025-01-17T12:25:49.931Z: Session updated with token data
+2025-01-17T13:50:59.966Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-17T13:50:59.967Z: Auth Secret exists: true
+2025-01-17T13:50:59.984Z: JWT Callback started
+2025-01-17T13:50:59.985Z: Session Callback started
+2025-01-17T13:50:59.986Z: Session updated with token data
+2025-01-17T14:06:50.910Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-17T14:06:50.911Z: Auth Secret exists: true
+2025-01-17T14:06:50.924Z: JWT Callback started
+2025-01-17T14:06:50.926Z: Session Callback started
+2025-01-17T14:06:50.927Z: Session updated with token data
+2025-01-17T14:07:14.424Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-17T14:07:14.424Z: Auth Secret exists: true
+2025-01-17T14:07:14.727Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-17T14:07:14.727Z: Auth Secret exists: true
+2025-01-17T14:07:14.737Z: JWT Callback started
+2025-01-17T14:07:14.738Z: Session Callback started
+2025-01-17T14:07:14.740Z: Session updated with token data
+2025-01-17T14:07:14.741Z: JWT Callback started
+2025-01-17T14:07:14.741Z: Session Callback started
+2025-01-17T14:07:14.743Z: Session updated with token data
+2025-01-17T14:07:14.744Z: JWT Callback started
+2025-01-17T14:07:14.745Z: Session Callback started
+2025-01-17T14:07:14.745Z: Session updated with token data
+2025-01-17T14:07:14.747Z: JWT Callback started
+2025-01-17T14:07:14.747Z: Session Callback started
+2025-01-17T14:07:14.748Z: Session updated with token data
+2025-01-17T14:07:14.749Z: JWT Callback started
+2025-01-17T14:07:14.749Z: Session Callback started
+2025-01-17T14:07:14.749Z: Session updated with token data
+2025-01-17T14:07:14.750Z: JWT Callback started
+2025-01-17T14:07:14.751Z: Session Callback started
+2025-01-17T14:07:14.751Z: Session updated with token data
+2025-01-17T14:07:14.932Z: JWT Callback started
+2025-01-17T14:07:14.933Z: Session Callback started
+2025-01-17T14:07:14.934Z: Session updated with token data
+2025-01-17T14:07:14.948Z: JWT Callback started
+2025-01-17T14:07:14.948Z: Session Callback started
+2025-01-17T14:07:14.949Z: Session updated with token data
+2025-01-17T14:07:15.029Z: JWT Callback started
+2025-01-17T14:07:15.029Z: Session Callback started
+2025-01-17T14:07:15.030Z: Session updated with token data
+2025-01-17T14:07:15.085Z: JWT Callback started
+2025-01-17T14:07:15.085Z: Session Callback started
+2025-01-17T14:07:15.086Z: Session updated with token data
+2025-01-17T14:07:15.087Z: JWT Callback started
+2025-01-17T14:07:15.088Z: Session Callback started
+2025-01-17T14:07:15.089Z: Session updated with token data
+2025-01-17T14:07:15.238Z: Starting auth service with URL: https://wupeyfswdaimqrllobgo.supabase.co
+2025-01-17T14:07:15.239Z: Auth Secret exists: true

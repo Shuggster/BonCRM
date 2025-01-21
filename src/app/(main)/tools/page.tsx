@@ -15,12 +15,14 @@ import {
   Search,
   ListFilter,
   Download,
-  Wrench
+  Wrench,
+  FolderOpen
 } from 'lucide-react'
 import { PageHeader } from "@/components/ui/page-header"
 import PageTransition from '@/components/animations/PageTransition'
 import { useSplitViewStore } from '@/components/layouts/SplitViewContainer'
 import { useRouter } from 'next/navigation'
+import { FileManagerPreview } from './file-manager/FileManagerPreview'
 
 const tools = [
   {
@@ -76,6 +78,20 @@ const tools = [
     icon: Zap,
     color: 'from-yellow-500/30 to-yellow-500/10 hover:from-yellow-500/40 hover:to-yellow-500/20',
     comingSoon: true
+  },
+  {
+    id: 'file-manager',
+    name: 'File Manager',
+    description: 'Upload, manage and process your documents',
+    icon: FolderOpen,
+    color: 'from-cyan-500/30 to-cyan-500/10 hover:from-cyan-500/40 hover:to-cyan-500/20',
+    comingSoon: false,
+    features: [
+      { icon: Download, name: 'File Upload' },
+      { icon: Search, name: 'Document Search' },
+      { icon: Brain, name: 'AI Processing' },
+      { icon: ListFilter, name: 'File Organization' }
+    ]
   }
 ]
 
@@ -192,6 +208,10 @@ export default function ToolsPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {tool.id === 'file-manager' && (
+            <FileManagerPreview />
           )}
         </div>
       </motion.div>

@@ -1,0 +1,198 @@
+2025-01-17T22:49:19.540Z: === Server: Starting File Processing ===
+2025-01-17T22:49:19.540Z: Server: Request headers: {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  "content-length": "49",
+  "content-type": "application/json",
+  "cookie": "next-auth.csrf-token=5cbca477b04a45cf0f366f9964c15cded1c49dffb3c5c431023b34cf2d5c3e11%7C76cdfe19f8f2d13b86839114f12210a711993093e263f7c576ef24a63ca62bf9; next-auth.callback-url=http%3A%2F%2Flocalhost%3A3002%2Flogin; next-auth.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..25IKBz3X7j65ox5N.J3t1IDbgsOhS2ANFQ0k6OQa2fF-WVBv5PuC69xUi7RCLuMN3Naq6Fs49E2I_v3Zy1VjMZu5jiBHMgdbuXUlf4KcyHAiqqUNoKGgEtIriRhiaJL4IypC8Mylx-jEdJBYXkzXdJTIGvsQI7P5kw4g19p09iTzIevIY5vTbAzinGI-t_7x_-QmRIH79-CmZq_ZDC7sm1nr0bhtRQNF9DbGMbfC7sHnnuagqDaTkJ7AmEwx8NwhHRIwR9lGiI6IUsPcpyOV6sNme8kHWRQzQuTGAAZD65ruvTSDrEQULBT8t-xX3bzKx9DZm5B0oJMjQY309gEWcGLzTrLS1aes2hV4C7MU.gOIdAG9g4yEVATLXxIm-WA",
+  "host": "localhost:3002",
+  "origin": "http://localhost:3002",
+  "pragma": "no-cache",
+  "referer": "http://localhost:3002/tools/file-manager",
+  "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "x-forwarded-for": "::1",
+  "x-forwarded-host": "localhost:3002",
+  "x-forwarded-port": "3002",
+  "x-forwarded-proto": "http"
+}
+2025-01-17T22:49:19.551Z: Server: Request body: {
+  "fileId": "e031a6c1-020e-42d3-a0b4-3925a40c767b"
+}
+2025-01-17T22:49:19.551Z: Server: Sending response: {
+  "success": true,
+  "message": "Got request with body: {\"fileId\":\"e031a6c1-020e-42d3-a0b4-3925a40c767b\"}"
+}
+2025-01-17T22:49:28.877Z: === Server: Starting File Processing ===
+2025-01-17T22:49:28.877Z: Server: Request headers: {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  "content-length": "49",
+  "content-type": "application/json",
+  "cookie": "next-auth.csrf-token=5cbca477b04a45cf0f366f9964c15cded1c49dffb3c5c431023b34cf2d5c3e11%7C76cdfe19f8f2d13b86839114f12210a711993093e263f7c576ef24a63ca62bf9; next-auth.callback-url=http%3A%2F%2Flocalhost%3A3002%2Flogin; next-auth.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..FYMP-Sw8So6mhTwZ.PjinpZxAH48XgBjvoDMQsycGWn0tyb5ERltM7aYJSOfrcqS9pMy8B1LEaWmG2iZUhAp4WqmDJgFQlw09Gq4OSyHlTx7eb5m6Y_6kKmtV5PWBaJX8y7JV0t5xb1BSwiK8vELvvxMKJeFHGBHrSMJJ7JCST0NCFaWBz_b9kHXIJ0FuI-sW344IevTkJrupYtIwWSIHWIzlngRSu8WdgrmkWVy2orbN45sIITaMio6TXPZtztNLT2Pog-AzXIpe_OoAweln0JH2-jOnUkzzZGROtdKbDgPGtDxVMOZKPoeOGp2nCNBHiM3mCTjqtWIk7pNnsKbGR9NPo6SIv95AE3uCbiY.88PPXAuKYnQxJlT8rJ1uSQ",
+  "host": "localhost:3002",
+  "origin": "http://localhost:3002",
+  "pragma": "no-cache",
+  "referer": "http://localhost:3002/tools/file-manager",
+  "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "x-forwarded-for": "::1",
+  "x-forwarded-host": "localhost:3002",
+  "x-forwarded-port": "3002",
+  "x-forwarded-proto": "http"
+}
+2025-01-17T22:49:28.880Z: Server: Request body: {
+  "fileId": "e031a6c1-020e-42d3-a0b4-3925a40c767b"
+}
+2025-01-17T22:49:28.881Z: Server: Sending response: {
+  "success": true,
+  "message": "Got request with body: {\"fileId\":\"e031a6c1-020e-42d3-a0b4-3925a40c767b\"}"
+}
+2025-01-17T22:52:41.454Z: === Server: Starting File Processing ===
+2025-01-17T22:52:41.455Z: Server: Request headers: {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  "content-length": "49",
+  "content-type": "application/json",
+  "cookie": "next-auth.csrf-token=5cbca477b04a45cf0f366f9964c15cded1c49dffb3c5c431023b34cf2d5c3e11%7C76cdfe19f8f2d13b86839114f12210a711993093e263f7c576ef24a63ca62bf9; next-auth.callback-url=http%3A%2F%2Flocalhost%3A3002%2Flogin; next-auth.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..NwCAvwuznsVqE0H2.U_scvCnIzrIlHiNb2BEt58qS75YJfVE-k2n1CMiHZz4CGl46cnOZ-XYMfY1g6eYFgHPzBacCbMw0ji_CBMtxyAwjvZCtjisOiVilTzDDNskrGZg5iFVTS9mOaPvmJqehKV86y1OtDRboKKtDMPnw7avyJBK4zNEnqMqBcALBq7Qrp0CZDRN7BGpzM46S08vEMUKSPpyJgWRQQ3aGLIBfC8nhUL2kGoqkAgJPhX1bqzRrXlOO60hLUpLyjdUGjKdhJrz4srwmLozT54cBKe1man9ipDPeiI0Sgkw6--j8q3W9DBU5fEm6YTl6ghX3ZFRAYfz8ROK_NShvuM_Xb0dQDb8.XbsDa76t_Ea3f1UIdsaSmg",
+  "host": "localhost:3002",
+  "origin": "http://localhost:3002",
+  "pragma": "no-cache",
+  "referer": "http://localhost:3002/tools/file-manager",
+  "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "x-forwarded-for": "::1",
+  "x-forwarded-host": "localhost:3002",
+  "x-forwarded-port": "3002",
+  "x-forwarded-proto": "http"
+}
+2025-01-17T22:52:41.460Z: Server: Request body: {
+  "fileId": "e031a6c1-020e-42d3-a0b4-3925a40c767b"
+}
+2025-01-17T22:52:41.460Z: Server: Sending response: {
+  "success": true,
+  "message": "Got request with body: {\"fileId\":\"e031a6c1-020e-42d3-a0b4-3925a40c767b\"}"
+}
+2025-01-17T22:52:52.248Z: === Server: Starting File Processing ===
+2025-01-17T22:52:52.250Z: Server: Request headers: {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  "content-length": "49",
+  "content-type": "application/json",
+  "cookie": "next-auth.csrf-token=5cbca477b04a45cf0f366f9964c15cded1c49dffb3c5c431023b34cf2d5c3e11%7C76cdfe19f8f2d13b86839114f12210a711993093e263f7c576ef24a63ca62bf9; next-auth.callback-url=http%3A%2F%2Flocalhost%3A3002%2Flogin; next-auth.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..aCgC5GYSNqDJ1JR0.rk0P6wBEqYEpvFDz7-WuaVL2gPFgSfBsDVR0l69Bw8MgvvsWobYQEvpiW6Xf48DiIN2iUlnf-pPORCCcQDLbLVG9png6kLTYsL75e_pjtfOzaH_8wIvOrfbz7gGCW-NDTcGZEkyywVneJvStm9N8c9BUvh3E8YpgxhmFjdOFgqOmBxn4aW6KtBH63mtPVkITsfQ7P4B0mvkr4DIVoDdCgHQJkOyBI5fWvTi9v2deAC_ErAsFNxFm-ExF_Xi9NgFVbbpvL9UqaJGBH0cuus4YsMef1Lr7aApfbiBzrNA11O8kMZoUHRxSUc7tgnRv9OPrMQxp1sEJFmftdADwJboCnHQ.qQQRjCSBE-hydv3wUuOXGg",
+  "host": "localhost:3002",
+  "origin": "http://localhost:3002",
+  "pragma": "no-cache",
+  "referer": "http://localhost:3002/tools/file-manager",
+  "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "x-forwarded-for": "::1",
+  "x-forwarded-host": "localhost:3002",
+  "x-forwarded-port": "3002",
+  "x-forwarded-proto": "http"
+}
+2025-01-17T22:52:52.255Z: Server: Request body: {
+  "fileId": "e031a6c1-020e-42d3-a0b4-3925a40c767b"
+}
+2025-01-17T22:52:52.256Z: Server: Sending response: {
+  "success": true,
+  "message": "Got request with body: {\"fileId\":\"e031a6c1-020e-42d3-a0b4-3925a40c767b\"}"
+}
+2025-01-17T22:52:57.695Z: === Server: Starting File Processing ===
+2025-01-17T22:52:57.697Z: Server: Request headers: {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  "content-length": "49",
+  "content-type": "application/json",
+  "cookie": "next-auth.csrf-token=5cbca477b04a45cf0f366f9964c15cded1c49dffb3c5c431023b34cf2d5c3e11%7C76cdfe19f8f2d13b86839114f12210a711993093e263f7c576ef24a63ca62bf9; next-auth.callback-url=http%3A%2F%2Flocalhost%3A3002%2Flogin; next-auth.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..ziFLq1jtUf5xl3M_.udSVADwvfa2ponV0PqV5P1wro_xvHmfwbmIwAG958l4gxC9M7IN71WFSXdKrNNKUAEZHhh6zQkKYGRrvcd4Dz0dvcfcuQd9T7N2T5NdcwF4un-hrt5x5tgsAgUW8yK5sQ1O504eKOcZEsdMltI-7KRRQWgl_IDuoLazPmv3OBnSO7CaqE6NBPsXqSXeaIFFlUDTl8GEt-uzuLkEDShcDtImj6g_6O2sp9_XgHtiESLIFN23hsYfs5R2Imk7PX5qyNVAtUE4Zr8_d1vVrOimV4MSB8ZMyEwYSuV35IXR5JKd9xOxgEHImwjo6UC1cdiUMyjr7iBiZycAF2Gypn7TmheM.ZCQf4kCzD1k98KX_ekozhQ",
+  "host": "localhost:3002",
+  "origin": "http://localhost:3002",
+  "pragma": "no-cache",
+  "referer": "http://localhost:3002/tools/file-manager",
+  "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "x-forwarded-for": "::1",
+  "x-forwarded-host": "localhost:3002",
+  "x-forwarded-port": "3002",
+  "x-forwarded-proto": "http"
+}
+2025-01-17T22:52:57.702Z: Server: Request body: {
+  "fileId": "70dceb20-7510-4c4d-b745-df2b9d3c58f1"
+}
+2025-01-17T22:52:57.705Z: Server: Sending response: {
+  "success": true,
+  "message": "Got request with body: {\"fileId\":\"70dceb20-7510-4c4d-b745-df2b9d3c58f1\"}"
+}
+2025-01-17T22:53:11.152Z: === Server: Starting File Processing ===
+2025-01-17T22:53:11.152Z: Server: Request headers: {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-GB,en;q=0.9,en-US;q=0.8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  "content-length": "49",
+  "content-type": "application/json",
+  "cookie": "next-auth.csrf-token=5cbca477b04a45cf0f366f9964c15cded1c49dffb3c5c431023b34cf2d5c3e11%7C76cdfe19f8f2d13b86839114f12210a711993093e263f7c576ef24a63ca62bf9; next-auth.callback-url=http%3A%2F%2Flocalhost%3A3002%2Flogin; next-auth.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..tUEA9aZBHEMSrnIf.eiNSSYbkQkfCiSgvIkHRcVosBfXk2Av5efWRm_r-jENZtiH0AdIvzP02ZrqVc3Vsj0zBzVLDqcLOOdW6LLiZ7PBLOfg3ELxqtWdKePbmx5vrQZyRr7P8tobKLQ2JIYmn3Tb2s44rvcVu99MRsdMMfklA8eXmK_dBh62r48PlntV30EFXYynYqSL84DVbtq2osprdpVhS0Ml-Hgw1n-7O2_l94mfbp9AUmXJroWNevX0Rgq0tkrxBMYYI8xQlLjMsrxXdUbaihNE1w714eNO3Ke4rXg37ZVX6fOMonW3Yk6j0bxtbTgsSyBoGN79liEA1EID_AdEXpJMLFV8PdXdfJKM.G6UyXuCiA08NVqjWACXW-w",
+  "host": "localhost:3002",
+  "origin": "http://localhost:3002",
+  "pragma": "no-cache",
+  "referer": "http://localhost:3002/tools/file-manager",
+  "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "x-forwarded-for": "::1",
+  "x-forwarded-host": "localhost:3002",
+  "x-forwarded-port": "3002",
+  "x-forwarded-proto": "http"
+}
+2025-01-17T22:53:11.161Z: Server: Request body: {
+  "fileId": "70dceb20-7510-4c4d-b745-df2b9d3c58f1"
+}
+2025-01-17T22:53:11.163Z: Server: Sending response: {
+  "success": true,
+  "message": "Got request with body: {\"fileId\":\"70dceb20-7510-4c4d-b745-df2b9d3c58f1\"}"
+}

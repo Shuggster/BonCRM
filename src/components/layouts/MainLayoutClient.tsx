@@ -1,13 +1,12 @@
 'use client'
 
-import { Sidebar } from '@/components/navigation/Sidebar'
+import Sidebar from '@/components/layout/Sidebar'
 import { SplitViewContainer, SplitViewPersistence } from '@/components/layouts/SplitViewContainer'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { pageVariants } from '@/lib/animations'
-import { Toaster } from "@/components/ui/toaster"
 
-export default function MainLayout({
+export function MainLayoutClient({
   children,
 }: {
   children: React.ReactNode
@@ -42,7 +41,6 @@ export default function MainLayout({
           <SplitViewPersistence />
         </div>
       </div>
-      <Toaster />
     </>
   )
-}
+} 

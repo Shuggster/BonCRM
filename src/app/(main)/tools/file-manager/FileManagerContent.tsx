@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation"
 import { documentService } from '@/features/document-management/services/document-service'
 import { Button } from "@/components/ui/button"
 import { PDFScriptLoader } from "@/components/pdf-script-loader"
+import { Toast } from "@/components/ui/toast"
 
 // Custom hook to check if we're on the file manager page
 function useIsFileManagerPage() {
@@ -37,12 +38,30 @@ interface FileItemProps {
   file: FileRecord;
   onDelete: (path: string) => void;
   onDownload: (path: string) => void;
-  onProcess?: (path: string) => void;
+  onProcess?: (path: string, fileName: string) => void;
+  toast: ReturnType<typeof useToast>["toast"];
 }
 
-function FileItem({ file, onDelete, onDownload, onProcess }: FileItemProps) {
+function FileItem({ file, onDelete, onDownload, onProcess, toast }: FileItemProps) {
   const isPDF = file.name.toLowerCase().endsWith('.pdf');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const handleProcessFile = async () => {
+    try {
+      setIsProcessing(true);
+      console.log('Starting file processing:', file.name);
+
+      if (onProcess) {
+        await onProcess(file.path, file.name);
+      }
+      
+      console.log('File processed successfully:', file.name);
+    } catch (error) {
+      console.error('Error processing file:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   
   return (
     <div className="flex items-center justify-between p-2 hover:bg-gray-50">
@@ -52,17 +71,10 @@ function FileItem({ file, onDelete, onDownload, onProcess }: FileItemProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={async () => {
-              setIsProcessing(true);
-              try {
-                await onProcess(file.path);
-              } finally {
-                setIsProcessing(false);
-              }
-            }}
+            onClick={handleProcessFile}
             disabled={isProcessing}
           >
-            {isProcessing ? 'Processing...' : 'Process'}
+            {isProcessing ? 'Analyzing...' : 'Process'}
           </Button>
         )}
         <Button
@@ -125,9 +137,7 @@ export function FileManagerContent() {
       setFiles(processedFiles)
     } catch (error) {
       console.error('Error fetching files:', error)
-      toast({
-        description: "Could not load files"
-      })
+      toast("Could not load files")
     } finally {
       setLoading(false)
     }
@@ -149,14 +159,10 @@ export function FileManagerContent() {
       a.click()
       URL.revokeObjectURL(url)
       
-      toast({
-        description: "File downloaded successfully"
-      })
+      toast("File downloaded successfully")
     } catch (error) {
       console.error('Error downloading file:', error)
-      toast({
-        description: "Could not download file"
-      })
+      toast("Could not download file")
     }
   }
 
@@ -164,50 +170,31 @@ export function FileManagerContent() {
     try {
       await fileService.deleteFile(folderName, path)
       await fetchFiles()
-      toast({
-        description: "File deleted successfully"
-      })
+      toast("File deleted successfully")
     } catch (error) {
       console.error('Error deleting file:', error)
-      toast({
-        description: "Could not delete file"
-      })
+      toast("Could not delete file")
     }
   }
 
-  const handleProcessFile = async (path: string) => {
+  const handleProcessFile = async (filePath: string, fileName: string) => {
+    if (!userId) {
+      toast("User not authenticated");
+      return;
+    }
+
     try {
-      if (typeof window === 'undefined' || !window.pdfjsLib) {
-        toast({
-          title: "Error",
-          description: 'Please wait for PDF.js to load and try again',
-          variant: "destructive"
-        });
-        return;
-      }
+      toast("Starting file analysis...");
 
-      if (!userId) {
-        toast({
-          title: "Error",
-          description: 'User not authenticated',
-          variant: "destructive"
-        });
-        return;
-      }
+      await documentService.processPDFFile(filePath, fileName, userId);
+      
+      toast("Processing document...");
 
-      await documentService.processPDFFile(path, path, userId);
-      toast({
-        title: "Success",
-        description: 'File processed successfully',
-        variant: "default"
-      });
+      // Final success toast
+      toast(`File "${fileName}" processed successfully`);
     } catch (error) {
       console.error('Error processing file:', error);
-      toast({
-        title: "Error",
-        description: `Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
+      toast(error instanceof Error ? error.message : 'Error processing file');
     }
   };
 
@@ -256,14 +243,10 @@ export function FileManagerContent() {
             })
             
             await fetchFiles()
-            toast({
-              description: "File uploaded successfully"
-            })
+            toast("File uploaded successfully")
           } catch (error) {
             console.error('Error uploading file:', error)
-            toast({
-              description: "Could not upload file"
-            })
+            toast("Could not upload file")
           }
         }}
       />
@@ -281,6 +264,7 @@ export function FileManagerContent() {
               onDelete={handleDelete}
               onDownload={handleDownload}
               onProcess={handleProcessFile}
+              toast={toast}
             />
           ))
         )}

@@ -25,6 +25,11 @@ export class DocumentService {
     for (const word of words) {
       if ((currentChunk + ' ' + word).length > this.CHUNK_SIZE && currentChunk.length > 0) {
         chunks.push(currentChunk.trim());
+        console.log(`Created chunk ${chunks.length}:`, {
+          length: currentChunk.trim().length,
+          preview: currentChunk.trim().substring(0, 50) + '...',
+          endsWithPunctuation: /[.!?]$/.test(currentChunk.trim())
+        });
         currentChunk = word;
       } else {
         currentChunk += (currentChunk.length > 0 ? ' ' : '') + word;
@@ -33,9 +38,52 @@ export class DocumentService {
 
     if (currentChunk.length > 0) {
       chunks.push(currentChunk.trim());
+      console.log(`Created final chunk ${chunks.length}:`, {
+        length: currentChunk.trim().length,
+        preview: currentChunk.trim().substring(0, 50) + '...',
+        endsWithPunctuation: /[.!?]$/.test(currentChunk.trim())
+      });
     }
 
+    console.log('Chunking summary:', {
+      totalChunks: chunks.length,
+      averageChunkLength: chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length,
+      shortestChunk: Math.min(...chunks.map(chunk => chunk.length)),
+      longestChunk: Math.max(...chunks.map(chunk => chunk.length))
+    });
+
     return chunks;
+  }
+
+  private async generateEmbedding(text: string): Promise<number[]> {
+    try {
+      console.log('Sending text for embedding:', text.substring(0, 100) + '...');
+      
+      const response = await fetch('/api/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Error response from embeddings API:', error);
+        throw new Error(`Error generating embedding: ${error}`);
+      }
+
+      const data = await response.json();
+      if (!data.data?.[0]?.embedding) {
+        console.error('Unexpected response format:', data);
+        throw new Error('Invalid embedding response format');
+      }
+
+      return data.data[0].embedding;
+    } catch (error) {
+      console.error('Error in generateEmbedding:', error);
+      throw error;
+    }
   }
 
   async processPDFFile(fileUrl: string, fileName: string, userId: string): Promise<void> {
@@ -110,20 +158,24 @@ export class DocumentService {
         throw new Error('No document data received after insertion');
       }
 
-      // Create and store chunks
+      // Create and store chunks with embeddings
       const chunks = this.createChunks(fullText);
-      const chunkInserts = chunks.map((chunk, index) => ({
-        document_id: documentData.id,
-        content: chunk,
-        metadata: {
-          pageCount: pdfDoc.numPages,
-          chunkSize: this.CHUNK_SIZE,
-          totalChunks: chunks.length,
-          chunkIndex: index
-        },
-        user_id: userId,
-        team_id: null,
-        department: 'sales'
+      const chunkInserts = await Promise.all(chunks.map(async (chunk, index) => {
+        const embedding = await this.generateEmbedding(chunk);
+        return {
+          document_id: documentData.id,
+          content: chunk,
+          metadata: {
+            pageCount: pdfDoc.numPages,
+            chunkSize: this.CHUNK_SIZE,
+            totalChunks: chunks.length,
+            chunkIndex: index
+          },
+          user_id: userId,
+          team_id: null,
+          department: 'sales',
+          embedding
+        };
       }));
 
       const { error: chunksError } = await this.supabase
