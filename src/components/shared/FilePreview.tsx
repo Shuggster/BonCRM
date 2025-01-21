@@ -27,9 +27,13 @@ export function FilePreview({ file, isOpen, onClose }: FilePreviewProps) {
 
       setIsLoading(true)
       try {
+        // Ensure we're using the correct folder path
+        const filePath = file.path.startsWith('sales/') ? file.path : `sales/${file.path}`
+        console.log('Loading preview for path:', filePath)
+
         const { data, error } = await supabase.storage
           .from('files')
-          .download(file.path)
+          .download(filePath)
 
         if (error) throw error
 
@@ -110,16 +114,24 @@ export function FilePreview({ file, isOpen, onClose }: FilePreviewProps) {
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-4xl bg-zinc-900 p-6 shadow-lg rounded-lg border border-white/[0.08]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-lg font-semibold">
-              <FileText className="w-5 h-5" />
-              {file?.filename}
-            </div>
-            <Dialog.Close className="rounded-sm opacity-70 hover:opacity-100">
-              <X className="h-4 w-4" />
-            </Dialog.Close>
-          </div>
+        <Dialog.Content 
+          className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-4xl bg-zinc-900 p-6 shadow-lg rounded-lg border border-white/[0.08]"
+          aria-describedby="file-preview-description"
+        >
+          <Dialog.Title className="flex items-center gap-2 text-lg font-semibold mb-4">
+            <FileText className="w-5 h-5" />
+            {file?.filename}
+          </Dialog.Title>
+          
+          <Dialog.Description id="file-preview-description">
+            Preview of file: {file?.filename}. {file?.type ? `File type: ${file.type}` : ''}
+          </Dialog.Description>
+          
+          <Dialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Dialog.Close>
+          
           {renderPreview()}
         </Dialog.Content>
       </Dialog.Portal>

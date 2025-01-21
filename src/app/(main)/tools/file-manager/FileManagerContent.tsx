@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FileText, Download, Trash2 } from "lucide-react"
+import { FileText, Download, Trash2, Eye } from "lucide-react"
 import { formatBytes } from "@/lib/utils"
 import { FileUpload } from "@/components/ui/file-upload"
 import { useToast } from "@/components/ui/use-toast"
@@ -12,6 +12,7 @@ import { documentService } from '@/features/document-management/services/documen
 import { Button } from "@/components/ui/button"
 import { PDFScriptLoader } from "@/components/pdf-script-loader"
 import { Toast } from "@/components/ui/toast"
+import { FilePreview } from "@/components/shared/FilePreview"
 
 // Custom hook to check if we're on the file manager page
 function useIsFileManagerPage() {
@@ -39,10 +40,11 @@ interface FileItemProps {
   onDelete: (path: string) => void;
   onDownload: (path: string) => void;
   onProcess?: (path: string, fileName: string) => void;
+  onPreview: (file: FileRecord) => void;
   toast: ReturnType<typeof useToast>["toast"];
 }
 
-function FileItem({ file, onDelete, onDownload, onProcess, toast }: FileItemProps) {
+function FileItem({ file, onDelete, onDownload, onProcess, onPreview, toast }: FileItemProps) {
   const isPDF = file.name.toLowerCase().endsWith('.pdf');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -64,33 +66,57 @@ function FileItem({ file, onDelete, onDownload, onProcess, toast }: FileItemProp
   };
   
   return (
-    <div className="flex items-center justify-between p-2 hover:bg-gray-50">
-      <span className="flex-1 truncate">{file.name}</span>
-      <div className="flex gap-2">
-        {isPDF && onProcess && (
+    <div className="group px-6 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-[#111111] border border-white/[0.08] flex items-center justify-center">
+          <FileText className="w-5 h-5 text-zinc-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-white truncate">{file.name}</h3>
+          <p className="text-sm text-zinc-400 line-clamp-1">
+            {formatBytes(file.size)} • {new Date(file.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={handleProcessFile}
-            disabled={isProcessing}
+            onClick={() => onPreview(file)}
+            className="text-white/70 hover:text-white hover:bg-white/10"
           >
-            {isProcessing ? 'Analyzing...' : 'Process'}
+            <Eye className="w-4 h-4" />
+            <span className="sr-only">Preview</span>
           </Button>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onDownload(file.path)}
-        >
-          Download
-        </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => onDelete(file.path)}
-        >
-          Delete
-        </Button>
+          {isPDF && onProcess && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleProcessFile}
+              disabled={isProcessing}
+              className="text-white/70 hover:text-white hover:bg-white/10"
+            >
+              {isProcessing ? 'Analyzing...' : 'Process'}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDownload(file.path)}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <Download className="w-4 h-4" />
+            <span className="sr-only">Download</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(file.path)}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="sr-only">Delete</span>
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -106,6 +132,8 @@ export function FileManagerContent() {
 
   const [files, setFiles] = useState<FileRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedFile, setSelectedFile] = useState<FileRecord | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const { toast } = useToast()
   const { data: session, status } = useSession()
   const fileService = FileService.getInstance()
@@ -198,6 +226,11 @@ export function FileManagerContent() {
     }
   };
 
+  const handlePreview = (file: FileRecord) => {
+    setSelectedFile(file)
+    setIsPreviewOpen(true)
+  }
+
   useEffect(() => {
     let mounted = true
 
@@ -264,11 +297,26 @@ export function FileManagerContent() {
               onDelete={handleDelete}
               onDownload={handleDownload}
               onProcess={handleProcessFile}
+              onPreview={handlePreview}
               toast={toast}
             />
           ))
         )}
       </div>
+
+      <FilePreview
+        file={selectedFile ? {
+          filename: selectedFile.name,
+          type: selectedFile.metadata?.mimetype || '',
+          path: selectedFile.path,
+          size: selectedFile.size
+        } : null}
+        isOpen={isPreviewOpen}
+        onClose={() => {
+          setIsPreviewOpen(false)
+          setSelectedFile(null)
+        }}
+      />
     </div>
   )
 } 
