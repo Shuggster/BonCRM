@@ -8,6 +8,9 @@ import { useToast } from "@/components/ui/use-toast"
 import { useSession } from "next-auth/react"
 import { FileService } from "@/features/file-management/services/file-service"
 import { usePathname } from "next/navigation"
+import { documentService } from '@/features/document-management/services/document-service'
+import { Button } from "@/components/ui/button"
+import { PDFScriptLoader } from "@/components/pdf-script-loader"
 
 // Custom hook to check if we're on the file manager page
 function useIsFileManagerPage() {
@@ -28,6 +31,57 @@ interface FileRecord {
     size?: number
     mimetype?: string
   }
+}
+
+interface FileItemProps {
+  file: FileRecord;
+  onDelete: (path: string) => void;
+  onDownload: (path: string) => void;
+  onProcess?: (path: string) => void;
+}
+
+function FileItem({ file, onDelete, onDownload, onProcess }: FileItemProps) {
+  const isPDF = file.name.toLowerCase().endsWith('.pdf');
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  return (
+    <div className="flex items-center justify-between p-2 hover:bg-gray-50">
+      <span className="flex-1 truncate">{file.name}</span>
+      <div className="flex gap-2">
+        {isPDF && onProcess && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              setIsProcessing(true);
+              try {
+                await onProcess(file.path);
+              } finally {
+                setIsProcessing(false);
+              }
+            }}
+            disabled={isProcessing}
+          >
+            {isProcessing ? 'Processing...' : 'Process'}
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDownload(file.path)}
+        >
+          Download
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => onDelete(file.path)}
+        >
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function FileManagerContent() {
@@ -72,18 +126,21 @@ export function FileManagerContent() {
     } catch (error) {
       console.error('Error fetching files:', error)
       toast({
-        title: "Error",
-        description: "Could not load files",
-        variant: "destructive",
+        description: "Could not load files"
       })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDownload = async (file: FileRecord) => {
+  const handleDownload = async (path: string) => {
     try {
-      const data = await fileService.downloadFile(folderName, file.path)
+      const file = files.find(f => f.path === path);
+      if (!file) {
+        throw new Error('File not found');
+      }
+      
+      const data = await fileService.downloadFile(folderName, path)
       
       const url = URL.createObjectURL(data)
       const a = document.createElement('a')
@@ -93,38 +150,66 @@ export function FileManagerContent() {
       URL.revokeObjectURL(url)
       
       toast({
-        title: "Success",
-        description: "File downloaded successfully",
-        variant: "default",
+        description: "File downloaded successfully"
       })
     } catch (error) {
       console.error('Error downloading file:', error)
       toast({
-        title: "Error",
-        description: "Could not download file",
-        variant: "destructive",
+        description: "Could not download file"
       })
     }
   }
 
-  const handleDelete = async (file: FileRecord) => {
+  const handleDelete = async (path: string) => {
     try {
-      await fileService.deleteFile(folderName, file.path)
+      await fileService.deleteFile(folderName, path)
       await fetchFiles()
       toast({
-        title: "Success",
-        description: "File deleted successfully",
-        variant: "default",
+        description: "File deleted successfully"
       })
     } catch (error) {
       console.error('Error deleting file:', error)
       toast({
-        title: "Error",
-        description: "Could not delete file",
-        variant: "destructive",
+        description: "Could not delete file"
       })
     }
   }
+
+  const handleProcessFile = async (path: string) => {
+    try {
+      if (typeof window === 'undefined' || !window.pdfjsLib) {
+        toast({
+          title: "Error",
+          description: 'Please wait for PDF.js to load and try again',
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: 'User not authenticated',
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await documentService.processPDFFile(path, path, userId);
+      toast({
+        title: "Success",
+        description: 'File processed successfully',
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: "Error",
+        description: `Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     let mounted = true
@@ -149,6 +234,7 @@ export function FileManagerContent() {
 
   return (
     <div className="p-4">
+      <PDFScriptLoader />
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Files</h2>
         <div className="text-sm text-zinc-500">
@@ -171,16 +257,12 @@ export function FileManagerContent() {
             
             await fetchFiles()
             toast({
-              title: "Success",
-              description: "File uploaded successfully",
-              variant: "default",
+              description: "File uploaded successfully"
             })
           } catch (error) {
             console.error('Error uploading file:', error)
             toast({
-              title: "Error",
-              description: "Could not upload file",
-              variant: "destructive",
+              description: "Could not upload file"
             })
           }
         }}
@@ -193,34 +275,13 @@ export function FileManagerContent() {
           </div>
         ) : (
           files.map((file) => (
-            <div 
-              key={file.id}
-              className="flex items-center justify-between p-4 bg-white/5 rounded-lg"
-            >
-              <div className="flex items-center gap-4">
-                <FileText className="w-8 h-8 text-blue-400" />
-                <div>
-                  <h3 className="font-medium">{file.name}</h3>
-                  <p className="text-sm text-white/60">
-                    {formatBytes(file.size)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownload(file)}
-                  className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(file)}
-                  className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+            <FileItem
+              key={file.name}
+              file={file}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+              onProcess={handleProcessFile}
+            />
           ))
         )}
       </div>
