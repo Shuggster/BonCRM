@@ -6,7 +6,41 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { pageVariants } from '@/lib/animations'
 import { Toaster } from "@/components/ui/toaster"
-import { ShugBotProvider } from './components/ShugBot/ShugBotProvider'
+import dynamic from 'next/dynamic'
+import { memo } from 'react'
+
+// Dynamically import ShugBot with no SSR to prevent hydration issues
+const ShugBotProvider = dynamic(
+  () => import('./components/ShugBot/ShugBotProvider').then(mod => mod.ShugBotProvider),
+  { 
+    ssr: false,
+    loading: () => null // Don't show loading state to prevent layout shift
+  }
+)
+
+// Memoize the main content to prevent unnecessary re-renders
+const MainContent = memo(function MainContent({ 
+  children,
+  pathname
+}: { 
+  children: React.ReactNode
+  pathname: string 
+}) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.main
+        key={pathname}
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="h-full overflow-auto"
+      >
+        {children}
+      </motion.main>
+    </AnimatePresence>
+  )
+})
 
 export default function MainLayout({
   children,
@@ -23,18 +57,9 @@ export default function MainLayout({
         
         {/* Main Content Column */}
         <div className="flex-1 h-full overflow-hidden relative">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.main
-              key={pathname}
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="h-full overflow-auto"
-            >
-              {children}
-            </motion.main>
-          </AnimatePresence>
+          <MainContent pathname={pathname}>
+            {children}
+          </MainContent>
         </div>
 
         {/* Split View Column - Fixed width, separate from main content */}
