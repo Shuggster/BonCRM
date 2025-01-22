@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { pageVariants } from '@/lib/animations'
 import { Toaster } from "@/components/ui/toaster"
+import { ShugBotProvider } from './components/ShugBot/ShugBotProvider'
 
 export default function MainLayout({
   children,
@@ -43,6 +44,7 @@ export default function MainLayout({
         </div>
       </div>
       <Toaster />
+      <ShugBotProvider />
     </>
   )
 }
