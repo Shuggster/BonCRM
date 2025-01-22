@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { PDFScriptLoader } from "@/components/pdf-script-loader"
 import { Toast } from "@/components/ui/toast"
 import { FilePreview } from "@/components/shared/FilePreview"
+import { wordProcessor } from './processors/word-processor'
 
 // Custom hook to check if we're on the file manager page
 function useIsFileManagerPage() {
@@ -45,8 +46,12 @@ interface FileItemProps {
 }
 
 function FileItem({ file, onDelete, onDownload, onProcess, onPreview, toast }: FileItemProps) {
-  const isPDF = file.name.toLowerCase().endsWith('.pdf');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Check if file is processable (PDF or Word)
+  const isProcessable = file.name.toLowerCase().endsWith('.pdf') || 
+                       file.name.toLowerCase().endsWith('.docx') || 
+                       file.name.toLowerCase().endsWith('.doc');
   
   const handleProcessFile = async () => {
     try {
@@ -87,7 +92,7 @@ function FileItem({ file, onDelete, onDownload, onProcess, onPreview, toast }: F
             <Eye className="w-4 h-4" />
             <span className="sr-only">Preview</span>
           </Button>
-          {isPDF && onProcess && (
+          {isProcessable && onProcess && (
             <Button
               variant="ghost"
               size="sm"
@@ -214,11 +219,16 @@ export function FileManagerContent() {
     try {
       toast("Starting file analysis...");
 
-      await documentService.processPDFFile(filePath, fileName, userId);
+      const fileType = fileName.toLowerCase();
+      if (fileType.endsWith('.pdf')) {
+        await documentService.processPDFFile(filePath, fileName, userId);
+      } else if (fileType.endsWith('.docx') || fileType.endsWith('.doc')) {
+        await wordProcessor.processWordFile(filePath, fileName, userId);
+      } else {
+        throw new Error('Unsupported file type for processing');
+      }
       
       toast("Processing document...");
-
-      // Final success toast
       toast(`File "${fileName}" processed successfully`);
     } catch (error) {
       console.error('Error processing file:', error);

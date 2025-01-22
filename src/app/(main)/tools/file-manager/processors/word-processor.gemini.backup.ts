@@ -1,19 +1,16 @@
+"use client"
+
+import mammoth from 'mammoth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface DocumentMetadata {
   title: string;
-  pageCount: number;
+  pageCount?: number;
   author?: string;
   creationDate?: string;
 }
 
-declare global {
-  interface Window {
-    pdfjsLib: any;
-  }
-}
-
-export class DocumentService {
+export class WordProcessor {
   private supabase = createClientComponentClient();
   private readonly CHUNK_SIZE = 1000; // Characters per chunk
 
@@ -45,13 +42,6 @@ export class DocumentService {
       });
     }
 
-    console.log('Chunking summary:', {
-      totalChunks: chunks.length,
-      averageChunkLength: chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length,
-      shortestChunk: Math.min(...chunks.map(chunk => chunk.length)),
-      longestChunk: Math.max(...chunks.map(chunk => chunk.length))
-    });
-
     return chunks;
   }
 
@@ -59,7 +49,7 @@ export class DocumentService {
     try {
       console.log('Sending text for embedding:', text.substring(0, 100) + '...');
       
-      const response = await fetch('http://localhost:3002/api/embeddings', {
+      const response = await fetch('/api/embeddings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -86,14 +76,10 @@ export class DocumentService {
     }
   }
 
-  async processPDFFile(fileUrl: string, fileName: string, userId: string): Promise<void> {
+  async processWordFile(fileUrl: string, fileName: string, userId: string): Promise<void> {
     try {
-      console.log('Processing PDF file:', fileName);
+      console.log('Processing Word file:', fileName);
       console.log('User ID:', userId);
-      
-      if (typeof window === 'undefined' || !window.pdfjsLib) {
-        throw new Error('PDF.js is not loaded');
-      }
       
       // Download the file from Supabase storage
       const { data: fileData, error: downloadError } = await this.supabase
@@ -112,26 +98,16 @@ export class DocumentService {
       // Convert blob to ArrayBuffer
       const arrayBuffer = await fileData.arrayBuffer();
       
-      // Load the PDF document using browser-based PDF.js
-      const pdfDoc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      
-      // Extract text from all pages
-      let fullText = '';
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
-      }
+      // Extract text from Word document
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const fullText = result.value;
 
-      // Get document metadata
+      // Basic metadata for Word documents
       const metadata: DocumentMetadata = {
         title: fileName,
-        pageCount: pdfDoc.numPages,
+        pageCount: undefined, // Word docs don't have fixed pages
         author: undefined,
-        creationDate: undefined
+        creationDate: new Date().toISOString()
       };
 
       // Insert into documents table
@@ -166,8 +142,6 @@ export class DocumentService {
           document_id: documentData.id,
           content: chunk,
           metadata: {
-            pageCount: pdfDoc.numPages,
-            chunkSize: this.CHUNK_SIZE,
             totalChunks: chunks.length,
             chunkIndex: index
           },
@@ -186,13 +160,13 @@ export class DocumentService {
         throw new Error(`Error inserting chunks: ${chunksError.message}`);
       }
 
-      console.log('Successfully processed PDF:', fileName);
+      console.log('Successfully processed Word document:', fileName);
       console.log('Created chunks:', chunks.length);
     } catch (error) {
-      console.error('Error processing PDF:', error);
+      console.error('Error processing Word document:', error);
       throw error;
     }
   }
 }
 
-export const documentService = new DocumentService(); 
+export const wordProcessor = new WordProcessor(); 

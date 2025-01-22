@@ -1,11 +1,4 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-// Initialize the Google AI SDK
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-// Constants
-const EMBEDDING_SIZE = 768; // Match Supabase's expected dimensions
 
 export async function POST(req: Request) {
   try {
@@ -20,45 +13,52 @@ export async function POST(req: Request) {
 
     console.log('Generating embedding for text:', text.substring(0, 100) + '...');
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    
-    // Use a more neutral prompt that's less likely to trigger safety filters
-    const prompt = `Analyze and summarize the following text in a neutral way: ${text}`;
-    
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }]}],
-      generationConfig: {
-        temperature: 0,
-        topK: 1,
-        topP: 1,
-        maxOutputTokens: 1024,
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
       },
-      safetySettings: [
-        {
-          category: 'HARM_CATEGORY_HARASSMENT',
-          threshold: 'BLOCK_NONE',
-        },
-        {
-          category: 'HARM_CATEGORY_HATE_SPEECH',
-          threshold: 'BLOCK_NONE',
-        },
-        {
-          category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-          threshold: 'BLOCK_NONE',
-        },
-        {
-          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-          threshold: 'BLOCK_NONE',
-        },
-      ],
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          {
+            "role": "system",
+            "content": "You are a helpful assistant that converts text into semantic embeddings. Please analyze the following text and provide a detailed semantic representation."
+          },
+          {
+            "role": "user",
+            "content": text
+          }
+        ],
+        stream: false
+      })
     });
 
-    const response = await result.response;
-    const embedding = await response.text();
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Deepseek API error:', error);
+      return NextResponse.json(
+        { error: `Failed to generate embedding: ${error}` },
+        { status: response.status }
+      );
+    }
 
-    // Convert the text response into a numerical embedding
+    const data = await response.json();
+    
+    // Log token usage for monitoring
+    if (data.usage) {
+      console.log('Token usage:', {
+        prompt_tokens: data.usage.prompt_tokens,
+        total_tokens: data.usage.total_tokens
+      });
+    }
+
+    // Convert the chat response into a numerical embedding
+    const EMBEDDING_SIZE = 768;
     const embeddingArray = new Array(EMBEDDING_SIZE).fill(0);
-    const words = embedding.split(/\s+/);
+    const responseText = data.choices[0].message.content;
+    const words = responseText.split(/\s+/);
     
     words.forEach((word, index) => {
       const hash = hashCode(word);
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       embeddingArray[position] = hash / 2147483647; // Normalize to [-1, 1]
     });
 
-    // Ensure we have exactly 768 dimensions
+    // Return the embedding in the expected format
     return NextResponse.json({
       data: [{
         embedding: embeddingArray.slice(0, EMBEDDING_SIZE)
@@ -75,15 +75,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Error generating embedding:', error);
-    
-    // Check for safety block errors and return a more specific error message
-    if (error.toString().includes('SAFETY')) {
-      return NextResponse.json(
-        { error: 'Content was blocked by safety filters. Using fallback embedding generation.' },
-        { status: 200 }
-      );
-    }
-    
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate embedding' },
       { status: 500 }
