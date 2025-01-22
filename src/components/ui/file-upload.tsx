@@ -18,6 +18,11 @@ export function FileUpload({
     'application/pdf': ['.pdf'],
     'application/msword': ['.doc'],
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+    'application/vnd.ms-excel': ['.xls'],
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    'text/csv': ['.csv'],
+    'text/xml': ['.xml'],
+    'application/xml': ['.xml'],
     'text/plain': ['.txt'],
     'application/json': ['.json']
   }
@@ -53,7 +58,7 @@ export function FileUpload({
             Drop your file here or click to upload
           </p>
           <p className="text-sm text-muted-foreground">
-            Supports PDF, DOCX, TXT, JSON and image files up to 10MB
+            Supports PDF, Word (.docx, .doc), Excel (.xlsx, .xls), CSV, XML, and image files up to 10MB
           </p>
         </div>
       </div>

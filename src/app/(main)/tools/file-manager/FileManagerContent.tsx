@@ -14,6 +14,7 @@ import { PDFScriptLoader } from "@/components/pdf-script-loader"
 import { Toast } from "@/components/ui/toast"
 import { FilePreview } from "@/components/shared/FilePreview"
 import { wordProcessor } from './processors/word-processor'
+import { ExcelProcessor } from './processors/excel-processor'
 
 // Custom hook to check if we're on the file manager page
 function useIsFileManagerPage() {
@@ -48,10 +49,14 @@ interface FileItemProps {
 function FileItem({ file, onDelete, onDownload, onProcess, onPreview, toast }: FileItemProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Check if file is processable (PDF or Word)
+  // Check if file is processable (PDF, Word, Excel, CSV, or XML)
   const isProcessable = file.name.toLowerCase().endsWith('.pdf') || 
                        file.name.toLowerCase().endsWith('.docx') || 
-                       file.name.toLowerCase().endsWith('.doc');
+                       file.name.toLowerCase().endsWith('.doc') ||
+                       file.name.toLowerCase().endsWith('.xlsx') ||
+                       file.name.toLowerCase().endsWith('.xls') ||
+                       file.name.toLowerCase().endsWith('.csv') ||
+                       file.name.toLowerCase().endsWith('.xml');
   
   const handleProcessFile = async () => {
     try {
@@ -224,6 +229,10 @@ export function FileManagerContent() {
         await documentService.processPDFFile(filePath, fileName, userId);
       } else if (fileType.endsWith('.docx') || fileType.endsWith('.doc')) {
         await wordProcessor.processWordFile(filePath, fileName, userId);
+      } else if (fileType.endsWith('.xlsx') || fileType.endsWith('.xls') || 
+                fileType.endsWith('.csv') || fileType.endsWith('.xml')) {
+        const excelProcessor = new ExcelProcessor();
+        await excelProcessor.processExcelFile(filePath, fileName, userId);
       } else {
         throw new Error('Unsupported file type for processing');
       }
