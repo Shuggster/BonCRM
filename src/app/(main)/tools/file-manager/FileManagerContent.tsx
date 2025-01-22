@@ -15,6 +15,7 @@ import { Toast } from "@/components/ui/toast"
 import { FilePreview } from "@/components/shared/FilePreview"
 import { wordProcessor } from './processors/word-processor'
 import { ExcelProcessor } from './processors/excel-processor'
+import { ImageProcessor } from './processors/image-processor'
 
 // Custom hook to check if we're on the file manager page
 function useIsFileManagerPage() {
@@ -49,14 +50,18 @@ interface FileItemProps {
 function FileItem({ file, onDelete, onDownload, onProcess, onPreview, toast }: FileItemProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Check if file is processable (PDF, Word, Excel, CSV, or XML)
+  // Check if file is processable (PDF, Word, Excel, CSV, XML, or Images)
   const isProcessable = file.name.toLowerCase().endsWith('.pdf') || 
                        file.name.toLowerCase().endsWith('.docx') || 
                        file.name.toLowerCase().endsWith('.doc') ||
                        file.name.toLowerCase().endsWith('.xlsx') ||
                        file.name.toLowerCase().endsWith('.xls') ||
                        file.name.toLowerCase().endsWith('.csv') ||
-                       file.name.toLowerCase().endsWith('.xml');
+                       file.name.toLowerCase().endsWith('.xml') ||
+                       file.name.toLowerCase().endsWith('.png') ||
+                       file.name.toLowerCase().endsWith('.jpg') ||
+                       file.name.toLowerCase().endsWith('.jpeg') ||
+                       file.name.toLowerCase().endsWith('.gif');
   
   const handleProcessFile = async () => {
     try {
@@ -230,9 +235,13 @@ export function FileManagerContent() {
       } else if (fileType.endsWith('.docx') || fileType.endsWith('.doc')) {
         await wordProcessor.processWordFile(filePath, fileName, userId);
       } else if (fileType.endsWith('.xlsx') || fileType.endsWith('.xls') || 
-                fileType.endsWith('.csv') || fileType.endsWith('.xml')) {
+                 fileType.endsWith('.csv') || fileType.endsWith('.xml')) {
         const excelProcessor = new ExcelProcessor();
         await excelProcessor.processExcelFile(filePath, fileName, userId);
+      } else if (fileType.endsWith('.png') || fileType.endsWith('.jpg') || 
+                 fileType.endsWith('.jpeg') || fileType.endsWith('.gif')) {
+        const imageProcessor = new ImageProcessor();
+        await imageProcessor.processImageFile(filePath, fileName, userId);
       } else {
         throw new Error('Unsupported file type for processing');
       }
