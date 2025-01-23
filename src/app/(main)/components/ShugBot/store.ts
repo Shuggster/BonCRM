@@ -14,14 +14,13 @@ interface ShugBotState {
   messages: Message[]
   isLoading: boolean
   error: string | null
-  previousContext: string | null
   setOpen: (open: boolean) => void
   sendMessage: (content: string) => Promise<void>
   clearMessages: () => void
   clearError: () => void
 }
 
-export const useShugBotStore = create<ShugBotState>((set, get) => ({
+export const useShugBotStore = create<ShugBotState>((set) => ({
   isOpen: false,
   messages: [{
     id: crypto.randomUUID(),
@@ -31,7 +30,6 @@ export const useShugBotStore = create<ShugBotState>((set, get) => ({
   }],
   isLoading: false,
   error: null,
-  previousContext: null,
   
   setOpen: (open) => set({ isOpen: open }),
   
@@ -55,10 +53,7 @@ export const useShugBotStore = create<ShugBotState>((set, get) => ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          message: content,
-          previousContext: get().previousContext 
-        }),
+        body: JSON.stringify({ message: content }),
       });
 
       if (!response.ok) {
@@ -76,8 +71,7 @@ export const useShugBotStore = create<ShugBotState>((set, get) => ({
 
       set((state) => ({
         messages: [...state.messages, assistantMessage],
-        isLoading: false,
-        previousContext: data.context || null
+        isLoading: false
       }));
     } catch (error) {
       console.error('ShugBot error:', error);
@@ -94,8 +88,7 @@ export const useShugBotStore = create<ShugBotState>((set, get) => ({
       role: 'assistant',
       content: "Hello! I'm Shug, your AI assistant. How can I help you today?",
       timestamp: new Date()
-    }],
-    previousContext: null
+    }]
   }),
   
   clearError: () => set({ error: null })
